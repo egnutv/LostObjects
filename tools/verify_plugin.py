@@ -7,7 +7,7 @@ is a well formed Fallout 4 light plugin that matches what the DLL expects:
 
   * TES4 header: light (ESL) flag, HEDR version 1.0, master Fallout4.esm,
     record + group count matches the file
-  * only KYWD and FLST records, all new form IDs inside 0x800-0xFFF
+  * only KYWD, FLST and ARTO records, all new form IDs inside 0x800-0xFFF
   * every keyword is a recipe filter (TNAM 9) with a name (FULL)
   * every form list entry points to a record inside this plugin
   * the form IDs in src/PluginForms.h exist with the right record type
@@ -153,6 +153,16 @@ def main() -> int:
                     fail(f"form list {edid} entry {i} -> {entry:08X} does not exist in this plugin")
                 elif i == 0 and records[entry][0] != "KYWD":
                     fail(f"form list {edid} entry 0 must be a keyword")
+        elif rtype == "ARTO":
+            model = zstring(fields.get("MODL", [b"\x00"])[0])
+            if not model.lower().endswith(".nif"):
+                fail(f"art object {edid} has no model (MODL)")
+            if len(fields.get("OBND", [b""])[0]) != 12:
+                fail(f"art object {edid} OBND must be 12 bytes")
+            if len(fields.get("DNAM", [b""])[0]) != 4:
+                fail(f"art object {edid} DNAM must be 4 bytes")
+            if not (REPO_ROOT / "data" / "Meshes" / model.replace("\\", "/")).exists():
+                fail(f"art object {edid}: mesh data/Meshes/{model} is missing")
         else:
             fail(f"unexpected record type {rtype}")
 
@@ -180,6 +190,7 @@ def main() -> int:
         expect(constant("FirstMenu") + i, "FLST", f"Menu {i + 1}")
     for i in range(max(constant("LeafCount"), 0)):
         expect(constant("FirstLeaf") + i, "KYWD", f"Leaf {i + 1}")
+    expect(constant("MenuIcon"), "ARTO", "MenuIcon")
 
     print(f"{path.name}: {len(records)} records in {group_count} groups, masters {masters}, light={bool(flags & 0x200)}")
     return report()

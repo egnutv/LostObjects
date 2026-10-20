@@ -93,4 +93,23 @@ namespace LO::Util
 		const auto* editorID = a_form->GetFormEditorID();
 		return editorID ? std::string(editorID) : std::string();
 	}
+
+	// What a recipe really builds: the item itself, or - for a form list - every
+	// variant in it (nested lists one level deep, at most 256 forms).
+	inline void CollectVariants(const RE::TESForm* a_form, std::vector<const RE::TESForm*>& a_out, std::uint32_t a_depth = 0)
+	{
+		if (!a_form || a_out.size() >= 256) {
+			return;
+		}
+		if (const auto* list = a_form->As<RE::BGSListForm>()) {
+			if (a_depth >= 2) {
+				return;
+			}
+			for (const auto* form : list->GetAllForms()) {
+				CollectVariants(form, a_out, a_depth + 1);
+			}
+			return;
+		}
+		a_out.push_back(a_form);
+	}
 }

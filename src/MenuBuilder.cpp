@@ -445,6 +445,11 @@ namespace LO
 		};
 		std::vector<TabItem> tab;
 
+		// Which plugins go into which menu. Several plugins can share one home
+		// (an add-on uses the menu of its main mod): they share ONE "Lost
+		// Objects" folder there; the menu's own plugin goes in directly, the
+		// others get a sub folder named after their plugin.
+		std::vector<std::pair<RE::BGSListForm*, std::vector<const Bucket*>>> homes;
 		for (const auto& bucket : buckets) {
 			RE::BGSListForm* homeMenu = nullptr;
 			if (home) {
@@ -453,27 +458,13 @@ namespace LO
 			}
 
 			if (homeMenu) {
-				plan.where = PlacedIn::kModFolder;
-				const auto path = PathOf(a_scan, homeMenu) + " > " + rootName;
-				if (auto* folder = plan.AllocMenu(rootName)) {
-					std::size_t count = 0;
-					for (const auto& [key, leaf] : bucket.leaves) {
-						for (const auto& group : RegroupBorrowed(leaf, groupOptions)) {
-							plan.Add(folder, plan.BuildCategory(group.label, group.recipes, path));
-						}
-						count += leaf.recipes.size();
-					}
-					for (const auto& [key, menu] : bucket.menus) {
-						plan.Add(folder, plan.BuildMenu(menu, path, menu.name));
-						for (const auto& [leafKey, leaf] : menu.leaves) {
-							count += leaf.recipes.size();
-						}
-					}
-					if (plan.contents[folder].size() > 1) {
-						plan.Inject(homeMenu, folder, std::format("{} ({} recipes from {})", path, count, bucket.plugin));
-					}
-					continue;
+				auto existing = std::ranges::find(homes, homeMenu, &std::pair<RE::BGSListForm*, std::vector<const Bucket*>>::first);
+				if (existing == homes.end()) {
+					homes.emplace_back(homeMenu, std::vector<const Bucket*>{});
+					existing = std::prev(homes.end());
 				}
+				existing->second.push_back(&bucket);
+				continue;
 			}
 
 			TabItem item{ &bucket, {}, {} };
@@ -485,6 +476,59 @@ namespace LO
 			}
 			if (!item.leaves.empty() || !item.menus.empty()) {
 				tab.push_back(std::move(item));
+			}
+		}
+
+		plan.where = PlacedIn::kModFolder;
+		for (const auto& [homeMenu, members] : homes) {
+			const auto folderPath = PathOf(a_scan, homeMenu) + " > " + rootName;
+			auto* folder = plan.AllocMenu(rootName);
+			if (!folder) {
+				for (const auto* bucket : members) {
+					for (const auto& [key, leaf] : bucket->leaves) {
+						plan.overflow.insert(plan.overflow.end(), leaf.recipes.begin(), leaf.recipes.end());
+					}
+					for (const auto& [key, menu] : bucket->menus) {
+						for (const auto& [leafKey, leaf] : menu.leaves) {
+							plan.overflow.insert(plan.overflow.end(), leaf.recipes.begin(), leaf.recipes.end());
+						}
+					}
+				}
+				continue;
+			}
+
+			const auto owner = Util::ToLower(Util::GetFileName(homeMenu, 0));
+			std::size_t count = 0;
+			std::string plugins;
+			for (const auto* bucket : members) {
+				RE::BGSListForm* target = folder;
+				std::string path = folderPath;
+				if (members.size() > 1 && Util::ToLower(bucket->plugin) != owner) {
+					const auto stem = Util::StripExtension(bucket->plugin.empty() ? "Unknown"s : bucket->plugin);
+					if (auto* sub = plan.AllocMenu(stem)) {
+						plan.Add(folder, sub);
+						target = sub;
+						path = folderPath + " > " + stem;
+					}
+				}
+
+				for (const auto& [key, leaf] : bucket->leaves) {
+					for (const auto& group : RegroupBorrowed(leaf, groupOptions)) {
+						plan.Add(target, plan.BuildCategory(group.label, group.recipes, path));
+					}
+					count += leaf.recipes.size();
+				}
+				for (const auto& [key, menu] : bucket->menus) {
+					plan.Add(target, plan.BuildMenu(menu, path, menu.name));
+					for (const auto& [leafKey, leaf] : menu.leaves) {
+						count += leaf.recipes.size();
+					}
+				}
+				plugins += (plugins.empty() ? "" : ", ") + bucket->plugin;
+			}
+
+			if (plan.contents[folder].size() > 1) {
+				plan.Inject(homeMenu, folder, std::format("{} ({} recipes from {})", folderPath, count, plugins));
 			}
 		}
 

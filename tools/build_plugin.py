@@ -9,7 +9,8 @@ Generates two files from one single source of truth (this script):
   src/PluginForms.h         The matching form IDs for the F4SE plugin.
 
 Why a generator instead of the Creation Kit?
-  The plugin only contains simple records (KYWD and FLST). Generating it
+  The plugin only contains simple records (KYWD, FLST and one ARTO for the
+  menu icon). Generating it
   makes every byte reviewable in git, keeps form IDs in sync with the C++
   code and lets anyone rebuild it without the Creation Kit.
 
@@ -60,6 +61,8 @@ FIRST_LOCAL_ID = 0x800
 LAST_LOCAL_ID = 0xFFF
 
 ROOT_NAME = "Lost Objects"
+MENU_ICON_MODEL = "LostObjects\\MenuIcon.nif"  # relative to Data\Meshes, see tools/icon
+MENU_ICON_BOUNDS = (-32, -2, 0, 32, 2, 64)  # OBND of the icon mesh (x, y, z min / max)
 MENU_NAME_TEMPLATE = "Menu {:03d}"  # renamed at runtime
 LEAF_NAME_TEMPLATE = "Group {:03d}"  # renamed at runtime
 
@@ -167,11 +170,14 @@ def build_layout() -> tuple[list[Keyword], list[FormList], dict[str, int]]:
     for i in range(1, MENU_COUNT + 1):
         formlists.append(FormList(take(f"Menu{i:03d}"), f"LO_Menu{i:03d}", [ids[f"MenuTitle{i:03d}"]]))
 
+    take("MenuIcon")
+
     ids["NextObjectID"] = next_id
     return keywords, formlists, ids
 
 
-def build_plugin(keywords: list[Keyword], formlists: list[FormList], next_object_id: int) -> bytes:
+def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[str, int]) -> bytes:
+    next_object_id = ids["NextObjectID"]
     keyword_records = b"".join(
         record(
             "KYWD",
@@ -194,9 +200,20 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], next_object
         for f in formlists
     )
 
+    # The workshop menu icon: an art object with our own mesh. The DLL links
+    # the tab's and folders' title keywords to it at runtime.
+    art_records = record(
+        "ARTO",
+        full_id(ids["MenuIcon"]),
+        subrecord("EDID", zstring("LO_MenuIcon"))
+        + subrecord("OBND", struct.pack("<6h", *MENU_ICON_BOUNDS))
+        + subrecord("MODL", zstring(MENU_ICON_MODEL))
+        + subrecord("DNAM", struct.pack("<I", 0)),  # art type: none / magic casting (unused for menu icons)
+    )
+
     # HEDR "number of records" counts records *and* groups (as the Creation Kit does).
-    group_count = 2
-    record_count = len(keywords) + len(formlists) + group_count
+    group_count = 3
+    record_count = len(keywords) + len(formlists) + 1 + group_count
 
     header_data = subrecord("HEDR", struct.pack("<fII", HEDR_VERSION, record_count, next_object_id))
     header_data += subrecord("CNAM", zstring(AUTHOR))
@@ -207,8 +224,8 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], next_object
 
     tes4 = record("TES4", 0, header_data, flags=TES4_FLAG_LIGHT)
 
-    # Top level groups in the order the Creation Kit writes them (KYWD before FLST).
-    return tes4 + group("KYWD", keyword_records) + group("FLST", formlist_records)
+    # Top level groups in the order the Creation Kit writes them (KYWD, FLST, ARTO).
+    return tes4 + group("KYWD", keyword_records) + group("FLST", formlist_records) + group("ARTO", art_records)
 
 
 def build_header(ids: dict[str, int]) -> str:
@@ -238,6 +255,9 @@ def build_header(ids: dict[str, int]) -> str:
         f"\tinline constexpr std::uint32_t LeafCount = {LEAF_COUNT};",
         f"\tinline constexpr std::uint32_t FirstLeaf = 0x{ids['Leaf001']:03X};",
         "",
+        f"\tinline constexpr std::uint32_t MenuIcon = 0x{ids['MenuIcon']:03X};  // ARTO with Meshes\\{MENU_ICON_MODEL}",
+        f'\tinline constexpr std::string_view MenuIconModel = "{MENU_ICON_MODEL.replace(chr(92), chr(92)*2)}";',
+        "",
         "\t// Vanilla forms (Fallout4.esm).",
         '\tinline constexpr std::string_view BaseGameFile = "Fallout4.esm";',
         "\tinline constexpr std::uint32_t WorkshopMenuMain = 0x106DA2;",
@@ -253,7 +273,7 @@ def main() -> int:
     args = parser.parse_args()
 
     keywords, formlists, ids = build_layout()
-    plugin_bytes = build_plugin(keywords, formlists, ids["NextObjectID"])
+    plugin_bytes = build_plugin(keywords, formlists, ids)
     header_text = build_header(ids)
 
     if args.check:
@@ -271,7 +291,7 @@ def main() -> int:
     PLUGIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLUGIN_PATH.write_bytes(plugin_bytes)
     HEADER_PATH.write_text(header_text, encoding="utf-8", newline="\n")
-    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists)} records)")
+    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 1} records)")
     print(f"Wrote {HEADER_PATH.relative_to(REPO_ROOT)}")
     return 0
 

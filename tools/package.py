@@ -6,6 +6,8 @@ Builds the mod archive that goes to Nexus Mods / GitHub releases:
 
   LostObjects-<version>.zip
     LostObjects.esp
+    Meshes/LostObjects/MenuIcon.nif          (workshop menu icon)
+    Textures/LostObjects/MenuIcon_d.dds, MenuIcon_n.dds
     F4SE/Plugins/LostObjects.dll
     F4SE/Plugins/LostObjects.ini
     F4SE/Plugins/LostObjects/README.txt
@@ -74,6 +76,10 @@ def main() -> int:
         add(archive, REPO_ROOT / "data" / "LostObjects.esp", "LostObjects.esp")
         add(archive, args.dll, "F4SE/Plugins/LostObjects.dll")
         add(archive, REPO_ROOT / "data" / "F4SE" / "Plugins" / "LostObjects.ini", "F4SE/Plugins/LostObjects.ini")
+        # Workshop menu icon (see tools/icon).
+        for folder in ("Meshes", "Textures"):
+            for source in sorted((REPO_ROOT / "data" / folder / "LostObjects").glob("*")):
+                add(archive, source, f"{folder}/LostObjects/{source.name}")
         for name, source in DOCS_IN_ARCHIVE.items():
             add(archive, source, f"F4SE/Plugins/LostObjects/{name}")
 

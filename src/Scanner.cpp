@@ -293,10 +293,31 @@ namespace LO
 		std::erase_if(result.visible, [&workshopBenches](const VisibleRecipe& a_visible) {
 			return !workshopBenches.contains(a_visible.recipe->benchKeyword);
 		});
+		// Only recipes without conditions count: an item that needs a perk or a
+		// quest elsewhere is not "already buildable" for everybody.
 		std::unordered_map<const RE::TESForm*, const VisibleRecipe*> buildableItems;
 		for (const auto& visible : result.visible) {
+			if (visible.recipe->conditions) {
+				continue;
+			}
 			buildableItems.try_emplace(visible.recipe->createdItem, &visible);
+			if (visible.recipe->createdItem && visible.recipe->createdItem->As<RE::BGSListForm>()) {
+				std::vector<const RE::TESForm*> variants;
+				Util::CollectVariants(visible.recipe->createdItem, variants);
+				for (const auto* variant : variants) {
+					buildableItems.try_emplace(variant, &visible);
+				}
+			}
 		}
+		const auto shownAtOf = [&result](const VisibleRecipe* a_visible) {
+			if (!a_visible->categories.empty()) {
+				const auto path = result.categoryPath.find(a_visible->categories.front());
+				if (path != result.categoryPath.end()) {
+					return path->second;
+				}
+			}
+			return std::string();
+		};
 
 		// Self-test of the model check with items that are visible right now.
 		if (a_settings.skipMissingModels && !ModelCheck::IsActive()) {
@@ -433,17 +454,30 @@ namespace LO
 			// The item itself can already be built through another recipe (for
 			// example a "scrap return" recipe of a decoration mod). Showing it
 			// again would only put the same item into the menu twice.
+			// For a list of variants: only if EVERY variant can already be built
+			// through its own recipe. Then nothing is lost, the items keep their
+			// recipes where they are.
 			if (a_settings.skipAlreadyBuildable) {
 				if (const auto it = buildableItems.find(recipe->createdItem); it != buildableItems.end()) {
-					std::string shownAt;
-					if (!it->second->categories.empty()) {
-						const auto path = result.categoryPath.find(it->second->categories.front());
-						if (path != result.categoryPath.end()) {
-							shownAt = path->second;
-						}
-					}
-					result.alreadyBuildable.push_back({ LostRecipe{ recipe, usable.empty(), usable }, std::move(shownAt), "the same item is already in the menu" });
+					result.alreadyBuildable.push_back({ LostRecipe{ recipe, usable.empty(), usable }, shownAtOf(it->second), "the same item is already in the menu" });
 					continue;
+				}
+				if (recipe->createdItem->As<RE::BGSListForm>()) {
+					std::vector<const RE::TESForm*> variants;
+					Util::CollectVariants(recipe->createdItem, variants);
+					const VisibleRecipe* first = nullptr;
+					const bool all = !variants.empty() && std::ranges::all_of(variants, [&](const RE::TESForm* a_variant) {
+						const auto found = buildableItems.find(a_variant);
+						if (found == buildableItems.end()) {
+							return false;
+						}
+						first = first ? first : found->second;
+						return true;
+					});
+					if (all) {
+						result.alreadyBuildable.push_back({ LostRecipe{ recipe, usable.empty(), usable }, shownAtOf(first), std::format("all {} variants are already in the menu", variants.size()) });
+						continue;
+					}
 				}
 			}
 

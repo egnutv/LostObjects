@@ -4,6 +4,28 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] - 2026-10-20
+
+### Added
+- Own workshop menu icon: a small picture frame with the Lost Objects logo
+  (`LO_MenuIcon` in `LostObjects.esp`, `Meshes\LostObjects\MenuIcon.nif`,
+  `Textures\LostObjects\MenuIcon_d.dds`). Built by `tools/icon` (mesh with the nifly
+  library as a build tool, textures from `Logo/Logo.png`). `bCustomMenuIcon=0` or a
+  missing mesh falls back to the vanilla "Decorations" icon.
+
+### Fixed
+- Two "Lost Objects" folders in the same menu when an add-on shares the menu of its
+  main mod (Snappy HouseKit + Snappy_DLC03). Now there is one folder per menu; the
+  add-on gets a sub folder named after its plugin.
+- Variant lists whose every variant can already be built through its own recipe were
+  shown again (duplicates in "Lost Objects > HouseKit"). Such a list is now skipped
+  like other already buildable items; the variants keep their own recipes. A list is
+  only skipped if every single variant is buildable, otherwise it is shown.
+- "Already buildable" only counts recipes without conditions, so nothing that needs a
+  perk or a quest elsewhere is hidden.
+- NOTICE.md: the permission for player creations only covers our rights; Bethesda's
+  terms for game content still apply.
+
 ## [0.4.0] - 2026-10-20
 
 ### Changed

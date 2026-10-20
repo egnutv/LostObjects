@@ -165,7 +165,7 @@ are installed right now, and no stale entries can end up in a save.
 | Pool menus and categories of `LostObjects.esp` | named and filled | every rebuild |
 | Top menus of other mods | a "Lost Objects" folder (pool menu) is appended | every rebuild (removed and added again), or on restart |
 | `WorkshopMenuMain` | the "Lost Objects" tab is appended if needed | every rebuild |
-| One vanilla icon art object | the tab's and the pool menus' title keywords are added | restart (`bBorrowMenuIcon=0` to disable) |
+| The menu icon | the tab's and the pool menus' title keywords are added to `LO_MenuIcon` (our picture frame with the logo) or, as fallback, to the vanilla "Decorations" icon | restart (`bBorrowMenuIcon=0` to disable, `bCustomMenuIcon=0` for the vanilla icon) |
 
 The menus are only rebuilt when the result of a scan changes, and never while the
 workshop menu is open. If another mod resets one of the menus (Papyrus `Revert()`),

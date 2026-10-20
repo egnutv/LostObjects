@@ -23,6 +23,9 @@ namespace LO::Forms
 	inline constexpr std::uint32_t LeafCount = 768;
 	inline constexpr std::uint32_t FirstLeaf = 0x8C1;
 
+	inline constexpr std::uint32_t MenuIcon = 0xC82;  // ARTO with Meshes\LostObjects\MenuIcon.nif
+	inline constexpr std::string_view MenuIconModel = "LostObjects\\MenuIcon.nif";
+
 	// Vanilla forms (Fallout4.esm).
 	inline constexpr std::string_view BaseGameFile = "Fallout4.esm";
 	inline constexpr std::uint32_t WorkshopMenuMain = 0x106DA2;

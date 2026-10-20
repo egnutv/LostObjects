@@ -2,6 +2,7 @@
 
 #include "Inventory.h"
 #include "MenuDump.h"
+#include "ModelCheck.h"
 #include "NameMap.h"
 #include "Notice.h"
 #include "Report.h"
@@ -237,8 +238,28 @@ namespace LO
 		_iconBorrowed = true;
 
 		// Workshop menu icons are art objects (ARTO) that list the category
-		// keyword. We link our keywords to the icon of the vanilla
-		// "Decorations" category, so our tab and folders get a proper icon.
+		// keyword. Our own icon (a picture frame with the logo, from
+		// LostObjects.esp + Meshes\LostObjects\MenuIcon.nif) is used if it is
+		// there; otherwise we link our keywords to the icon of the vanilla
+		// "Decorations" category.
+		const auto linkTo = [this](RE::BGSArtObject* a_art) {
+			auto* keywordForm = static_cast<RE::BGSKeywordForm*>(a_art);
+			keywordForm->AddKeyword(_forms.rootKeyword);
+			for (auto* title : _forms.menuTitles) {
+				keywordForm->AddKeyword(title);
+			}
+		};
+
+		if (Settings::Get().customMenuIcon && _forms.menuIcon) {
+			const auto exists = ModelCheck::FileExists(Forms::MenuIconModel);
+			if (exists == 1) {
+				linkTo(_forms.menuIcon);
+				REX::LogInformation("Icon: using the Lost Objects icon ({}, Meshes\\{})", Util::FormIDToString(_forms.menuIcon->GetFormID()), Forms::MenuIconModel);
+				return;
+			}
+			REX::LogWarning("Icon: Meshes\\{} {} - using the vanilla icon instead", Forms::MenuIconModel, exists == 0 ? "was not found" : "could not be checked");
+		}
+
 		auto* dataHandler = RE::TESDataHandler::GetSingleton();
 		if (!dataHandler) {
 			return;
@@ -282,11 +303,7 @@ namespace LO
 			return;
 		}
 
-		auto* keywordForm = static_cast<RE::BGSKeywordForm*>(donor);
-		keywordForm->AddKeyword(_forms.rootKeyword);
-		for (auto* title : _forms.menuTitles) {
-			keywordForm->AddKeyword(title);
-		}
+		linkTo(donor);
 
 		REX::LogInformation("Icon: using art object {} for the tab icon", Util::FormIDToString(donor->GetFormID()));
 	}

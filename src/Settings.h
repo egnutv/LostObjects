@@ -36,7 +36,8 @@ namespace LO
 		bool sortIntoCategories{ true };      // put lost items into matching existing categories
 		std::uint32_t minConfidence{ 30 };    // percent a match needs
 		bool showSummaryMessage{ true };
-		bool borrowMenuIcon{ true };
+		bool borrowMenuIcon{ true };   // give the tab and folders an icon
+		bool customMenuIcon{ true };   // the Lost Objects icon instead of the vanilla "Decorations" icon
 		bool writeReport{ true };
 		bool writeInventory{ true };
 		bool verboseLog{ false };

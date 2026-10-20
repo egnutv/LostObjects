@@ -8,7 +8,6 @@ namespace LO::ModelCheck
 	{
 		constexpr double MIN_FOUND_RATIO = 0.7;  // self-test: at least 70 % of the visible models must be found
 		constexpr std::size_t MIN_SAMPLE = 20;
-		constexpr std::size_t MAX_VARIANTS = 256;
 
 		enum class State
 		{
@@ -74,23 +73,6 @@ namespace LO::ModelCheck
 			g_status = std::move(a_reason);
 			REX::LogWarning("ModelCheck: {} - ghost objects are not hidden", g_status);
 		}
-
-		void CollectVariants(const RE::TESForm* a_form, std::vector<const RE::TESForm*>& a_out, std::uint32_t a_depth)
-		{
-			if (!a_form || a_out.size() >= MAX_VARIANTS) {
-				return;
-			}
-			if (const auto* list = a_form->As<RE::BGSListForm>()) {
-				if (a_depth >= 2) {
-					return;
-				}
-				for (const auto* form : list->GetAllForms()) {
-					CollectVariants(form, a_out, a_depth + 1);
-				}
-				return;
-			}
-			a_out.push_back(a_form);
-		}
 	}
 
 	void SelfTest(const std::vector<std::string>& a_visibleModels)
@@ -125,6 +107,11 @@ namespace LO::ModelCheck
 		REX::LogInformation("ModelCheck: {}", g_status);
 	}
 
+	int FileExists(std::string_view a_modelPath)
+	{
+		return Exists(a_modelPath);
+	}
+
 	bool IsActive() noexcept
 	{
 		return g_state == State::kActive;
@@ -142,7 +129,7 @@ namespace LO::ModelCheck
 		}
 
 		std::vector<const RE::TESForm*> variants;
-		CollectVariants(a_recipe->createdItem, variants, 0);
+		Util::CollectVariants(a_recipe->createdItem, variants);
 		if (variants.empty()) {
 			return a_recipe->createdItem->As<RE::BGSListForm>() ? "empty variant list, nothing to build"s : std::string();
 		}

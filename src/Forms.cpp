@@ -33,6 +33,7 @@ namespace LO
 		workshopMenuMain = Find<RE::BGSListForm>(dataHandler, Forms::WorkshopMenuMain, Forms::BaseGameFile);
 		rootMenu = Find<RE::BGSListForm>(dataHandler, Forms::RootMenu, Forms::PluginFile);
 		rootKeyword = Find<RE::BGSKeyword>(dataHandler, Forms::RootKeyword, Forms::PluginFile);
+		menuIcon = Find<RE::BGSArtObject>(dataHandler, Forms::MenuIcon, Forms::PluginFile);  // optional
 
 		bool ok = workshopMenuMain && rootMenu && rootKeyword;
 		if (!workshopMenuMain) {

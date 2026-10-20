@@ -18,6 +18,10 @@ namespace LO::ModelCheck
 	// One line for the report ("active (298 of 300 test files found)").
 	[[nodiscard]] const std::string& Status() noexcept;
 
+	// Asks the game's file system directly (no self-test needed).
+	// 1 = the model file exists, 0 = it does not, -1 = the lookup failed.
+	[[nodiscard]] int FileExists(std::string_view a_modelPath);
+
 	// Empty if the recipe's item (or at least one of its variants) has a model
 	// file, or cannot be judged (for example an NPC, which has no model).
 	// Otherwise the reason, e.g. "model file not found: Meshes\Foo\Bar.nif".

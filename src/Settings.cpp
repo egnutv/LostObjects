@@ -137,6 +137,7 @@ namespace LO
 		enabled = GetBool(data, "general.benabled", true);
 		showSummaryMessage = GetBool(data, "general.bshowsummarymessage", true);
 		borrowMenuIcon = GetBool(data, "general.bborrowmenuicon", true);
+		customMenuIcon = GetBool(data, "general.bcustommenuicon", true);
 		writeReport = GetBool(data, "general.bwritereport", true);
 		writeInventory = GetBool(data, "general.bwriteinventory", true);
 		verboseLog = GetBool(data, "general.bverboselog", false);

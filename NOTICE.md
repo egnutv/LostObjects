@@ -30,7 +30,10 @@ permissions to everyone:
    blueprints, screenshots, videos, streams, guides and other results you make
    while playing with Lost Objects are not covered by this license. You may
    use them for any purpose, including monetized videos and streams. You do not
-   need to credit this mod (but it is nice if you do).
+   need to credit this mod (but it is nice if you do). This permission only
+   covers the rights of egnutv: for the game content in your pictures and
+   videos (Fallout 4 and other mods), the terms of Bethesda and of those mod
+   authors still apply.
 
 2. **Continuing the project does not need permission.** Anyone may fork this
    project, maintain it, fix it, port it to newer game versions and publish their
