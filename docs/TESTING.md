@@ -58,7 +58,7 @@ Mark each case with OK / FAIL / NOT TESTED.
 ## 3. What to send back
 
 - The table above with your results.
-- `LostObjects.log` and `LostObjects_Report.txt` (for a full picture set
+- `LostObjects.log`, `LostObjects_Report.txt`, `LostObjects_Inventory.tsv` and `LostObjects_Patterns.txt` (for a full picture set
   `bVerboseLog=1` once).
 - Screenshots of the tab (main menu with tab, one folder opened).
 - For a crash: the crash log (Buffout 4 or similar) and `f4se.log`.

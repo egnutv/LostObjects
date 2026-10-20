@@ -22,6 +22,7 @@ namespace LO
 	{
 		RE::BGSConstructibleObject* recipe{ nullptr };
 		bool uncategorized{ false };
+		std::vector<RE::BGSKeyword*> categories;  // usable (named) categories of the recipe
 	};
 
 	struct ScanResult
@@ -37,6 +38,9 @@ namespace LO
 		std::uint32_t reachableMenuCount{ 0 };
 		std::uint32_t skippedWithoutCategory{ 0 };  // recipes removed by bSkipWithoutCategory=1
 		std::vector<std::string> workbenchKeywords;  // for the log
+
+		// Category keyword -> the tab entry (menu or category form) that shows it.
+		std::unordered_map<const RE::BGSKeyword*, const RE::TESForm*> entryOfCategory;
 
 		[[nodiscard]] bool Empty() const noexcept { return entries.empty() && uncategorized.empty(); }
 	};

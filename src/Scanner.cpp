@@ -260,7 +260,7 @@ namespace LO
 				result.uncategorized.push_back(recipe);
 			}
 
-			result.lostRecipes.push_back({ recipe, !hasUsableCategory });
+			result.lostRecipes.push_back({ recipe, !hasUsableCategory, usable });
 		}
 
 		// 5) Lost whole menus: form lists that look like a workshop sub menu
@@ -331,6 +331,7 @@ namespace LO
 			for (const auto* leaf : tree.leaves) {
 				if (lostCategories.contains(const_cast<RE::BGSKeyword*>(leaf))) {
 					coveredCategories.insert(leaf);
+					result.entryOfCategory[leaf] = list;
 				}
 			}
 
@@ -367,6 +368,8 @@ namespace LO
 					}
 				}
 			}
+
+			result.entryOfCategory[keyword] = keyword;
 
 			result.entries.push_back(MenuEntry{
 				.form = keyword,

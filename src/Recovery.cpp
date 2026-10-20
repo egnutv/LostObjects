@@ -1,5 +1,6 @@
 #include "Recovery.h"
 
+#include "Inventory.h"
 #include "NameMap.h"
 #include "Notice.h"
 #include "Report.h"
@@ -175,6 +176,9 @@ namespace LO
 			Report::Log(scan, apply, a_reason, settings.verboseLog);
 			if (settings.writeReport) {
 				Report::Write(scan, apply, a_reason);
+			}
+			if (settings.writeInventory) {
+				Inventory::Write(scan, a_reason);
 			}
 		}
 		REX::LogDebug("Scan ({}) finished in {} ms, changed={}", a_reason, elapsed.count(), apply.changed);

@@ -24,6 +24,7 @@ namespace LO
 		bool showSummaryMessage{ true };
 		bool borrowMenuIcon{ true };
 		bool writeReport{ true };
+		bool writeInventory{ true };
 		bool verboseLog{ false };
 		std::vector<std::string> ignoredPlugins;  // lower case file names
 

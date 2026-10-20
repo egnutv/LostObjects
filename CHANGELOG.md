@@ -4,6 +4,17 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-10-20
+
+### Added
+- `LostObjects_Inventory.tsv`: one line per recovered recipe with folder, entry, recipe and
+  item IDs, plugins, item name and type, model path, size, categories, workbench,
+  components, conditions and item keywords. Opens in Excel or LibreOffice.
+- `LostObjects_Patterns.txt`: frequency statistics over the inventory (folders, entries,
+  plugins, form types, sizes, model folders, words in names, keywords) as a basis for
+  better automatic categories.
+- INI setting `bWriteInventory` (default on).
+
 ## [0.1.2] - 2026-10-20
 
 ### Fixed

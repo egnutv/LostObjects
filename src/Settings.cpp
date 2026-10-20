@@ -121,6 +121,7 @@ namespace LO
 		showSummaryMessage = GetBool(data, "general.bshowsummarymessage", true);
 		borrowMenuIcon = GetBool(data, "general.bborrowmenuicon", true);
 		writeReport = GetBool(data, "general.bwritereport", true);
+		writeInventory = GetBool(data, "general.bwriteinventory", true);
 		verboseLog = GetBool(data, "general.bverboselog", false);
 
 		const auto sortText = Util::ToLower(GetString(data, "general.ssortmode", "ByMod"));
