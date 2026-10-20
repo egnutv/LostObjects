@@ -238,10 +238,19 @@ namespace LO
 		_iconBorrowed = true;
 
 		// Workshop menu icons are art objects (ARTO) that list the category
-		// keyword. Our own icon (the logo, from
-		// LostObjects.esp + Meshes\LostObjects\MenuIcon.nif) is used if it is
-		// there; otherwise we link our keywords to the icon of the vanilla
-		// "Decorations" category.
+		// keyword. The menu shows the art object's model the way its preview
+		// transform (TRNS) says: position, rotation, scale and zoom.
+		//
+		// Our own icon (the logo, LO_MenuIcon in LostObjects.esp with
+		// Meshes\LostObjects\MenuIcon.nif) is used if the mesh is there. Its
+		// transform starts as a copy of the vanilla "Decorations" icon's
+		// transform, so the menu frames it like the other icons. Without our
+		// icon we link our keywords to the vanilla icon itself.
+		auto* dataHandler = RE::TESDataHandler::GetSingleton();
+		if (!dataHandler) {
+			return;
+		}
+
 		const auto linkTo = [this](RE::BGSArtObject* a_art) {
 			auto* keywordForm = static_cast<RE::BGSKeywordForm*>(a_art);
 			keywordForm->AddKeyword(_forms.rootKeyword);
@@ -249,21 +258,6 @@ namespace LO
 				keywordForm->AddKeyword(title);
 			}
 		};
-
-		if (Settings::Get().customMenuIcon && _forms.menuIcon) {
-			const auto exists = ModelCheck::FileExists(Forms::MenuIconModel);
-			if (exists == 1) {
-				linkTo(_forms.menuIcon);
-				REX::LogInformation("Icon: using the Lost Objects icon ({}, Meshes\\{})", Util::FormIDToString(_forms.menuIcon->GetFormID()), Forms::MenuIconModel);
-				return;
-			}
-			REX::LogWarning("Icon: Meshes\\{} {} - using the vanilla icon instead", Forms::MenuIconModel, exists == 0 ? "was not found" : "could not be checked");
-		}
-
-		auto* dataHandler = RE::TESDataHandler::GetSingleton();
-		if (!dataHandler) {
-			return;
-		}
 
 		const auto findArtFor = [dataHandler](const auto& a_match) -> RE::BGSArtObject* {
 			for (auto* art : dataHandler->GetFormArray<RE::BGSArtObject>()) {
@@ -280,12 +274,24 @@ namespace LO
 			return nullptr;
 		};
 
+		const auto describe = [](const RE::BGSArtObject* a_art) {
+			const char* model = static_cast<const RE::BGSModelMaterialSwap*>(a_art)->GetModel();
+			const auto* transform = a_art->previewTransform.transform;
+			if (!transform) {
+				return std::format("{} from {}, model '{}', no preview transform", Util::FormIDToString(a_art->GetFormID()), Util::GetFileName(a_art, 0), model ? model : "");
+			}
+			const auto& d = transform->data;
+			return std::format("{} from {}, model '{}', transform {} pos ({:.1f} {:.1f} {:.1f}) rot ({:.1f} {:.1f} {:.1f}) scale {:.2f} zoom {:.2f}..{:.2f} flags {:08X}",
+				Util::FormIDToString(a_art->GetFormID()), Util::GetFileName(a_art, 0), model ? model : "", Util::FormIDToString(transform->GetFormID()),
+				d.position.x, d.position.y, d.position.z, d.rotation.x, d.rotation.y, d.rotation.z, d.scale, d.minZoom, d.maxZoom, transform->formFlags.underlying());
+		};
+
+		// The vanilla "Decorations" icon (base game keyword WorkshopRecipeFilterDecor),
+		// or the icon of the first vanilla sub menu.
 		auto* donor = findArtFor([](const RE::BGSKeyword* a_keyword) {
 			return Util::EqualsIgnoreCase(Util::GetEditorID(a_keyword), "WorkshopRecipeFilterDecor"sv);
 		});
-
 		if (!donor) {
-			// Fallback: the icon of the first vanilla sub menu.
 			for (auto* form : _forms.workshopMenuMain->GetAllForms()) {
 				auto* subMenu = form ? form->As<RE::BGSListForm>() : nullptr;
 				auto* title = subMenu ? subMenu->GetNthForm(0) : nullptr;
@@ -298,14 +304,48 @@ namespace LO
 			}
 		}
 
+		// For the log: how the icons of the main menu are set up (helps to
+		// tune our own icon).
+		for (auto* form : _forms.workshopMenuMain->GetAllForms()) {
+			auto* subMenu = form ? form->As<RE::BGSListForm>() : nullptr;
+			auto* title = subMenu ? subMenu->GetNthForm(0) : nullptr;
+			if (!title || _forms.IsOwned(subMenu)) {
+				continue;
+			}
+			if (auto* art = findArtFor([title](const RE::BGSKeyword* a_keyword) { return a_keyword == title; })) {
+				REX::LogInformation("Icon of '{}': {}", Util::GetFormName(title), describe(art));
+			}
+		}
+
+		if (Settings::Get().customMenuIcon && _forms.menuIcon) {
+			const auto exists = ModelCheck::FileExists(Forms::MenuIconModel);
+			if (exists == 1) {
+				auto* own = _forms.menuIcon->previewTransform.transform;
+				if (!own) {
+					own = _forms.menuIconTransform;
+					_forms.menuIcon->previewTransform.transform = own;
+				}
+				const auto* donorTransform = donor ? donor->previewTransform.transform : nullptr;
+				if (own && donorTransform && own != donorTransform) {
+					own->data = donorTransform->data;
+					constexpr std::uint32_t aroundOrigin = RE::BGSTransform::RecordFlag::kAroundOrigin;
+					auto& ownFlags = *own->formFlags.underlying_address();
+					ownFlags = (ownFlags & ~aroundOrigin) | (donorTransform->formFlags.underlying() & aroundOrigin);
+				}
+				linkTo(_forms.menuIcon);
+				REX::LogInformation("Icon: using the Lost Objects icon: {}", describe(_forms.menuIcon));
+				return;
+			}
+			REX::LogWarning("Icon: Meshes\\{} {} - using the vanilla icon instead", Forms::MenuIconModel, exists == 0 ? "was not found" : "could not be checked");
+		}
+
 		if (!donor) {
 			REX::LogWarning("Icon: no vanilla menu icon found, the tab will show without an icon");
 			return;
 		}
 
 		linkTo(donor);
-
-		REX::LogInformation("Icon: using art object {} for the tab icon", Util::FormIDToString(donor->GetFormID()));
+		REX::LogInformation("Icon: using the vanilla icon: {}", describe(donor));
 	}
 
 	void Recovery::ScheduleFollowUpScans()

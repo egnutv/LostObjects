@@ -4,6 +4,22 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.3] - 2026-10-20
+
+### Fixed
+- The menu icon was invisible: workshop menu icons need a preview transform (TRNS)
+  that tells the menu how to show the model. `LostObjects.esp` now has
+  `LO_MenuIconTransform`; at runtime it gets the values of the vanilla "Decorations"
+  icon, so the logo is framed like the other icons.
+
+### Added
+- The log lists how the icons of all main menu categories are set up (model,
+  transform), to tune the icon if needed.
+
+### Changed
+- NOTICE.md: videos, streams, screenshots and reviews of the mod are explicitly
+  allowed, also monetized; Bethesda's video policy still applies to game content.
+
 ## [0.4.2] - 2026-10-20
 
 ### Changed

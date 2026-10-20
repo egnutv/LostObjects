@@ -24,6 +24,7 @@ namespace LO::Forms
 	inline constexpr std::uint32_t FirstLeaf = 0x8C1;
 
 	inline constexpr std::uint32_t MenuIcon = 0xC82;  // ARTO with Meshes\LostObjects\MenuIcon.nif
+	inline constexpr std::uint32_t MenuIconTransform = 0xC83;  // TRNS, preview transform of MenuIcon
 	inline constexpr std::string_view MenuIconModel = "LostObjects\\MenuIcon.nif";
 
 	// Vanilla forms (Fallout4.esm).

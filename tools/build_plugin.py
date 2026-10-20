@@ -9,8 +9,8 @@ Generates two files from one single source of truth (this script):
   src/PluginForms.h         The matching form IDs for the F4SE plugin.
 
 Why a generator instead of the Creation Kit?
-  The plugin only contains simple records (KYWD, FLST and one ARTO for the
-  menu icon). Generating it
+  The plugin only contains simple records (KYWD, FLST, and one ARTO + TRNS
+  for the menu icon). Generating it
   makes every byte reviewable in git, keeps form IDs in sync with the C++
   code and lets anyone rebuild it without the Creation Kit.
 
@@ -171,6 +171,7 @@ def build_layout() -> tuple[list[Keyword], list[FormList], dict[str, int]]:
         formlists.append(FormList(take(f"Menu{i:03d}"), f"LO_Menu{i:03d}", [ids[f"MenuTitle{i:03d}"]]))
 
     take("MenuIcon")
+    take("MenuIconTransform")
 
     ids["NextObjectID"] = next_id
     return keywords, formlists, ids
@@ -202,18 +203,29 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
 
     # The workshop menu icon: an art object with our own mesh. The DLL links
     # the tab's and folders' title keywords to it at runtime.
+    # How the menu shows the icon (position, rotation in degrees, scale, zoom).
+    # The DLL overwrites these values at runtime with the ones of the vanilla
+    # "Decorations" icon, so the logo is framed like the other icons.
+    transform_records = record(
+        "TRNS",
+        full_id(ids["MenuIconTransform"]),
+        subrecord("EDID", zstring("LO_MenuIconTransform"))
+        + subrecord("DATA", struct.pack("<9f", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -1.0, 1.0)),
+    )
+
     art_records = record(
         "ARTO",
         full_id(ids["MenuIcon"]),
         subrecord("EDID", zstring("LO_MenuIcon"))
         + subrecord("OBND", struct.pack("<6h", *MENU_ICON_BOUNDS))
+        + subrecord("PTRN", struct.pack("<I", full_id(ids["MenuIconTransform"])))
         + subrecord("MODL", zstring(MENU_ICON_MODEL))
         + subrecord("DNAM", struct.pack("<I", 0)),  # art type: none / magic casting (unused for menu icons)
     )
 
     # HEDR "number of records" counts records *and* groups (as the Creation Kit does).
-    group_count = 3
-    record_count = len(keywords) + len(formlists) + 1 + group_count
+    group_count = 4
+    record_count = len(keywords) + len(formlists) + 2 + group_count
 
     header_data = subrecord("HEDR", struct.pack("<fII", HEDR_VERSION, record_count, next_object_id))
     header_data += subrecord("CNAM", zstring(AUTHOR))
@@ -224,8 +236,8 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
 
     tes4 = record("TES4", 0, header_data, flags=TES4_FLAG_LIGHT)
 
-    # Top level groups in the order the Creation Kit writes them (KYWD, FLST, ARTO).
-    return tes4 + group("KYWD", keyword_records) + group("FLST", formlist_records) + group("ARTO", art_records)
+    # Top level groups in the order the Creation Kit writes them (KYWD, TRNS, FLST, ARTO).
+    return tes4 + group("KYWD", keyword_records) + group("TRNS", transform_records) + group("FLST", formlist_records) + group("ARTO", art_records)
 
 
 def build_header(ids: dict[str, int]) -> str:
@@ -256,6 +268,7 @@ def build_header(ids: dict[str, int]) -> str:
         f"\tinline constexpr std::uint32_t FirstLeaf = 0x{ids['Leaf001']:03X};",
         "",
         f"\tinline constexpr std::uint32_t MenuIcon = 0x{ids['MenuIcon']:03X};  // ARTO with Meshes\\{MENU_ICON_MODEL}",
+        f"\tinline constexpr std::uint32_t MenuIconTransform = 0x{ids['MenuIconTransform']:03X};  // TRNS, preview transform of MenuIcon",
         f'\tinline constexpr std::string_view MenuIconModel = "{MENU_ICON_MODEL.replace(chr(92), chr(92)*2)}";',
         "",
         "\t// Vanilla forms (Fallout4.esm).",
@@ -291,7 +304,7 @@ def main() -> int:
     PLUGIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLUGIN_PATH.write_bytes(plugin_bytes)
     HEADER_PATH.write_text(header_text, encoding="utf-8", newline="\n")
-    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 1} records)")
+    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 2} records)")
     print(f"Wrote {HEADER_PATH.relative_to(REPO_ROOT)}")
     return 0
 

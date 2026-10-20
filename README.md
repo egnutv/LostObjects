@@ -137,7 +137,7 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) first.
 [PolyForm Noncommercial 1.0.0](LICENSE) with additional permissions in [NOTICE.md](NOTICE.md):
 
 - the code may be used, changed and shared for **noncommercial** purposes only,
-- everything you **create with** the mod (settlements, screenshots, videos, ...) is yours,
-  also for commercial use,
+- **videos, streams, screenshots and reviews** of the mod are allowed, also monetized
+  (YouTube, Twitch, ...), and everything you build with it is yours,
 - anyone may fork and continue the project without asking,
 - no warranty and no support obligation.

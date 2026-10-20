@@ -26,14 +26,17 @@ This is a summary, not legal advice. If the summary and `LICENSE` disagree, `LIC
 In addition to the PolyForm Noncommercial License, egnutv grants the following
 permissions to everyone:
 
-1. **What you create with the mod is yours, also commercially.** Settlements,
-   blueprints, screenshots, videos, streams, guides and other results you make
-   while playing with Lost Objects are not covered by this license. You may
-   use them for any purpose, including monetized videos and streams. You do not
-   need to credit this mod (but it is nice if you do). This permission only
-   covers the rights of egnutv: for the game content in your pictures and
-   videos (Fallout 4 and other mods), the terms of Bethesda and of those mod
-   authors still apply.
+1. **Videos, streams, screenshots and reviews are allowed, also commercially.**
+   You may show, review, test and explain Lost Objects in videos, streams,
+   screenshots, articles and guides (mod reviews, showcases, let's plays,
+   tutorials), and earn money with them (for example YouTube Partner Program,
+   Twitch, sponsors, donations). Settlements, blueprints and other results you
+   make while playing are yours. You do not need to ask or to credit this mod
+   (but it is nice if you do). This permission only covers the rights of egnutv:
+   for the game content in your pictures and videos (Fallout 4 and other mods),
+   the terms of Bethesda and of those mod authors still apply. Bethesda's video
+   policy allows the YouTube Partner Program but not selling the video content
+   itself.
 
 2. **Continuing the project does not need permission.** Anyone may fork this
    project, maintain it, fix it, port it to newer game versions and publish their

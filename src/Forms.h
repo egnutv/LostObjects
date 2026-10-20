@@ -22,6 +22,7 @@ namespace LO
 		std::vector<RE::BGSKeyword*> leaves;  // pool: categories lost recipes are tagged with
 
 		RE::BGSArtObject* menuIcon{ nullptr };  // optional: our own workshop menu icon (the logo)
+		RE::BGSTransform* menuIconTransform{ nullptr };  // optional: how the menu shows it
 
 		// Looks everything up. Returns false (and logs why) if something is missing.
 		bool Resolve();
