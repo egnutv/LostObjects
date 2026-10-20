@@ -65,6 +65,7 @@ generate_xse_plugin_info("${commonlibf4_SOURCE_DIR}")
 set(SOURCES
 	src/Forms.cpp
 	src/Grouping.cpp
+	src/Holotape.cpp
 	src/Matcher.cpp
 	src/ModelCheck.cpp
 	src/Inventory.cpp
@@ -77,11 +78,13 @@ set(SOURCES
 	src/Report.cpp
 	src/Scanner.cpp
 	src/Settings.cpp
+	src/Snapshot.cpp
 )
 
 set(HEADERS
 	src/Forms.h
 	src/Grouping.h
+	src/Holotape.h
 	src/Inventory.h
 	src/MenuBuilder.h
 	src/MenuDump.h
@@ -93,6 +96,7 @@ set(HEADERS
 	src/Report.h
 	src/Scanner.h
 	src/Settings.h
+	src/Snapshot.h
 	src/Util.h
 )
 

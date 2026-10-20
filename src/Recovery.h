@@ -28,6 +28,9 @@ namespace LO
 		void OnWorkshopModeChanged(bool a_entering);
 		void OnWorkshopMenuClosed();
 
+		// A menu item of the settings holotape was selected (main thread).
+		void OnHolotapeItem(std::int32_t a_itemID);
+
 	private:
 		Recovery() = default;
 
@@ -39,6 +42,8 @@ namespace LO
 		void BorrowMenuIcon();
 		void ScheduleFollowUpScans();
 		void ShowSummary(const ApplyResult& a_apply) const;
+		void ShowRestartHint();
+		void RestoreSnapshot();
 		[[nodiscard]] static bool IsWorkshopMenuOpen();
 
 		OwnedForms _forms;
@@ -61,6 +66,15 @@ namespace LO
 		bool _hasLoggedOnce{ false };
 		std::size_t _lastSignature{ 0 };
 		std::uint32_t _scanCount{ 0 };
+
+		// The game builds its workshop menu the first time the workshop is
+		// opened and keeps it until the game is closed. Changes after that are
+		// only visible after a restart (see Snapshot.h).
+		bool _workshopEnteredThisProcess{ false };
+		bool _restartHintShown{ false };
+		bool _manualRequest{ false };  // "Rebuild now" on the holotape: say what happened
+		std::size_t _savedSignature{ 0 };  // signature of the snapshot on disk
+		std::uint64_t _savedFingerprint{ 0 };
 
 		std::atomic<std::uint32_t> _loadGeneration{ 0 };
 	};

@@ -7,7 +7,8 @@ Started by build.cmd in the repository root. It:
   1. checks the required tools (Visual Studio 2026 with C++, CMake 4.3+, Git),
   2. sets up vcpkg (uses VCPKG_ROOT if set, otherwise a private copy in .vcpkg),
   3. configures and builds the DLL (same presets as the GitHub build),
-  4. packages the mod into dist\\LostObjects-<version>.zip.
+  4. builds the Papyrus compiler Caprica and compiles the holotape scripts,
+  5. packages the mod into dist\\LostObjects-<version>.zip.
 
 Every step prints what it does. If something is missing, it says what to
 install and where to get it.
@@ -33,6 +34,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BUILD_DIR = REPO_ROOT / "build" / "release"
+PAPYRUS_BUILD_DIR = REPO_ROOT / "build" / "papyrus"
+TRIPLET = "x64-windows-static-md-release"
 OUTPUT_DIR = BUILD_DIR / "RelWithDebInfo"
 LOCAL_VCPKG = REPO_ROOT / ".vcpkg"
 MIN_CMAKE = (4, 3)
@@ -186,7 +189,7 @@ def main() -> int:
     print("Vibecoded by AI (Claude, Anthropic). AI-generated code can contain mistakes.")
 
     try:
-        step("1/5 Checking tools")
+        step("1/6 Checking tools")
         vs_path = find_visual_studio()
         info(f"Visual Studio: {vs_path}")
         cmake = find_cmake(vs_path)
@@ -194,7 +197,7 @@ def main() -> int:
         git = find_git()
         info(f"Git: {git}")
 
-        step("2/5 Setting up vcpkg")
+        step("2/6 Setting up vcpkg")
         vcpkg_root = setup_vcpkg(git)
 
         env = dict(os.environ)
@@ -206,10 +209,10 @@ def main() -> int:
             step("Cleaning the build folder")
             shutil.rmtree(BUILD_DIR)
 
-        step("3/5 Configuring (the first run downloads and builds libraries, this takes a while)")
+        step("3/6 Configuring (the first run downloads and builds libraries, this takes a while)")
         run([cmake, "--preset", "release"], env=env)
 
-        step("4/5 Building the DLL")
+        step("4/6 Building the DLL")
         run([cmake, "--build", "--preset", "release"], env=env)
 
         dll = OUTPUT_DIR / "LostObjects.dll"
@@ -222,8 +225,20 @@ def main() -> int:
             step("Done (packaging skipped)")
             return 0
 
-        step("5/5 Packaging")
-        package_command = [sys.executable, str(REPO_ROOT / "tools" / "package.py"), "--dll", str(dll), "--out", str(REPO_ROOT / "dist")]
+        step("5/6 Compiling the holotape scripts (the first run builds the Papyrus compiler)")
+        if args.clean and PAPYRUS_BUILD_DIR.exists():
+            shutil.rmtree(PAPYRUS_BUILD_DIR)
+        run([
+            cmake, "-S", str(REPO_ROOT / "tools" / "papyrus"), "-B", str(PAPYRUS_BUILD_DIR),
+            "-G", "Visual Studio 18 2026", "-A", "x64",
+            f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_root / 'scripts' / 'buildsystems' / 'vcpkg.cmake'}",
+            f"-DVCPKG_TARGET_TRIPLET={TRIPLET}", f"-DVCPKG_HOST_TRIPLET={TRIPLET}",
+        ], env=env)
+        run([cmake, "--build", str(PAPYRUS_BUILD_DIR), "--config", "Release"], env=env)
+        scripts = PAPYRUS_BUILD_DIR / "Scripts"
+
+        step("6/6 Packaging")
+        package_command = [sys.executable, str(REPO_ROOT / "tools" / "package.py"), "--dll", str(dll), "--scripts", str(scripts), "--out", str(REPO_ROOT / "dist")]
         if pdb.is_file():
             package_command += ["--pdb", str(pdb)]
         run(package_command)

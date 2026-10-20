@@ -18,6 +18,7 @@ namespace LO
 		menus.clear();
 		menuTitles.clear();
 		leaves.clear();
+		optionGlobals.clear();
 
 		auto* dataHandler = RE::TESDataHandler::GetSingleton();
 		if (!dataHandler) {
@@ -35,6 +36,15 @@ namespace LO
 		rootKeyword = Find<RE::BGSKeyword>(dataHandler, Forms::RootKeyword, Forms::PluginFile);
 		menuIcon = Find<RE::BGSArtObject>(dataHandler, Forms::MenuIcon, Forms::PluginFile);  // optional
 		menuIconTransform = Find<RE::BGSTransform>(dataHandler, Forms::MenuIconTransform, Forms::PluginFile);  // optional
+		holotape = Find<RE::BGSNote>(dataHandler, Forms::Holotape, Forms::PluginFile);  // optional
+		holotapeTerminal = Find<RE::BGSTerminal>(dataHandler, Forms::HolotapeTerminal, Forms::PluginFile);  // optional
+		for (std::uint32_t i = 0; i < Forms::OptionCount; ++i) {
+			optionGlobals.push_back(Find<RE::TESGlobal>(dataHandler, Forms::FirstOptionGlobal + i, Forms::PluginFile));
+		}
+		if (!holotape || !holotapeTerminal || std::ranges::find(optionGlobals, nullptr) != optionGlobals.end()) {
+			REX::LogWarning("Forms: the settings holotape is missing in LostObjects.esp - it is not available");
+			holotape = nullptr;
+		}
 
 		bool ok = workshopMenuMain && rootMenu && rootKeyword;
 		if (!workshopMenuMain) {

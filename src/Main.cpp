@@ -8,6 +8,7 @@
 // License: PolyForm Noncommercial 1.0.0 - see LICENSE and NOTICE.md.
 // -----------------------------------------------------------------------------
 
+#include "Holotape.h"
 #include "Recovery.h"
 
 namespace
@@ -62,6 +63,7 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	REX::LogInformation("Vibecoded by AI (Claude, Anthropic) - AI-generated code can contain mistakes.");
 
 	F4SE::GetMessagingInterface()->RegisterListener(&OnF4SEMessage);
+	LO::Holotape::RegisterPapyrus();  // LostObjects.HolotapeItem for the settings holotape
 
 	return true;
 }

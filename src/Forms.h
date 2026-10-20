@@ -24,6 +24,10 @@ namespace LO
 		RE::BGSArtObject* menuIcon{ nullptr };  // optional: our own workshop menu icon (the logo)
 		RE::BGSTransform* menuIconTransform{ nullptr };  // optional: how the menu shows it
 
+		RE::BGSNote* holotape{ nullptr };  // optional: the settings holotape
+		RE::BGSTerminal* holotapeTerminal{ nullptr };  // its terminal (menu items, script)
+		std::vector<RE::TESGlobal*> optionGlobals;  // one per holotape option (1 = on), see Holotape.h
+
 		// Looks everything up. Returns false (and logs why) if something is missing.
 		bool Resolve();
 

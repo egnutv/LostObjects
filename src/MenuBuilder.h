@@ -36,6 +36,19 @@ namespace LO
 		std::vector<std::string> injections;
 	};
 
+	// Everything Lost Objects changes in the game's menus. Built by Apply from
+	// a scan, or read back from the snapshot file at the next game start.
+	struct MenuState
+	{
+		std::vector<std::pair<RE::TESForm*, std::string>> names;  // our pool forms -> display name
+		std::vector<std::pair<RE::BGSListForm*, std::vector<RE::TESForm*>>> contents;  // our menus (incl. the tab) -> entries
+		std::vector<std::pair<RE::BGSListForm*, RE::TESForm*>> injections;  // foreign menu -> our folder added to it
+		std::vector<std::pair<RE::BGSConstructibleObject*, RE::BGSKeyword*>> tags;  // recipe -> category we add
+		bool tabVisible{ false };  // the tab is added to WorkshopMenuMain
+	};
+
+	using PreviewMap = std::unordered_map<RE::TESBoundObject*, RE::BGSTransform*>;
+
 	// Turns a ScanResult into menus.
 	//
 	// Every recovered recipe gets exactly one extra category:
@@ -55,6 +68,17 @@ namespace LO
 	public:
 		ApplyResult Apply(const OwnedForms& a_forms, const ScanResult& a_scan, const Settings& a_settings);
 
+		// Restores a state saved earlier (snapshot) without a scan. a_signature
+		// is the signature Apply computed for it, so the next Apply with the
+		// same result changes nothing.
+		void Restore(const OwnedForms& a_forms, const MenuState& a_state, const PreviewMap& a_previews, std::size_t a_signature, const ApplyResult& a_summary);
+
+		// What is in the menus right now (for the snapshot).
+		[[nodiscard]] const MenuState& State() const noexcept { return _state; }
+		[[nodiscard]] const PreviewMap& Previews() const noexcept { return _previewGiven; }
+		[[nodiscard]] std::size_t Signature() const noexcept { return _lastSignature; }
+		[[nodiscard]] bool HasState() const noexcept { return _lastSignature != 0; }
+
 		// Recipes we tagged, with their original categories.
 		[[nodiscard]] const KeywordMap& OriginalKeywords() const noexcept { return _originalKeywords; }
 
@@ -67,9 +91,11 @@ namespace LO
 		void UpdateTags(const TagMap& a_wanted);
 		std::uint32_t AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result);
 		void RemoveInjections(const OwnedForms& a_forms);
+		void Execute(const OwnedForms& a_forms, const MenuState& a_state);
 
 		KeywordMap _originalKeywords;  // recipe -> categories before we tagged it
-		std::unordered_set<const RE::TESForm*> _previewGiven;  // items we gave a preview transform
+		PreviewMap _previewGiven;  // items we gave a preview transform, with that transform
+		MenuState _state;  // what Execute put into the menus last
 		TagMap _currentTags;  // recipe -> the keyword we added
 		std::unordered_set<RE::BGSListForm*> _injectedInto;  // foreign menus we added entries to
 		std::size_t _lastSignature{ 0 };

@@ -327,6 +327,7 @@ namespace LO
 		_currentTags.clear();
 		_injectedInto.clear();
 		_previewGiven.clear();
+		_state = {};
 		_lastSignature = 0;
 		_lastResult = {};
 	}
@@ -418,7 +419,7 @@ namespace LO
 				const auto type = byType.find(item->GetFormType());
 				auto* transform = type != byType.end() ? mostCommon(type->second) : nullptr;
 				item->previewTransform.transform = transform ? transform : fallback;
-				_previewGiven.insert(item);
+				_previewGiven.emplace(item, item->previewTransform.transform);
 				++added;
 			}
 		}
@@ -688,12 +689,35 @@ namespace LO
 			return a_injection.first->ContainsEditorForm(a_injection.second);
 		}) && (!result.tabVisible || a_forms.workshopMenuMain->ContainsEditorForm(a_forms.rootMenu));
 
-		if (signature == _lastSignature && _lastSignature != 0 && intact) {
-			_lastResult.changed = false;
-			return _lastResult;  // nothing to do, the menus are already like this
+		const bool unchanged = signature == _lastSignature && _lastSignature != 0 && intact;
+		if (!unchanged) {
+			// --- 2. Apply ---------------------------------------------------------
+			MenuState state;
+			state.names = plan.names;
+			for (auto* menu : plan.menuOrder) {
+				state.contents.emplace_back(menu, plan.contents.at(menu));
+			}
+			state.contents.emplace_back(a_forms.rootMenu, rootContents);
+			state.injections = plan.injections;
+			for (const auto& [recipe, tag] : plan.tags) {
+				state.tags.emplace_back(recipe, tag);
+			}
+			std::ranges::sort(state.tags, [](const auto& a_lhs, const auto& a_rhs) { return a_lhs.first->GetFormID() < a_rhs.first->GetFormID(); });
+			state.tabVisible = result.tabVisible;
+
+			Execute(a_forms, state);
+			AddPreviewTransforms(a_scan, result);
+			_lastSignature = signature;
 		}
 
-		// --- 2. Apply -------------------------------------------------------------
+		result.changed = !unchanged;
+		result.previewsAdded = static_cast<std::uint32_t>(_previewGiven.size());
+		_lastResult = result;
+		return result;
+	}
+
+	void MenuBuilder::Execute(const OwnedForms& a_forms, const MenuState& a_state)
+	{
 		RemoveInjections(a_forms);
 
 		SetListContents(a_forms.rootMenu, { a_forms.rootKeyword });
@@ -701,34 +725,54 @@ namespace LO
 			SetListContents(a_forms.menus[i], { a_forms.menuTitles[i] });
 		}
 
-		for (const auto& [form, name] : plan.names) {
+		for (const auto& [form, name] : a_state.names) {
 			if (!NameMap::SetName(form, name)) {
 				REX::LogWarning("MenuBuilder: could not name {} '{}'", Util::FormIDToString(form->GetFormID()), name);
 			}
 		}
 
-		for (const auto& [menu, children] : plan.contents) {
+		for (const auto& [menu, children] : a_state.contents) {
 			SetListContents(menu, children);
 		}
-		SetListContents(a_forms.rootMenu, rootContents);
 
-		for (const auto& [target, node] : plan.injections) {
+		for (const auto& [target, node] : a_state.injections) {
 			if (!target->ContainsEditorForm(node)) {
 				target->arrayOfForms.push_back(node);
 			}
 			_injectedInto.insert(target);
 		}
 
-		if (result.tabVisible) {
+		if (a_state.tabVisible) {
 			a_forms.workshopMenuMain->arrayOfForms.push_back(a_forms.rootMenu);
 		}
 
-		UpdateTags(plan.tags);
-		result.previewsAdded = AddPreviewTransforms(a_scan, result);
+		TagMap tags;
+		for (const auto& [recipe, tag] : a_state.tags) {
+			tags[recipe] = tag;
+		}
+		UpdateTags(tags);
 
-		result.changed = true;
-		_lastSignature = signature;
-		_lastResult = result;
-		return result;
+		_state = a_state;
+	}
+
+	void MenuBuilder::Restore(const OwnedForms& a_forms, const MenuState& a_state, const PreviewMap& a_previews, std::size_t a_signature, const ApplyResult& a_summary)
+	{
+		if (!a_forms.IsValid()) {
+			return;
+		}
+
+		Execute(a_forms, a_state);
+
+		for (const auto& [item, transform] : a_previews) {
+			if (item && transform && !item->previewTransform.transform) {
+				item->previewTransform.transform = transform;
+				_previewGiven.emplace(item, transform);
+			}
+		}
+
+		_lastSignature = a_signature;
+		_lastResult = a_summary;
+		_lastResult.changed = true;
+		_lastResult.previewsAdded = static_cast<std::uint32_t>(_previewGiven.size());
 	}
 }

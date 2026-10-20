@@ -7,6 +7,12 @@ namespace LO
 	namespace
 	{
 		constexpr auto INI_PATH = "Data/F4SE/Plugins/LostObjects.ini"sv;
+		constexpr auto HOLOTAPE_FILE = "LostObjects_Settings.ini"sv;
+
+		std::filesystem::path HolotapePath()
+		{
+			return F4SE::GetLogDirectoryPath() / HOLOTAPE_FILE;
+		}
 
 		// Minimal INI reader: [Section] lines and key=value pairs.
 		// Comments start with ';' or '#'. Keys are case-insensitive.
@@ -128,10 +134,19 @@ namespace LO
 	void Settings::Load()
 	{
 		const std::filesystem::path path(INI_PATH);
-		const auto data = ReadIni(path);
+		auto data = ReadIni(path);
 
 		if (data.empty()) {
 			REX::LogWarning("Settings: '{}' not found or empty, using defaults", INI_PATH);
+		}
+
+		// Choices made on the settings holotape win over the INI.
+		const auto holotape = ReadIni(HolotapePath());
+		for (const auto& [key, value] : holotape) {
+			data.insert_or_assign(key, value);
+		}
+		if (!holotape.empty()) {
+			REX::LogInformation("Settings: {} choice(s) from the holotape ({}) override the INI", holotape.size(), HOLOTAPE_FILE);
 		}
 
 		enabled = GetBool(data, "general.benabled", true);
@@ -200,6 +215,27 @@ namespace LO
 			writeInventory,
 			verboseLog,
 			ignoredPlugins.size());
+	}
+
+	void Settings::SaveHolotapeChoices() const
+	{
+		const auto path = HolotapePath();
+		std::ofstream file(path, std::ios::out | std::ios::trunc);
+		if (!file.is_open()) {
+			REX::LogWarning("Settings: could not write {}", path.string());
+			return;
+		}
+		file << "; Lost Objects - choices made on the settings holotape.\n";
+		file << "; Written by the game. They win over Data\\F4SE\\Plugins\\LostObjects.ini.\n";
+		file << "; Delete this file to go back to the INI values.\n";
+		file << "[General]\n";
+		file << "bSortIntoCategories=" << (sortIntoCategories ? 1 : 0) << "\n";
+		file << "bShowSummaryMessage=" << (showSummaryMessage ? 1 : 0) << "\n";
+		file << "bDevelopmentMode=" << (writeInventory ? 1 : 0) << "\n";
+		file << "[Filters]\n";
+		file << "bSkipMissingModels=" << (skipMissingModels ? 1 : 0) << "\n";
+		file << "bSkipAlreadyBuildable=" << (skipAlreadyBuildable ? 1 : 0) << "\n";
+		REX::LogInformation("Settings: holotape choices saved to {}", path.string());
 	}
 
 	bool Settings::IsPluginIgnored(std::string_view a_fileName) const

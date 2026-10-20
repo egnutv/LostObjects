@@ -14,14 +14,20 @@ namespace LO
 		kFlat    // "Lost Objects" -> recovered menus directly
 	};
 
-	// Values from Data/F4SE/Plugins/LostObjects.ini.
-	// Every setting has a safe default, so a missing or broken INI never stops the mod.
+	// Values from Data/F4SE/Plugins/LostObjects.ini, then the choices made on the
+	// settings holotape (Documents\My Games\Fallout4\F4SE\LostObjects_Settings.ini,
+	// written by the DLL), which win. Every setting has a safe default, so a
+	// missing or broken INI never stops the mod.
 	class Settings
 	{
 	public:
 		[[nodiscard]] static Settings& Get() noexcept;
 
 		void Load();
+
+		// Writes the settings that the holotape can change into the holotape
+		// file, so they stay after a restart. The INI of the mod is never touched.
+		void SaveHolotapeChoices() const;
 
 		bool enabled{ true };
 		bool liveUpdate{ false };            // true: also apply changes during the first minute without waiting for a second scan

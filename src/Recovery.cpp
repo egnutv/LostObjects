@@ -1,5 +1,6 @@
 #include "Recovery.h"
 
+#include "Holotape.h"
 #include "Inventory.h"
 #include "MenuDump.h"
 #include "ModelCheck.h"
@@ -8,6 +9,7 @@
 #include "Report.h"
 #include "Scanner.h"
 #include "Settings.h"
+#include "Snapshot.h"
 #include "Util.h"
 
 namespace LO
@@ -18,8 +20,18 @@ namespace LO
 
 		// Mods that inject their menus with Papyrus (for example through
 		// Settlement Menu Manager) do so a few seconds after a save is loaded.
-		// A few follow-up scans make sure those menus are seen as reachable.
-		constexpr std::array FOLLOW_UP_DELAYS{ 3s, 10s, 20s, 30s, 60s, 90s, 180s };
+		// Follow-up scans make sure those menus are seen as reachable: every
+		// 2 seconds at first, so the menus are ready as early as possible.
+		constexpr std::array FOLLOW_UP_DELAYS{ 2s, 4s, 6s, 8s, 10s, 12s, 14s, 16s, 18s, 20s, 25s, 30s, 45s, 60s, 90s, 180s };
+
+		// Shown when the menus changed after the game already built its
+		// workshop menu. Static storage: the message box may read it later.
+		constexpr auto RESTART_HINT =
+			"LOST OBJECTS\n\n"
+			"Lost Objects has updated the workshop menu.\n\n"
+			"The game shows the new menu after a restart of the game. Lost Objects "
+			"remembers the result by itself - you do not need to save for Lost Objects.\n\n"
+			"(Save as usual if you want to keep your game progress.)";
 
 		class WorkshopModeSink final : public RE::BSTEventSink<RE::Workshop::WorkshopModeEvent>
 		{
@@ -90,16 +102,37 @@ namespace LO
 		_ready = true;
 		BorrowMenuIcon();
 		RegisterEvents();
+		Holotape::Setup(_forms);
+		RestoreSnapshot();
 
 		REX::LogInformation("Lost Objects is ready");
+	}
+
+	void Recovery::RestoreSnapshot()
+	{
+		const auto fingerprint = Snapshot::Fingerprint(Settings::Get());
+		auto data = Snapshot::Load(_forms, fingerprint);
+		if (!data) {
+			return;
+		}
+
+		_builder.Restore(_forms, data->state, data->previews, data->signature, data->summary);
+		_lastApply = data->summary;
+		_savedSignature = data->signature;
+		_savedFingerprint = fingerprint;
+		REX::LogInformation("Snapshot: the menus of the last game are in place ({} recovered recipes); they are checked again after loading", data->summary.recipeCount);
 	}
 
 	void Recovery::OnGameLoaded(std::string_view a_reason)
 	{
 		Notice::ShowIfNeeded();
 		RegisterEvents();  // in case the UI was not available at data load
+		if (_ready) {
+			Holotape::GiveIfMissing(_forms);
+		}
 
 		_summaryShown = false;
+		_restartHintShown = false;
 		_built = false;
 		_builtSignature = 0;
 		_previousSignature = 0;
@@ -173,7 +206,7 @@ namespace LO
 	void Recovery::ScanNow(std::string_view a_reason, bool a_force)
 	{
 		const auto& settings = Settings::Get();
-		const bool traceSteps = ++_scanCount <= 5;  // detailed progress for the first scans only
+		const bool traceSteps = ++_scanCount <= 12;  // detailed progress for the first scans only
 
 		if (traceSteps) {
 			REX::LogInformation("Scan ({}) started", a_reason);
@@ -210,7 +243,7 @@ namespace LO
 			decision = a_force && !(sameAsBefore && settled) ? "built early, the workshop was opened"sv : "built"sv;
 		} else if (signature == _builtSignature) {
 			decision = "nothing new"sv;  // only re-adds entries another mod removed
-		} else if (sameAsBefore || calm || settings.liveUpdate) {
+		} else if (sameAsBefore || calm || settings.liveUpdate || a_force) {
 			decision = "updated, the workshop menu changed"sv;
 		} else {
 			if (traceSteps) {
@@ -251,6 +284,82 @@ namespace LO
 		REX::LogDebug("Scan ({}) finished in {} ms, changed={}", a_reason, elapsed.count(), apply.changed);
 
 		_lastApply = apply;
+
+		// The game only shows changes made after its workshop menu was built
+		// (the first time the workshop was opened) after a restart.
+		if (apply.changed && _workshopEnteredThisProcess) {
+			REX::LogInformation("Scan ({}): the workshop was already opened in this game session - the change is shown after a restart", a_reason);
+			ShowRestartHint();
+		} else if (_manualRequest) {
+			RE::SendHUDMessage::ShowHUDMessage(apply.changed ? "Lost Objects: the workshop menus were rebuilt." : "Lost Objects: the workshop menus are already up to date.");
+		}
+		_manualRequest = false;
+
+		// Keep the result for the next game start - but only a settled one,
+		// never the half-finished menu right after loading.
+		const auto fingerprint = Snapshot::Fingerprint(settings);
+		if (sameAsBefore && settled && (_builder.Signature() != _savedSignature || fingerprint != _savedFingerprint)) {
+			Snapshot::Save(_builder, apply, fingerprint);
+			_savedSignature = _builder.Signature();
+			_savedFingerprint = fingerprint;
+		}
+	}
+
+	void Recovery::ShowRestartHint()
+	{
+		if (_restartHintShown) {
+			return;
+		}
+		auto* messageMenu = RE::MessageMenuManager::GetSingleton();
+		if (!messageMenu) {
+			RE::SendHUDMessage::ShowHUDMessage("Lost Objects: the workshop menu changed. Restart the game to see it.");
+			return;
+		}
+		messageMenu->CreateOKMessage(RESTART_HINT);
+		_restartHintShown = true;
+	}
+
+	void Recovery::OnHolotapeItem(std::int32_t a_itemID)
+	{
+		if (!_ready) {
+			RE::SendHUDMessage::ShowHUDMessage("Lost Objects is not running. See LostObjects.log.");
+			return;
+		}
+
+		if (a_itemID == Forms::HolotapeItemRebuild) {
+			REX::LogInformation("Holotape: rebuild requested");
+			_manualRequest = true;
+			_hasLoggedOnce = false;  // write the report again
+			RequestScan("holotape: rebuild now"sv, true);
+			return;
+		}
+
+		const auto first = Forms::HolotapeFirstOptionItem;
+		const auto count = static_cast<std::int32_t>(Forms::OptionCount);
+		if (a_itemID < first || a_itemID >= first + 2 * count) {
+			REX::LogWarning("Holotape: unknown menu item {}", a_itemID);
+			return;
+		}
+
+		const auto index = static_cast<std::size_t>((a_itemID - first) / 2);
+		auto& settings = Settings::Get();
+		auto& value = Holotape::OptionValue(settings, index);
+		value = !value;
+		settings.SaveHolotapeChoices();
+		Holotape::SyncGlobals(_forms);
+
+		static std::string message;  // the HUD may read it later
+		message = std::format("Lost Objects: {} - {}.", Holotape::OPTION_NAMES[index], value ? "on" : "off");
+		RE::SendHUDMessage::ShowHUDMessage(message.c_str());
+		REX::LogInformation("Holotape: '{}' switched {}", Holotape::OPTION_NAMES[index], value ? "on" : "off");
+
+		if (index == Holotape::OPTION_SUMMARY) {
+			return;  // nothing to rebuild
+		}
+		if (index == Holotape::OPTION_DEVELOPMENT) {
+			_hasLoggedOnce = false;  // write the analysis files now
+		}
+		RequestScan("holotape: setting changed"sv, true);
 	}
 
 	void Recovery::OnWorkshopModeChanged(bool a_entering)
@@ -259,7 +368,18 @@ namespace LO
 			return;
 		}
 
-		RequestScan("entering workshop mode"sv, true);
+		// From now on the game has built its workshop menu (see Snapshot.h).
+		const bool firstTime = !_workshopEnteredThisProcess;
+		_workshopEnteredThisProcess = true;
+
+		// If the menus are not built yet (first start, no snapshot), build them
+		// now - the game may still pick them up. With menus already in place
+		// (snapshot or earlier build), only a normal scan: an early rebuild
+		// could see the menu while other mods are still adding to it.
+		RequestScan("entering workshop mode"sv, !_builder.HasState());
+		if (firstTime) {
+			REX::LogDebug("Workshop opened for the first time in this game session");
+		}
 
 		if (!_summaryShown && _lastApply.recipeCount > 0) {
 			ShowSummary(_lastApply);
