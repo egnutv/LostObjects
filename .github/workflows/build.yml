@@ -81,6 +81,13 @@ jobs:
       - name: Build
         run: cmake --build --preset release
 
+      - name: Compile the Papyrus scripts (settings holotape)
+        shell: pwsh
+        run: |
+          cmake -S tools/papyrus -B build/papyrus -G "Visual Studio 18 2026" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows-static-md-release -DVCPKG_HOST_TRIPLET=x64-windows-static-md-release
+          cmake --build build/papyrus --config Release
+          Get-ChildItem build/papyrus/Scripts
+
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -90,6 +97,7 @@ jobs:
           python tools/package.py
           --dll build/release/RelWithDebInfo/LostObjects.dll
           --pdb build/release/RelWithDebInfo/LostObjects.pdb
+          --scripts build/papyrus/Scripts
           --out dist
 
       - name: Upload mod archive

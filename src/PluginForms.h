@@ -27,6 +27,15 @@ namespace LO::Forms
 	inline constexpr std::uint32_t MenuIconTransform = 0xC83;  // TRNS, preview transform of MenuIcon
 	inline constexpr std::string_view MenuIconModel = "LostObjects\\MenuIcon.nif";
 
+	// The settings holotape (NOTE -> TERM with the script below, one GLOB per option).
+	inline constexpr std::uint32_t Holotape = 0xC84;
+	inline constexpr std::uint32_t HolotapeTerminal = 0xC85;
+	inline constexpr std::uint32_t FirstOptionGlobal = 0xC86;
+	inline constexpr std::uint32_t OptionCount = 5;
+	inline constexpr std::int32_t HolotapeItemRebuild = 1;
+	inline constexpr std::int32_t HolotapeFirstOptionItem = 10;  // option i: items 10 + 2i and 11 + 2i
+	inline constexpr std::string_view HolotapeScript = "LostObjects_Holotape";
+
 	// Vanilla forms (Fallout4.esm).
 	inline constexpr std::string_view BaseGameFile = "Fallout4.esm";
 	inline constexpr std::uint32_t WorkshopMenuMain = 0x106DA2;

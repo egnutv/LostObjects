@@ -8,6 +8,9 @@ Builds the mod archive that goes to Nexus Mods / GitHub releases:
     LostObjects.esp
     Meshes/LostObjects/MenuIcon.nif          (workshop menu icon)
     Textures/LostObjects/MenuIcon_d.dds
+    Scripts/LostObjects.pex                  (settings holotape, see tools/papyrus)
+    Scripts/LostObjects_Holotape.pex
+    Scripts/Source/User/*.psc                (their source code)
     F4SE/Plugins/LostObjects.dll
     F4SE/Plugins/LostObjects.ini
     F4SE/Plugins/LostObjects/README.txt
@@ -25,6 +28,7 @@ install it directly.
 Usage:
   python tools/package.py --dll build/release/RelWithDebInfo/LostObjects.dll \
                           --pdb build/release/RelWithDebInfo/LostObjects.pdb \
+                          --scripts build/papyrus/Scripts \
                           --out dist
 
 Vibecoded by AI (Claude, Anthropic). License: PolyForm Noncommercial 1.0.0.
@@ -47,6 +51,9 @@ DOCS_IN_ARCHIVE = {
     "THIRD_PARTY_NOTICES.txt": REPO_ROOT / "THIRD_PARTY_NOTICES.md",
 }
 
+SCRIPTS = ("LostObjects", "LostObjects_Holotape")
+SCRIPT_SOURCE_DIR = REPO_ROOT / "data" / "Scripts" / "Source" / "User"
+
 
 def read_version() -> str:
     manifest = json.loads((REPO_ROOT / "vcpkg.json").read_text(encoding="utf-8"))
@@ -64,6 +71,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dll", required=True, type=Path, help="path to LostObjects.dll")
     parser.add_argument("--pdb", type=Path, help="path to LostObjects.pdb (optional)")
+    parser.add_argument("--scripts", required=True, type=Path, help="folder with the compiled scripts (*.pex), see tools/papyrus")
     parser.add_argument("--out", default=REPO_ROOT / "dist", type=Path, help="output folder")
     args = parser.parse_args()
 
@@ -80,6 +88,10 @@ def main() -> int:
         for folder in ("Meshes", "Textures"):
             for source in sorted((REPO_ROOT / "data" / folder / "LostObjects").glob("*")):
                 add(archive, source, f"{folder}/LostObjects/{source.name}")
+        # Settings holotape scripts (see tools/papyrus) and their source code.
+        for script in SCRIPTS:
+            add(archive, args.scripts / f"{script}.pex", f"Scripts/{script}.pex")
+            add(archive, SCRIPT_SOURCE_DIR / f"{script}.psc", f"Scripts/Source/User/{script}.psc")
         for name, source in DOCS_IN_ARCHIVE.items():
             add(archive, source, f"F4SE/Plugins/LostObjects/{name}")
 

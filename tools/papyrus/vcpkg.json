@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "lostobjects-papyrus-tools",
+  "version-string": "1",
+  "description": "Build tool only: Boost for the Papyrus compiler Caprica.",
+  "dependencies": [
+    "boost-container",
+    "boost-filesystem",
+    "boost-program-options"
+  ],
+  "builtin-baseline": "802d61d714db2714e3fefcfc59447431166b8367"
+}

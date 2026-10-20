@@ -7,7 +7,10 @@ is a well formed Fallout 4 light plugin that matches what the DLL expects:
 
   * TES4 header: light (ESL) flag, HEDR version 1.0, master Fallout4.esm,
     record + group count matches the file
-  * only KYWD, FLST, ARTO and TRNS records, all new form IDs inside 0x800-0xFFF
+  * only KYWD, FLST, ARTO, TRNS, GLOB, NOTE and TERM records, all new form
+    IDs inside 0x800-0xFFF
+  * the settings holotape: NOTE (type terminal) -> TERM with the script and
+    menu items whose conditions point to globals of this plugin
   * every keyword is a recipe filter (TNAM 9) with a name (FULL)
   * every form list entry points to a record inside this plugin
   * the form IDs in src/PluginForms.h exist with the right record type
@@ -122,6 +125,12 @@ def main() -> int:
     if hedr_count != len(records) + group_count:
         fail(f"HEDR count {hedr_count} != records {len(records)} + groups {group_count}")
 
+    header_text = HEADER.read_text(encoding="utf-8")
+
+    def constant_text(name: str) -> str:
+        match = re.search(rf'{name}\s*=\s*"([^"]*)"', header_text)
+        return match.group(1) if match else ""
+
     # --- Record content ---------------------------------------------------
     for rid, (rtype, fields) in records.items():
         if rid >> 24 != master_index:
@@ -169,11 +178,58 @@ def main() -> int:
                 fail(f"art object {edid} DNAM must be 4 bytes")
             if not (REPO_ROOT / "data" / "Meshes" / model.replace("\\", "/")).exists():
                 fail(f"art object {edid}: mesh data/Meshes/{model} is missing")
+        elif rtype == "GLOB":
+            if fields.get("FNAM", [b""])[0] not in (b"s", b"l", b"f"):
+                fail(f"global {edid} needs FNAM s, l or f")
+            if len(fields.get("FLTV", [b""])[0]) != 4:
+                fail(f"global {edid} FLTV must be 4 bytes")
+        elif rtype == "NOTE":
+            if fields.get("DNAM", [b""])[0] != b"\x03":
+                fail(f"holotape {edid} must be of type terminal (DNAM 3)")
+            if len(fields.get("DATA", [b""])[0]) != 8:
+                fail(f"holotape {edid} DATA must be 8 bytes (value, weight)")
+            snam = fields.get("SNAM", [b""])[0]
+            if len(snam) != 4 or struct.unpack("<I", snam)[0] not in records or records[struct.unpack("<I", snam)[0]][0] != "TERM":
+                fail(f"holotape {edid} SNAM must point to a TERM of this plugin")
+            if not zstring(fields.get("FULL", [b"\x00"])[0]):
+                fail(f"holotape {edid} has no name (FULL)")
+        elif rtype == "TERM":
+            vmad = fields.get("VMAD", [b""])[0]
+            if len(vmad) < 6:
+                fail(f"terminal {edid} has no script (VMAD)")
+            else:
+                version, object_format, script_count = struct.unpack_from("<hhH", vmad, 0)
+                if version != 6 or object_format != 2 or script_count != 1:
+                    fail(f"terminal {edid} VMAD header is {version}/{object_format}/{script_count}, expected 6/2/1")
+                (name_length,) = struct.unpack_from("<H", vmad, 6)
+                script = vmad[8 : 8 + name_length].decode("ascii", "replace")
+                if script != constant_text("HolotapeScript"):
+                    fail(f"terminal {edid} script is '{script}', expected the one in PluginForms.h")
+                rest = vmad[8 + name_length :]
+                # status, property count, fragments: version 3, empty script, flags, properties, count
+                if rest != struct.pack("<BH", 0, 0) + struct.pack("<bH", 3, 0) + struct.pack("<BHH", 0, 0, 0):
+                    fail(f"terminal {edid} VMAD tail is not the expected 'no properties, no fragments'")
+            (isiz,) = struct.unpack("<I", fields.get("ISIZ", [b"\x00\x00\x00\x00"])[0])
+            if isiz != len(fields.get("ITXT", [])) or isiz != len(fields.get("ITID", [])) or isiz != len(fields.get("ANAM", [])):
+                fail(f"terminal {edid}: ISIZ {isiz} does not match the menu items")
+            (bsiz,) = struct.unpack("<I", fields.get("BSIZ", [b"\x00\x00\x00\x00"])[0])
+            if bsiz != len(fields.get("BTXT", [])):
+                fail(f"terminal {edid}: BSIZ {bsiz} does not match the body texts")
+            item_ids = [struct.unpack("<H", i)[0] for i in fields.get("ITID", [])]
+            if len(set(item_ids)) != len(item_ids):
+                fail(f"terminal {edid}: menu item IDs are not unique")
+            for ctda in fields.get("CTDA", []):
+                if len(ctda) != 32:
+                    fail(f"terminal {edid}: CTDA must be 32 bytes")
+                    continue
+                function, = struct.unpack_from("<H", ctda, 8)
+                param1, = struct.unpack_from("<I", ctda, 12)
+                if function != 74 or param1 not in records or records[param1][0] != "GLOB":
+                    fail(f"terminal {edid}: condition must be GetGlobalValue of a global of this plugin")
         else:
             fail(f"unexpected record type {rtype}")
 
     # --- Header constants ---------------------------------------------------
-    header_text = HEADER.read_text(encoding="utf-8")
 
     def constant(name: str) -> int:
         match = re.search(rf"{name}\s*=\s*(0x[0-9A-Fa-f]+|\d+)", header_text)
@@ -198,6 +254,10 @@ def main() -> int:
         expect(constant("FirstLeaf") + i, "KYWD", f"Leaf {i + 1}")
     expect(constant("MenuIcon"), "ARTO", "MenuIcon")
     expect(constant("MenuIconTransform"), "TRNS", "MenuIconTransform")
+    expect(constant("Holotape"), "NOTE", "Holotape")
+    expect(constant("HolotapeTerminal"), "TERM", "HolotapeTerminal")
+    for i in range(max(constant("OptionCount"), 0)):
+        expect(constant("FirstOptionGlobal") + i, "GLOB", f"Option {i + 1}")
 
     print(f"{path.name}: {len(records)} records in {group_count} groups, masters {masters}, light={bool(flags & 0x200)}")
     return report()

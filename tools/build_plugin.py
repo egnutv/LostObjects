@@ -9,8 +9,8 @@ Generates two files from one single source of truth (this script):
   src/PluginForms.h         The matching form IDs for the F4SE plugin.
 
 Why a generator instead of the Creation Kit?
-  The plugin only contains simple records (KYWD, FLST, and one ARTO + TRNS
-  for the menu icon). Generating it
+  The plugin only contains simple records (KYWD, FLST, one ARTO + TRNS for
+  the menu icon, and the settings holotape: NOTE + TERM + GLOB). Generating it
   makes every byte reviewable in git, keeps form IDs in sync with the C++
   code and lets anyone rebuild it without the Creation Kit.
 
@@ -66,6 +66,36 @@ MENU_ICON_BOUNDS = (-32, -1, -32, 32, 1, 32)  # OBND of the icon mesh (x, y, z m
 MENU_NAME_TEMPLATE = "Menu {:03d}"  # renamed at runtime
 LEAF_NAME_TEMPLATE = "Group {:03d}"  # renamed at runtime
 
+# The settings holotape. It runs a terminal (TERM) whose script
+# (tools/papyrus/Source/LostObjects_Holotape.psc) passes the selected menu
+# item ID to the DLL. Every option has a global (GLOB) that the DLL keeps in
+# sync with the setting, so the menu can show [X] or [ ] through conditions.
+HOLOTAPE_NAME = "Lost Objects Settings"
+HOLOTAPE_SCRIPT = "LostObjects_Holotape"
+HOLOTAPE_ITEM_REBUILD = 1
+HOLOTAPE_FIRST_OPTION_ITEM = 10  # option i: item 10 + 2i (shown when on), 11 + 2i (shown when off)
+HOLOTAPE_OPTIONS = [
+    # (editor ID suffix, text in the menu); the order is the DLL's option index
+    ("SortIntoCategories", "Sort lost items into existing categories"),
+    ("HideGhostObjects", "Hide ghost objects (no model file)"),
+    ("HideAlreadyBuildable", "Hide items that can already be built"),
+    ("SummaryMessage", "Show the summary message"),
+    ("DevelopmentMode", "Development mode (analysis files)"),
+]
+HOLOTAPE_HEADER = "LOST OBJECTS"
+HOLOTAPE_WELCOME = "Lost Objects - settings"
+HOLOTAPE_BODY = (
+    "Lost Objects finds workshop items you cannot reach in the build menu "
+    "and puts them back.\r\n\r\n"
+    "Changes are saved by Lost Objects itself. If you already opened the "
+    "workshop in this game session, the new menu is shown after a restart of the game."
+)
+HOLOTAPE_REBUILD_TEXT = "Rebuild the workshop menus now"
+HOLOTAPE_REBUILD_RESPONSE = "Lost Objects is rebuilding the menus.\r\nA message tells you the result."
+HOLOTAPE_OPTION_RESPONSE = "Saved.\r\nGo back to see the new setting."
+CONDITION_FUNCTION_GET_GLOBAL_VALUE = 74
+TERM_ITEM_DISPLAY_TEXT = 8
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_PATH = REPO_ROOT / "data" / PLUGIN_FILE
 HEADER_PATH = REPO_ROOT / "src" / "PluginForms.h"
@@ -80,6 +110,12 @@ def zstring(text: str) -> bytes:
     """Null-terminated string. Only ASCII is used to avoid code page issues."""
     text.encode("ascii")  # raises if a non-ASCII character slipped in
     return text.encode("ascii") + b"\x00"
+
+
+def lenstring(text: str) -> bytes:
+    """String with a 16-bit length prefix and no terminator (used in VMAD)."""
+    data = text.encode("ascii")
+    return struct.pack("<H", len(data)) + data
 
 
 def subrecord(signature: str, data: bytes) -> bytes:
@@ -173,6 +209,11 @@ def build_layout() -> tuple[list[Keyword], list[FormList], dict[str, int]]:
     take("MenuIcon")
     take("MenuIconTransform")
 
+    take("Holotape")
+    take("HolotapeTerminal")
+    for suffix, _ in HOLOTAPE_OPTIONS:
+        take(f"Option{suffix}")
+
     ids["NextObjectID"] = next_id
     return keywords, formlists, ids
 
@@ -223,9 +264,11 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
         + subrecord("DNAM", struct.pack("<I", 0)),  # art type: none / magic casting (unused for menu icons)
     )
 
+    holotape_globals, holotape_note, holotape_terminal = build_holotape(ids)
+
     # HEDR "number of records" counts records *and* groups (as the Creation Kit does).
-    group_count = 4
-    record_count = len(keywords) + len(formlists) + 2 + group_count
+    group_count = 7
+    record_count = len(keywords) + len(formlists) + 2 + len(HOLOTAPE_OPTIONS) + 2 + group_count
 
     header_data = subrecord("HEDR", struct.pack("<fII", HEDR_VERSION, record_count, next_object_id))
     header_data += subrecord("CNAM", zstring(AUTHOR))
@@ -236,8 +279,104 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
 
     tes4 = record("TES4", 0, header_data, flags=TES4_FLAG_LIGHT)
 
-    # Top level groups in the order the Creation Kit writes them (KYWD, TRNS, FLST, ARTO).
-    return tes4 + group("KYWD", keyword_records) + group("TRNS", transform_records) + group("FLST", formlist_records) + group("ARTO", art_records)
+    # Top level groups in the order the Creation Kit writes them.
+    return (
+        tes4
+        + group("KYWD", keyword_records)
+        + group("TRNS", transform_records)
+        + group("GLOB", holotape_globals)
+        + group("NOTE", holotape_note)
+        + group("TERM", holotape_terminal)
+        + group("FLST", formlist_records)
+        + group("ARTO", art_records)
+    )
+
+
+def condition_global_equals(global_id: int, value: float) -> bytes:
+    """CTDA: GetGlobalValue <global> == value (run on subject, 32 bytes)."""
+    return subrecord(
+        "CTDA",
+        struct.pack(
+            "<B3sfHHIIIIi",
+            0x00,  # type: "equal to", no flags
+            b"\x00\x00\x00",
+            value,
+            CONDITION_FUNCTION_GET_GLOBAL_VALUE,
+            0,
+            full_id(global_id),
+            0,
+            0,  # run on: subject
+            0,
+            -1,
+        ),
+    )
+
+
+def build_holotape(ids: dict[str, int]) -> tuple[bytes, bytes, bytes]:
+    globals_data = b"".join(
+        record(
+            "GLOB",
+            full_id(ids[f"Option{suffix}"]),
+            subrecord("EDID", zstring(f"LO_Option{suffix}"))
+            + subrecord("FNAM", b"s")  # short
+            + subrecord("FLTV", struct.pack("<f", 1.0)),  # the DLL sets the real value
+        )
+        for suffix, _ in HOLOTAPE_OPTIONS
+    )
+
+    # The model is copied at runtime from a vanilla holotape, so no fixed path is needed.
+    note = record(
+        "NOTE",
+        full_id(ids["Holotape"]),
+        subrecord("EDID", zstring("LO_Holotape"))
+        + subrecord("OBND", struct.pack("<6h", 0, 0, 0, 0, 0, 0))
+        + subrecord("FULL", zstring(HOLOTAPE_NAME))
+        + subrecord("DNAM", struct.pack("<B", 3))  # type: terminal
+        + subrecord("DATA", struct.pack("<If", 0, 0.0))  # value, weight
+        + subrecord("SNAM", struct.pack("<I", full_id(ids["HolotapeTerminal"]))),
+    )
+
+    # Script attached to the terminal (OnMenuItemRun), no fragments.
+    vmad = (
+        struct.pack("<hhH", 6, 2, 1)  # version, object format, script count
+        + lenstring(HOLOTAPE_SCRIPT)
+        + struct.pack("<BH", 0, 0)  # status: local, no properties
+        + struct.pack("<b", 3)  # script fragments: extra bind data version
+        + lenstring("")  # no fragment script
+        + struct.pack("<BH", 0, 0)
+        + struct.pack("<H", 0)  # no fragments
+    )
+
+    items = [(HOLOTAPE_REBUILD_TEXT, HOLOTAPE_ITEM_REBUILD, HOLOTAPE_REBUILD_RESPONSE, None)]
+    for index, (suffix, text) in enumerate(HOLOTAPE_OPTIONS):
+        global_id = ids[f"Option{suffix}"]
+        items.append((f"[X] {text}", HOLOTAPE_FIRST_OPTION_ITEM + 2 * index, HOLOTAPE_OPTION_RESPONSE, (global_id, 1.0)))
+        items.append((f"[ ] {text}", HOLOTAPE_FIRST_OPTION_ITEM + 2 * index + 1, HOLOTAPE_OPTION_RESPONSE, (global_id, 0.0)))
+
+    item_data = b""
+    for text, item_id, response, condition in items:
+        item_data += subrecord("ITXT", zstring(text))
+        item_data += subrecord("ANAM", struct.pack("<B", TERM_ITEM_DISPLAY_TEXT))
+        item_data += subrecord("ITID", struct.pack("<H", item_id))
+        item_data += subrecord("UNAM", zstring(response))
+        if condition:
+            item_data += condition_global_equals(*condition)
+
+    terminal = record(
+        "TERM",
+        full_id(ids["HolotapeTerminal"]),
+        subrecord("EDID", zstring("LO_HolotapeTerminal"))
+        + subrecord("VMAD", vmad)
+        + subrecord("OBND", struct.pack("<6h", 0, 0, 0, 0, 0, 0))
+        + subrecord("NAM0", zstring(HOLOTAPE_HEADER))
+        + subrecord("WNAM", zstring(HOLOTAPE_WELCOME))
+        + subrecord("FULL", zstring(HOLOTAPE_NAME))
+        + subrecord("BSIZ", struct.pack("<I", 1))
+        + subrecord("BTXT", zstring(HOLOTAPE_BODY))
+        + subrecord("ISIZ", struct.pack("<I", len(items)))
+        + item_data,
+    )
+    return globals_data, note, terminal
 
 
 def build_header(ids: dict[str, int]) -> str:
@@ -270,6 +409,15 @@ def build_header(ids: dict[str, int]) -> str:
         f"\tinline constexpr std::uint32_t MenuIcon = 0x{ids['MenuIcon']:03X};  // ARTO with Meshes\\{MENU_ICON_MODEL}",
         f"\tinline constexpr std::uint32_t MenuIconTransform = 0x{ids['MenuIconTransform']:03X};  // TRNS, preview transform of MenuIcon",
         f'\tinline constexpr std::string_view MenuIconModel = "{MENU_ICON_MODEL.replace(chr(92), chr(92)*2)}";',
+        "",
+        "\t// The settings holotape (NOTE -> TERM with the script below, one GLOB per option).",
+        f"\tinline constexpr std::uint32_t Holotape = 0x{ids['Holotape']:03X};",
+        f"\tinline constexpr std::uint32_t HolotapeTerminal = 0x{ids['HolotapeTerminal']:03X};",
+        f"\tinline constexpr std::uint32_t FirstOptionGlobal = 0x{ids['Option' + HOLOTAPE_OPTIONS[0][0]]:03X};",
+        f"\tinline constexpr std::uint32_t OptionCount = {len(HOLOTAPE_OPTIONS)};",
+        f"\tinline constexpr std::int32_t HolotapeItemRebuild = {HOLOTAPE_ITEM_REBUILD};",
+        f"\tinline constexpr std::int32_t HolotapeFirstOptionItem = {HOLOTAPE_FIRST_OPTION_ITEM};  // option i: items {HOLOTAPE_FIRST_OPTION_ITEM} + 2i and {HOLOTAPE_FIRST_OPTION_ITEM + 1} + 2i",
+        f'\tinline constexpr std::string_view HolotapeScript = "{HOLOTAPE_SCRIPT}";',
         "",
         "\t// Vanilla forms (Fallout4.esm).",
         '\tinline constexpr std::string_view BaseGameFile = "Fallout4.esm";',
@@ -304,7 +452,7 @@ def main() -> int:
     PLUGIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLUGIN_PATH.write_bytes(plugin_bytes)
     HEADER_PATH.write_text(header_text, encoding="utf-8", newline="\n")
-    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 2} records)")
+    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 4 + len(HOLOTAPE_OPTIONS)} records)")
     print(f"Wrote {HEADER_PATH.relative_to(REPO_ROOT)}")
     return 0
 
