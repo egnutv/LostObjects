@@ -38,7 +38,7 @@ def main() -> None:
 
     lines = [
         (font(FONT_BOLD, 54), "Every lost workshop item - back where it belongs", (235, 235, 240, 255), 800),
-        (font(FONT, 34), "Fallout 4 1.11.240  |  F4SE plugin  |  no scripts  |  nothing in your save", (175, 170, 190, 255), 885),
+        (font(FONT, 34), "Fallout 4 1.11.240  |  F4SE plugin  |  settings holotape  |  safe to remove", (175, 170, 190, 255), 885),
     ]
     for f, text, color, y in lines:
         width = draw.textlength(text, font=f)

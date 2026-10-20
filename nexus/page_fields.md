@@ -1,4 +1,4 @@
-# Nexus Mods - page fields for Lost Objects 0.9.0
+# Nexus Mods - page fields for Lost Objects 0.10.0
 
 Fill in the upload form on nexusmods.com (Fallout 4 > Upload a mod) like this.
 
@@ -7,12 +7,12 @@ Fill in the upload form on nexusmods.com (Fallout 4 > Upload a mod) like this.
 | Field | Value |
 |---|---|
 | Mod name | `Lost Objects` |
-| Version | `0.9.0` |
+| Version | `0.10.0` |
 | Category | **Player Settlement** (second choice: Utilities) |
 | Language | English |
 | Author | egnutv |
 | Created by | egnutv (code by Claude, Anthropic - see description) |
-| Summary | `Finds every craftable workshop item you cannot reach in the build menu - from mods, DLCs or the base game - and puts it back where it belongs. F4SE plugin, no scripts, nothing in your save. Public beta, vibecoded by AI.` |
+| Summary | `Finds every craftable workshop item you cannot reach in the build menu - from mods, DLCs or the base game - and puts it back where it belongs. F4SE plugin with a settings holotape, nothing running in the background. Public beta, vibecoded by AI.` |
 | Description | paste `description.bbcode` (the editor has a BBCode / source mode) |
 | Adult content | no |
 
@@ -71,9 +71,9 @@ Donation Points: your choice.
 
 | Field | Value |
 |---|---|
-| File | `LostObjects-0.9.0.zip` (from `releases/` on GitHub) |
+| File | `LostObjects-0.10.0.zip` (from `releases/` on GitHub) |
 | File name | `Lost Objects` |
-| Version | `0.9.0` |
+| Version | `0.10.0` |
 | Category | Main Files |
 | Description | `Public beta. Fallout 4 1.11.240, F4SE 0.7.9. Install with your mod manager and enable LostObjects.esp.` |
 | Mod manager download | yes |
@@ -86,7 +86,7 @@ See `screenshots.md`. Primary image: `header.png` or your best in-game screensho
 
 ## Changelog
 
-Version `0.9.0`: `First public release (public beta).`
+Version `0.10.0`: `First public release (public beta).`
 
 ## Before you publish
 

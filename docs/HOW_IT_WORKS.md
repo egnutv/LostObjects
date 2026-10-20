@@ -155,9 +155,15 @@ useful feature exists, the recipes are split alphabetically ("A - F", ...).
 
 What you build in your settlements is saved by the game as always - Lost Objects does
 not change that, and nothing you built disappears. The changes Lost Objects makes to
-the menus are made **in memory only** and are not stored in the save game: the menu is
-rebuilt within seconds every time a save is loaded, so it always matches the mods that
-are installed right now, and no stale entries can end up in a save.
+the menus are made **in memory only** and are not stored in the save game: they are
+checked again every time a save is loaded, so they always match the mods that are
+installed right now, and no stale entries can end up in a save. The only thing of Lost
+Objects in a save is the settings holotape in your inventory - a normal item that
+disappears when the mod is removed.
+
+Lost Objects keeps two files of its own in `Documents\My Games\Fallout4\F4SE\`:
+`LostObjects_Snapshot.txt` (the menus it built, see section 6) and
+`LostObjects_Settings.ini` (the choices made on the holotape).
 
 | What | Change | Undone when |
 |---|---|---|
@@ -175,10 +181,27 @@ the next scan adds the entries again.
 
 | Moment | What happens |
 |---|---|
-| Game data loaded | find the forms of `LostObjects.esp`, set up the icon |
-| Save loaded / new game | first scan |
-| 3, 10, 20, 30, 60, 90 and 180 seconds later | scans again: menus added by scripts (for example through Settlement Menu Manager) appear a few seconds after loading |
+| Game data loaded | find the forms of `LostObjects.esp`, set up the icon and the holotape, put the menus of the snapshot back |
+| Save loaded / new game | first scan; the holotape is added to the inventory if it is missing |
+| every 2 seconds up to 20 seconds, then 25, 30, 45, 60, 90 and 180 seconds later | scans again: menus added by scripts (for example through Settlement Menu Manager) appear a few seconds after loading |
 | Entering workshop mode | scans again |
+| Holotape "Rebuild the workshop menus now" or an option switched | scans and builds at once |
+
+**Why a snapshot?** The game builds its workshop menu the first time the workshop is
+opened and keeps that picture until the game is closed - opening and closing the
+workshop again does not read the menus again. So everything Lost Objects adds must be
+in place before the workshop is opened for the first time. Lost Objects saves what it
+built in `LostObjects_Snapshot.txt` and puts it back as soon as the game data is loaded,
+long before a save is loaded. After loading, it checks the menus as described below; if
+the result is the same - the normal case - nothing changes. The snapshot is only used
+if the plugins (and their order), the Lost Objects version and the settings that decide
+the menus are exactly the same as when it was written; forms are stored as "plugin
+file + form ID". Only a settled result is saved, never the half-finished menu right
+after loading.
+
+If the menus change after the workshop was already opened in this game session (the
+very first start, mods changed, an option switched on the holotape), the change is made
+anyway, saved, and a message says that the game shows it after a restart.
 
 **The menus always show the best current state.** Right after loading, other mods
 are still adding their menus. So Lost Objects first waits until the menu has settled:
@@ -190,8 +213,8 @@ in a row, so the menus do not flip back and forth while mods are loading; after 
 changes are applied at once. A scan that finds nothing new changes nothing (it only
 re-adds entries another mod removed).
 
-If you open the workshop before the menu has settled, Lost Objects builds right away
-so nothing is missing.
+If you open the workshop before the menu has settled and there is no snapshot yet,
+Lost Objects builds right away and asks for a restart (see above).
 
 The menu is never changed while it is on screen.
 
@@ -212,7 +235,9 @@ check fails, names are not read or written.
 | File | Purpose |
 |---|---|
 | `src/Main.cpp` | F4SE entry point, game messages |
-| `src/Recovery.*` | when to scan, events, icon, summary message |
+| `src/Recovery.*` | when to scan, events, icon, summary message, restart hint |
+| `src/Snapshot.*` | saves the built menus and puts them back at the next game start |
+| `src/Holotape.*` | the settings holotape: native Papyrus function, options, inventory |
 | `src/Scanner.*` | the read-only analysis described above |
 | `src/MenuBuilder.*` | decides where recovered recipes go and builds the menus |
 | `src/Matcher.*` | finds the existing category a lost item belongs to |
@@ -223,7 +248,7 @@ check fails, names are not read or written.
 | `src/NameMap.*` | verified access to the game's name table |
 | `src/Report.*` | log output and `LostObjects_Report.txt` |
 | `src/Notice.*` | the AI disclosure shown once per version |
-| `src/Settings.*` | INI file |
+| `src/Settings.*` | INI file and the holotape choices |
 | `src/Forms.*` | looks up the forms of `LostObjects.esp` |
 | `src/PluginForms.h` | form IDs, generated by `tools/build_plugin.py` |
 | `tools/build_plugin.py` | generates `data/LostObjects.esp` and `src/PluginForms.h` |
@@ -231,6 +256,8 @@ check fails, names are not read or written.
 | `tools/package.py` | builds the release archive |
 | `tools/build_local.py`, `build.cmd` | one-click build on Windows |
 | `tools/icon/` | generators for the menu icon mesh and texture, and the Nexus header |
+| `tools/papyrus/` | builds the Papyrus compiler Caprica and compiles the holotape scripts; compile-time stubs of the base game scripts |
+| `data/Scripts/Source/User/` | source code of the two holotape scripts |
 | `data/` | esp, ini, icon mesh and texture as they go into the game's Data folder |
 | `nexus/` | the Nexus Mods page kit |
 

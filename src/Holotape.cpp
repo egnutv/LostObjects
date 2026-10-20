@@ -24,7 +24,7 @@ namespace LO::Holotape
 			if (!a_vm) {
 				return false;
 			}
-			const bool bound = a_vm->BindNativeFunction(NATIVE_SCRIPT, NATIVE_FUNCTION, &HolotapeItem, true);
+			const bool bound = a_vm->BindNativeFunction(NATIVE_SCRIPT, NATIVE_FUNCTION, HolotapeItem, true);
 			REX::LogInformation("Holotape: native function {}.{} {}", NATIVE_SCRIPT, NATIVE_FUNCTION, bound ? "registered" : "could NOT be registered");
 			return bound;
 		}

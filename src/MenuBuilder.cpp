@@ -321,6 +321,25 @@ namespace LO
 		}
 	}
 
+	bool MenuState::SameAs(const MenuState& a_other) const
+	{
+		const auto sorted = [](auto a_items) {
+			std::ranges::sort(a_items, [](const auto& a_lhs, const auto& a_rhs) { return a_lhs.first->GetFormID() < a_rhs.first->GetFormID(); });
+			return a_items;
+		};
+		const auto sortedPairs = [](auto a_items) {
+			std::ranges::sort(a_items, [](const auto& a_lhs, const auto& a_rhs) {
+				return a_lhs.first->GetFormID() != a_rhs.first->GetFormID() ? a_lhs.first->GetFormID() < a_rhs.first->GetFormID() : a_lhs.second->GetFormID() < a_rhs.second->GetFormID();
+			});
+			return a_items;
+		};
+		return tabVisible == a_other.tabVisible &&
+		       sorted(names) == sorted(a_other.names) &&
+		       sorted(contents) == sorted(a_other.contents) &&
+		       sortedPairs(injections) == sortedPairs(a_other.injections) &&
+		       sorted(tags) == sorted(a_other.tags);
+	}
+
 	void MenuBuilder::Reset()
 	{
 		_originalKeywords.clear();
@@ -689,26 +708,28 @@ namespace LO
 			return a_injection.first->ContainsEditorForm(a_injection.second);
 		}) && (!result.tabVisible || a_forms.workshopMenuMain->ContainsEditorForm(a_forms.rootMenu));
 
-		const bool unchanged = signature == _lastSignature && _lastSignature != 0 && intact;
+		MenuState state;
+		state.names = plan.names;
+		for (auto* menu : plan.menuOrder) {
+			state.contents.emplace_back(menu, plan.contents.at(menu));
+		}
+		state.contents.emplace_back(a_forms.rootMenu, rootContents);
+		state.injections = plan.injections;
+		for (const auto& [recipe, tag] : plan.tags) {
+			state.tags.emplace_back(recipe, tag);
+		}
+		std::ranges::sort(state.tags, [](const auto& a_lhs, const auto& a_rhs) { return a_lhs.first->GetFormID() < a_rhs.first->GetFormID(); });
+		state.tabVisible = result.tabVisible;
+
+		// Compared by content, not only by the signature: the menus put back
+		// from the snapshot must count as "unchanged" when they are the same.
+		const bool unchanged = _lastSignature != 0 && intact && state.SameAs(_state);
 		if (!unchanged) {
 			// --- 2. Apply ---------------------------------------------------------
-			MenuState state;
-			state.names = plan.names;
-			for (auto* menu : plan.menuOrder) {
-				state.contents.emplace_back(menu, plan.contents.at(menu));
-			}
-			state.contents.emplace_back(a_forms.rootMenu, rootContents);
-			state.injections = plan.injections;
-			for (const auto& [recipe, tag] : plan.tags) {
-				state.tags.emplace_back(recipe, tag);
-			}
-			std::ranges::sort(state.tags, [](const auto& a_lhs, const auto& a_rhs) { return a_lhs.first->GetFormID() < a_rhs.first->GetFormID(); });
-			state.tabVisible = result.tabVisible;
-
 			Execute(a_forms, state);
 			AddPreviewTransforms(a_scan, result);
-			_lastSignature = signature;
 		}
+		_lastSignature = signature;
 
 		result.changed = !unchanged;
 		result.previewsAdded = static_cast<std::uint32_t>(_previewGiven.size());

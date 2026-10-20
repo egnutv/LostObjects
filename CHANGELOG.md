@@ -4,6 +4,42 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-10-20 - public beta
+
+### Fixed
+- Recovered items were missing for the whole session when the workshop was opened
+  within the first seconds after loading. The game builds its workshop menu the first
+  time the workshop is opened and keeps it until the game is closed, so a late change
+  was never shown - not even after leaving and entering the workshop again.
+
+### Added
+- **Snapshot**: Lost Objects saves the menus it built
+  (`Documents\My Games\Fallout4\F4SE\LostObjects_Snapshot.txt`) and puts them back as
+  soon as the game data is loaded - before a save is loaded and long before the workshop
+  can be opened. After loading, the menus are checked as before; if nothing changed,
+  nothing happens. The snapshot is only used when the plugins, their order, the version
+  and the settings are exactly the same. Only settled results are saved.
+- **Restart hint**: if the menus change after the workshop was already opened in this
+  game session (first start, mods changed, an option switched), a message says that the
+  game shows the new menu after a restart. Saving is not needed for Lost Objects.
+- **Settings holotape** "Lost Objects Settings", put into the inventory when a save is
+  loaded (it comes back if it is lost): "Rebuild the workshop menus now" and switches for
+  sorting into existing categories, hiding ghost objects, hiding items that can already
+  be built, the summary message and the development mode. The choices are saved in
+  `LostObjects_Settings.ini` next to the log and win over the INI.
+  It uses one tiny Papyrus script that passes the selected menu item to the DLL and only
+  runs when an item is selected. The scripts are compiled with the open source compiler
+  Caprica at build time (`tools/papyrus/`), so the project still builds without the
+  Creation Kit.
+
+### Changed
+- Follow-up scans every 2 seconds during the first 20 seconds after loading (before: 3,
+  10 and 20 seconds), so the menus are ready earlier on the first start.
+- Entering workshop mode no longer forces an early build when the menus are already in
+  place (snapshot or earlier build): an early build could see the menu while other mods
+  are still adding to it.
+- Nexus page kit and header: "no scripts" replaced by "settings holotape".
+
 ## [0.9.0] - 2026-10-20 - public beta
 
 First public release. Tested on Fallout 4 1.11.240 with F4SE 0.7.9 and a large

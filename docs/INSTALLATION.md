@@ -26,6 +26,9 @@ Copy the contents of the archive into `Fallout 4\Data\`:
 Data\LostObjects.esp
 Data\Meshes\LostObjects\MenuIcon.nif
 Data\Textures\LostObjects\MenuIcon_d.dds
+Data\Scripts\LostObjects.pex
+Data\Scripts\LostObjects_Holotape.pex
+Data\Scripts\Source\User\   (source code of the two scripts)
 Data\F4SE\Plugins\LostObjects.dll
 Data\F4SE\Plugins\LostObjects.ini
 Data\F4SE\Plugins\LostObjects\   (readme, license, notices)
@@ -35,19 +38,27 @@ Then enable `LostObjects.esp` in `plugins.txt` or in the game's mod menu.
 
 ## Check that it works
 
-1. Load a save. Once per version a message appears saying the mod was made with AI.
+1. Load a save. Once per version a message appears saying the mod was made with AI,
+   and the settings holotape "Lost Objects Settings" is put into your inventory.
 2. Open `Documents\My Games\Fallout4\F4SE\LostObjects.log`. It should contain
    `Lost Objects is ready`.
-3. Wait about ten seconds (other mods add their menus after loading), then enter
-   workshop mode. A short message tells you how many items were recovered and how many
+3. **The very first time** with Lost Objects (or after you changed your mods), wait
+   about 20 seconds after loading before you enter workshop mode - other mods add their
+   menus after loading and Lost Objects waits for them. If you are faster, a message
+   asks you to restart the game once; nothing is lost. From then on the menus are
+   complete right away.
+4. In workshop mode a short message tells you how many items were recovered and how many
    of them were sorted into existing categories. Look for "Lost Objects" folders at the
    end of your mods' menus and, if anything has no home, the **Lost Objects** tab in the
    main menu. If nothing is lost, there is nothing to see - that is good news.
 
 ## Uninstall
 
-Disable or remove the mod. Nothing is stored in your save game. Things you built stay
-where they are; you just cannot build new lost items anymore.
+Disable or remove the mod. Lost Objects stores nothing in your save game; the settings
+holotape simply disappears from your inventory. Things you built stay where they are;
+you just cannot build new lost items anymore. You can also delete
+`LostObjects_Snapshot.txt` and `LostObjects_Settings.ini` in
+`Documents\My Games\Fallout4\F4SE\`.
 
 ## Updating
 

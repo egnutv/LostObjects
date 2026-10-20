@@ -26,14 +26,16 @@ Lost Objects walks through the whole workshop menu exactly the way the game does
 [*]Recovered items get a thumbnail in the build bar.
 [*]Items keep their original costs and requirements; conditions of their mod still apply.
 [*]The menus are built once your workshop menu has settled after loading and are updated when something new turns up - they never flip back and forth.
+[*]Lost Objects remembers its result. From the second start on, the menus are complete the moment the game has loaded - even if you open the workshop at once.
+[*][b]Settings holotape[/b] in your inventory: rebuild the menus now, and switch the main options on or off. No text files needed.
 [*]Only settlement workshop recipes are considered. Chemistry, cooking, armor and weapon workbenches are not touched.
 [/list]
 
 [size=4][b]Safe to use and to remove[/b][/size]
 [list]
-[*]Everything happens in memory. Nothing is written into your save game.
-[*]No Papyrus scripts.
-[*]Remove the mod at any time. Things you built stay where they are.
+[*]The menu changes happen in memory. Lost Objects stores nothing in your save game - only the settings holotape is a normal item in your inventory.
+[*]One tiny Papyrus script on the holotape that only runs when you select a menu item. Nothing runs in the background.
+[*]Remove the mod at any time. Things you built stay where they are, the holotape simply disappears.
 [/list]
 
 [size=4][b]Requirements[/b][/size]
@@ -47,10 +49,13 @@ Lost Objects walks through the whole workshop menu exactly the way the game does
 A large settlement load order: Workshop Framework, Settlement Menu Manager (+ patches), Workshop Rearranged, Homemaker, Settlement Objects Expansion Pack (+ Vanilla Menu Fixer), Snap'n Build, Snappy HouseKit (+ DLC03), The Master Plan, Vanilla Extensions, Red Rocket Reborn, OC Decorator, Chuck Yufarley Collection, Renovated Furniture and Decorations, Settlement Keywords Expanded, Place Everywhere, Scrap Everything and more, plus all DLCs and the Creation Club content. Full list on GitHub: [url=https://github.com/egnutv/LostObjects/blob/main/docs/TESTED_WITH.md]TESTED_WITH.md[/url]
 
 [size=4][b]Installation[/b][/size]
-Install with Vortex, the Nexus app or Mod Organizer 2 and enable LostObjects.esp. It is a light plugin (ESL flagged) and does not use a regular plugin slot. Load order does not matter. After loading a save, give it about ten seconds before you open the workshop - other mods add their menus right after loading.
+Install with Vortex, the Nexus app or Mod Organizer 2 and enable LostObjects.esp. It is a light plugin (ESL flagged) and does not use a regular plugin slot. Load order does not matter.
+The very first time (and after you changed your mods), give it about 20 seconds after loading a save before you open the workshop - other mods add their menus right after loading and Lost Objects waits for them. The game builds its workshop menu only once per session, so if you are faster, Lost Objects asks you to restart the game once. You do not need to save for that. From then on the menus are complete right away.
 
 [size=4][b]Settings[/b][/size]
-Data\F4SE\Plugins\LostObjects.ini - every option is explained in the file.
+The settings holotape "Lost Objects Settings" (it is added to your inventory automatically): rebuild the menus now, sort into existing categories, hide ghost objects, hide items that can already be built, summary message, development mode.
+
+Everything else: Data\F4SE\Plugins\LostObjects.ini - every option is explained in the file.
 [list]
 [*]sPlacement = Home / Tab - sort into the mods' menus, or everything into one tab
 [*]iMinConfidence - how sure a match must be before an item is sorted into a category

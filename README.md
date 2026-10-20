@@ -62,8 +62,13 @@ Workshop main menu
 - Items keep their original costs and requirements; conditions of their mod still apply.
 - The menus are built once the workshop menu has settled after loading and are updated
   when something new turns up - they never flip back and forth.
-- Nothing is written into your save game. Remove the mod and everything is as before;
-  things you already built stay where they are.
+- Lost Objects remembers its result (a snapshot file next to its log). At the next game
+  start the menus are complete right away, even if you open the workshop immediately.
+- A **settings holotape** ("Lost Objects Settings") in your inventory: rebuild the menus
+  now, and switch the main options on or off - no text file needed.
+- Lost Objects stores nothing in your save game. Only the holotape is a normal item in
+  your inventory. Remove the mod and everything is as before; things you already built
+  stay where they are.
 - Only workshop (settlement) recipes are considered - chemistry, cooking, armor and weapon
   workbenches are not touched.
 
@@ -90,10 +95,15 @@ per version.
 
 ## Settings
 
-`Data/F4SE/Plugins/LostObjects.ini` - for example `sPlacement=Tab` to put everything into
-the tab, `iMinConfidence=` to make the sorting stricter, `sIgnorePlugins=` to hide a
-plugin's items, or `bDevelopmentMode=1` for the detailed analysis files.
-All options: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+The **settings holotape** ("Lost Objects Settings", it is put into your inventory
+automatically) has the everyday options: rebuild the menus now, sort into existing
+categories, hide ghost objects, hide items that can already be built, the summary
+message and the development mode. Your choices are saved by Lost Objects itself.
+
+Everything else is in `Data/F4SE/Plugins/LostObjects.ini` - for example `sPlacement=Tab`
+to put everything into the tab, `iMinConfidence=` to make the sorting stricter or
+`sIgnorePlugins=` to hide a plugin's items. All options:
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
 ## Reporting problems
 

@@ -1,6 +1,30 @@
 # Configuration
 
-Settings are in `Data/F4SE/Plugins/LostObjects.ini` (in Mod Organizer 2: inside the
+## The settings holotape
+
+"Lost Objects Settings" is put into your inventory when you load a save (if you lose or
+sell it, it comes back the next time you load). Play it in the Pip-Boy:
+
+| Menu item | What it does |
+|---|---|
+| Rebuild the workshop menus now | Scans and builds at once, without waiting. A message tells you whether anything changed. |
+| Sort lost items into existing categories | = `bSortIntoCategories` |
+| Hide ghost objects (no model file) | = `bSkipMissingModels` |
+| Hide items that can already be built | = `bSkipAlreadyBuildable` |
+| Show the summary message | = `bShowSummaryMessage` |
+| Development mode (analysis files) | = `bDevelopmentMode` |
+
+`[X]` = on, `[ ]` = off. Select an item to switch it, then go back to see the new state.
+Lost Objects saves your choices in `Documents\My Games\Fallout4\F4SE\LostObjects_Settings.ini`;
+they win over the INI below. Delete that file to go back to the INI values.
+
+If you already opened the workshop in this game session, the game shows the new menu
+only after a restart of the game (it builds its workshop menu once per session). Lost
+Objects tells you when that is the case. You do not need to save for Lost Objects.
+
+## The INI
+
+All settings are in `Data/F4SE/Plugins/LostObjects.ini` (in Mod Organizer 2: inside the
 mod's folder under `F4SE/Plugins`). Changes take effect the next time the game starts.
 If the file is missing or a value is invalid, the default is used and a warning is
 written to the log.

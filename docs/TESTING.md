@@ -61,6 +61,12 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T19c | Report, "Model check" and "Ghost objects" | The model check is "active". The listed ghost objects really show only an empty slot when `bSkipMissingModels=0`. |
 | T19d | Add-on without own menu (e.g. Snappy_DLC03) | Its lost items are in the "Lost Objects" folder of the main mod's menu, not in the tab. |
 | T20 | `sPlacement=Tab`, restart | Everything is in the "Lost Objects" tab again, nothing in other menus or categories. |
+| T21 | First start with 0.10 (or after deleting `LostObjects_Snapshot.txt`): load a save and open the workshop **at once** | A message asks you to restart the game. After the restart and loading the save, the Lost Objects folders and tab are there, even when you open the workshop at once. |
+| T22 | Load a save, wait 30 seconds, look at `LostObjects.log` | `Snapshot: loaded`, later `built` and no restart message. |
+| T23 | Holotape "Lost Objects Settings" | It is in your inventory. Playing it shows the menu with `[X]` / `[ ]`. |
+| T24 | Holotape: switch "Sort lost items into existing categories" off, go back | The mark changes to `[ ]`, a message confirms it; `LostObjects_Settings.ini` contains `bSortIntoCategories=0`. After a restart the items are in the "Lost Objects" folders instead of the categories. Switch it on again. |
+| T25 | Holotape: "Rebuild the workshop menus now" | Message "already up to date" (or "rebuilt"). |
+| T26 | Drop or sell the holotape, save, load | It is back in the inventory. |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 
 ## 3. What to send back

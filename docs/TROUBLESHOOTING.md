@@ -18,8 +18,28 @@ All files mentioned here are in `Documents\My Games\Fallout4\F4SE\`.
    existing categories" in the report lists them) or into a "Lost Objects" folder at the
    end of their mod's own menu. Only items without any home are in the Lost Objects tab.
 4. **Was the menu built?** Right after loading, the log says `waiting until the menu has
-   settled`. About ten seconds later it says `built`. Entering workshop mode builds at
-   once.
+   settled`. About ten to twenty seconds later it says `built`.
+5. **Did you open the workshop very early?** The game builds its workshop menu the first
+   time you open the workshop and keeps it until you close the game. If Lost Objects was
+   not finished yet (only possible the first time, or after you changed your mods), a
+   message asks you to restart the game. After the restart everything is there at once,
+   because Lost Objects remembers its result (`LostObjects_Snapshot.txt`).
+
+## The menus look different after I changed my mods
+
+That is expected: the snapshot is only used when the mods and the settings are exactly
+the same. The first start after a change works like the very first start (wait about 20
+seconds before you open the workshop, or restart once when Lost Objects asks you to).
+Deleting `LostObjects_Snapshot.txt` is always safe.
+
+## The settings holotape does nothing
+
+- Check `LostObjects.log` for `Holotape: native function LostObjects.HolotapeItem
+  registered`. If it says `could NOT be registered`, report it.
+- The scripts `Data\Scripts\LostObjects.pex` and `LostObjects_Holotape.pex` must be
+  installed (they are part of the archive).
+- After switching an option, go back one page - the `[X]` / `[ ]` marks are updated when
+  the list is shown again.
 
 ## Items appear twice
 

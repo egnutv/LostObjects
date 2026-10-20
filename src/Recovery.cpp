@@ -296,9 +296,12 @@ namespace LO
 		_manualRequest = false;
 
 		// Keep the result for the next game start - but only a settled one,
-		// never the half-finished menu right after loading.
+		// never the half-finished menu right after loading. What the player
+		// asked for on the holotape is saved at once.
 		const auto fingerprint = Snapshot::Fingerprint(settings);
-		if (sameAsBefore && settled && (_builder.Signature() != _savedSignature || fingerprint != _savedFingerprint)) {
+		const bool keep = settled && (sameAsBefore || _userRequest);
+		_userRequest = false;
+		if (keep && (_builder.Signature() != _savedSignature || fingerprint != _savedFingerprint)) {
 			Snapshot::Save(_builder, apply, fingerprint);
 			_savedSignature = _builder.Signature();
 			_savedFingerprint = fingerprint;
@@ -329,6 +332,7 @@ namespace LO
 		if (a_itemID == Forms::HolotapeItemRebuild) {
 			REX::LogInformation("Holotape: rebuild requested");
 			_manualRequest = true;
+			_userRequest = true;
 			_hasLoggedOnce = false;  // write the report again
 			RequestScan("holotape: rebuild now"sv, true);
 			return;
@@ -359,6 +363,7 @@ namespace LO
 		if (index == Holotape::OPTION_DEVELOPMENT) {
 			_hasLoggedOnce = false;  // write the analysis files now
 		}
+		_userRequest = true;
 		RequestScan("holotape: setting changed"sv, true);
 	}
 

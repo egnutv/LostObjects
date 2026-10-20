@@ -93,10 +93,25 @@ on every push:
 | `LostObjects.esp` | `tools/build_plugin.py` | `build_plugin.py --check`, `verify_plugin.py` |
 | `Meshes/LostObjects/MenuIcon.nif` | `tools/icon/make_icon_nif.cpp` | rebuilt and compared byte for byte |
 | `Textures/LostObjects/MenuIcon_d.dds` | `tools/icon/make_icon_textures.py` from `Logo/Logo.png` | rebuilt and compared byte for byte |
+| `Scripts/*.pex` | `data/Scripts/Source/User/*.psc`, compiled with Caprica (`tools/papyrus/`) | compiled by the CI on every build |
 | INI, readme, license files | `data/`, `docs/`, root | copied by `tools/package.py` |
 
 No Creation Kit, xEdit, NifSkope or other closed tool is needed. Details for the icon:
 [tools/icon/README.md](../tools/icon/README.md).
+
+The holotape scripts are compiled with [Caprica](https://github.com/nikitalita/Caprica)
+(MIT), an open source Papyrus compiler, downloaded at a pinned commit and built from
+source by `tools/papyrus/CMakeLists.txt` (Windows, Boost from vcpkg). The base game
+scripts our scripts extend are not needed: `tools/papyrus/stubs/` has small
+declarations written for this project. Neither Caprica nor the stubs are part of the
+mod. By hand:
+
+```
+cmake -S tools/papyrus -B build/papyrus -A x64 -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md-release -DVCPKG_HOST_TRIPLET=x64-windows-static-md-release
+cmake --build build/papyrus --config Release
+```
+
+The compiled scripts are in `build/papyrus/Scripts`; `build.cmd` does this for you.
 
 ## Building in your own fork
 
@@ -109,13 +124,14 @@ the original repository.
 ```
 .github/        CI workflow and issue templates
 Logo/           the logo (PNG, plus the Affinity and Paint.NET source files)
-data/           files that go into the game's Data folder (esp, ini, mesh, texture)
+data/           files that go into the game's Data folder (esp, ini, mesh, texture, script source)
 docs/           documentation
 nexus/          the Nexus Mods page kit
 releases/       the latest mod archive, stored by the CI
 src/            C++ source of the F4SE plugin
 tools/          plugin generator and checker, packager, local build script
 tools/icon/     generators for the menu icon mesh, its texture and the Nexus header
+tools/papyrus/  Papyrus compiler build (Caprica) and compile-time stubs
 CMakeLists.txt  build definition
 vcpkg.json      library dependencies
 ```

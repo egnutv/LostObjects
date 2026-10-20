@@ -10,6 +10,12 @@ They are **not** covered by the PolyForm Noncommercial license of this project.
 | [{fmt}](https://github.com/fmtlib/fmt) | text formatting | MIT |
 | [spdlog](https://github.com/gabime/spdlog) | log file | MIT |
 
+Build tools that are **not** part of the mod (downloaded at a pinned commit only while
+building): [Caprica](https://github.com/nikitalita/Caprica) (MIT, compiles the two
+holotape scripts; uses [Boost](https://www.boost.org/), Boost Software License) and
+[nifly](https://github.com/ousnius/nifly) (GPL-3.0, writes the icon mesh). The compiled
+scripts and the mesh contain no code of these tools.
+
 Runtime requirements that are **not** shipped with this mod:
 [F4SE](https://f4se.silverlock.org/) by the F4SE team and the
 [Address Library for F4SE Plugins](https://www.nexusmods.com/fallout4/mods/47327).

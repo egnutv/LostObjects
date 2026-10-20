@@ -45,6 +45,10 @@ namespace LO
 		std::vector<std::pair<RE::BGSListForm*, RE::TESForm*>> injections;  // foreign menu -> our folder added to it
 		std::vector<std::pair<RE::BGSConstructibleObject*, RE::BGSKeyword*>> tags;  // recipe -> category we add
 		bool tabVisible{ false };  // the tab is added to WorkshopMenuMain
+
+		// Same content (the order of names, folders and tags does not matter,
+		// the order inside a menu does).
+		[[nodiscard]] bool SameAs(const MenuState& a_other) const;
 	};
 
 	using PreviewMap = std::unordered_map<RE::TESBoundObject*, RE::BGSTransform*>;

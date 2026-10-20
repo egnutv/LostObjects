@@ -17,10 +17,14 @@ REQUIREMENTS
 
 INSTALLATION
 Install with your mod manager and enable LostObjects.esp (light plugin).
-After loading a save, wait about ten seconds, then enter workshop mode.
+The first time (and after you changed your mods), wait about 20 seconds after
+loading a save before you enter workshop mode. If you are faster, a message
+asks you to restart the game once. After that the menus are complete at once.
 
 SETTINGS
-Data\F4SE\Plugins\LostObjects.ini
+The holotape "Lost Objects Settings" in your inventory (added automatically):
+rebuild the menus now and switch the main options on or off.
+All options: Data\F4SE\Plugins\LostObjects.ini
 
 FILES FOR BUG REPORTS
 Documents\My Games\Fallout4\F4SE\LostObjects.log
