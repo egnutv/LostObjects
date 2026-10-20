@@ -1,8 +1,10 @@
 # Builds Lost Objects on every push and pull request.
-# A tag like "v0.1.0" additionally creates a GitHub release with the mod archive.
 #
-# Where to find the result: Actions tab -> the latest run -> "Artifacts"
-# (LostObjects-zip contains the ready-to-install mod).
+# Where to find the result:
+#   * releases/LostObjects-<version>.zip in the repository itself (updated after
+#     every successful build of the main branch)
+#   * Actions tab -> the latest run -> "Artifacts"
+# A tag like "v0.1.0" additionally creates a GitHub release with the mod archive.
 
 name: Build
 
@@ -10,6 +12,8 @@ on:
   push:
     branches: ["**"]
     tags: ["v*"]
+    paths-ignore:
+      - "releases/**"  # the build's own commit must not start another build
   pull_request:
   workflow_dispatch:
 
@@ -78,6 +82,27 @@ jobs:
           name: LostObjects-pdb
           path: dist/LostObjects-*-pdb.zip
           if-no-files-found: warn
+
+      - name: Store mod archive in the repository (releases folder)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force releases | Out-Null
+          Get-ChildItem releases -Filter "LostObjects-*.zip" | Remove-Item
+          Get-ChildItem dist -Filter "LostObjects-*.zip" |
+            Where-Object { $_.Name -notlike "*-pdb.zip" } |
+            Copy-Item -Destination releases
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A releases
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Update mod archive in releases/ [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          } else {
+            Write-Host "releases/ is already up to date"
+          }
 
       - name: Publish GitHub release (tags only)
         if: startsWith(github.ref, 'refs/tags/v')

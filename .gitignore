@@ -39,6 +39,7 @@ LostObjects_State.ini
 
 # --- Archives -----------------------------------------------------------------
 *.zip
+!/releases/*.zip
 *.7z
 *.rar
 
@@ -46,3 +47,6 @@ LostObjects_State.ini
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# --- Local build ---
+/.vcpkg/

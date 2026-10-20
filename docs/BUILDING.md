@@ -1,8 +1,26 @@
 # Building
 
 You do not need to build anything yourself to play or test - GitHub builds every
-commit automatically (see [TESTING.md](TESTING.md#0-get-a-test-build)). This page is for
+commit automatically and stores the finished mod in `releases/` inside the repository (see [TESTING.md](TESTING.md#0-get-a-test-build)). This page is for
 developers who want to build locally or continue the project.
+
+## One-click build on your PC
+
+Double-click `build.cmd` in the repository folder. It checks the tools, sets up
+vcpkg, builds the DLL and packages the mod into `dist\LostObjects-<version>.zip`.
+If a tool is missing it tells you what to install and where to get it.
+
+Install once:
+
+1. **Visual Studio 2026** (Community is free) with the workload
+   "Desktop development with C++" - https://visualstudio.microsoft.com/
+2. **CMake 4.3 or newer** - https://cmake.org/download/ (choose "Add CMake to the PATH")
+3. **Git** - https://git-scm.com/download/win
+4. **Python 3.10 or newer** - https://www.python.org/downloads/ (tick "Add python.exe to PATH")
+
+The first build downloads vcpkg into the hidden folder `.vcpkg` and builds the
+libraries; that takes a while. Later builds take a few minutes. Options:
+`build.cmd --clean` (start from scratch), `build.cmd --no-package` (DLL only).
 
 ## Toolchain
 

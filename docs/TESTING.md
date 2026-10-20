@@ -5,11 +5,20 @@ is done by a human tester. This guide lists what to test and what to send back.
 
 ## 0. Get a test build
 
-1. Open the repository on GitHub, tab **Actions**.
-2. Click the newest run of **Build** with a green check mark.
-3. At the bottom, under **Artifacts**, download **LostObjects-zip**.
-4. GitHub wraps it in another zip: unpack it once. Inside is
-   `LostObjects-<version>.zip` - that is the mod archive.
+After every successful build of the `main` branch, GitHub puts the finished mod into the
+repository itself:
+
+```
+releases/LostObjects-<version>.zip
+```
+
+Open the folder `releases` on the repository page (tab **Code**), click the zip and
+then **Download** (the button with the arrow at the top right of the file view). In
+GitHub Desktop, click **Fetch origin** and then **Pull origin** to get it into your local
+folder. This zip is the mod archive - install it with your mod manager.
+
+The same file is also available in the tab **Actions** -> newest run -> **Artifacts**
+(GitHub wraps it in another zip there).
 
 If the run has a red cross, open it, click the failed step and copy the error text.
 
