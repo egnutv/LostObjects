@@ -6,14 +6,16 @@ transparent `Logo/Logo.png`, nothing added.
 | File | Made by |
 |---|---|
 | `data/Meshes/LostObjects/MenuIcon.nif` | `make_icon_nif.cpp` |
-| `data/Textures/LostObjects/MenuIcon_d.dds`, `MenuIcon_n.dds` | `make_icon_textures.py` (from `Logo/Logo.png`) |
+| `data/Textures/LostObjects/MenuIcon_d.dds` | `make_icon_textures.py` (from `Logo/Logo.png`) |
 | `LO_MenuIcon` (ARTO) in `LostObjects.esp` | `tools/build_plugin.py` |
 
-The mesh is two 64 x 64 planes back to back (bottom at Z = 0, the back one with
-mirrored UVs so the logo reads correctly from both sides): one `BSTriShape` with a
-`BSLightingShaderProperty` (double sided), a texture set pointing to the two
-textures and a `NiAlphaProperty` (alpha test, threshold 128) that cuts out
-everything transparent in the logo.
+The mesh is ONE 64 x 64 plane facing -Y, centered on the origin, like the flat
+icons of other mods: one `BSTriShape` with an unlit `BSEffectShaderProperty`
+(double sided, because the menu turns the selected icon) showing the texture as it
+is, and a `NiAlphaProperty` (alpha test, threshold 128) that cuts out everything
+transparent in the logo. `LO_MenuIcon` has a preview transform (`LO_MenuIconTransform`);
+the DLL copies the vanilla "Decorations" icon's transform into it and scales it by
+the ratio of the two icons' bounds, so the logo gets the same size as that icon.
 
 ## Rebuilding
 

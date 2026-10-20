@@ -1,7 +1,6 @@
 """Builds the textures of the workshop menu icon from Logo/Logo.png.
 
   textures/LostObjects/MenuIcon_d.dds   the logo with its transparency (512x512)
-  textures/LostObjects/MenuIcon_n.dds   flat normal map (64x64)
   tools/icon/MenuIcon_preview.png       what the diffuse map looks like
 
 Uncompressed 32-bit DDS (A8R8G8B8) with mipmaps - every Fallout 4 version
@@ -75,10 +74,11 @@ def main() -> int:
     (out / "MenuIcon_d.dds").write_bytes(dds_bytes(image))
     image.save(ROOT / "tools" / "icon" / "MenuIcon_preview.png")
 
-    normal = Image.new("RGBA", (64, 64), (128, 128, 255, 255))
-    (out / "MenuIcon_n.dds").write_bytes(dds_bytes(normal))
+    stale = out / "MenuIcon_n.dds"  # normal map of older versions, not needed by the unlit shader
+    if stale.exists():
+        stale.unlink()
 
-    print("wrote", out / "MenuIcon_d.dds", "and", out / "MenuIcon_n.dds")
+    print("wrote", out / "MenuIcon_d.dds")
     return 0
 
 

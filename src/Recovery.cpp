@@ -328,6 +328,17 @@ namespace LO
 				const auto* donorTransform = donor ? donor->previewTransform.transform : nullptr;
 				if (own && donorTransform && own != donorTransform) {
 					own->data = donorTransform->data;
+
+					// Same size as the vanilla icon: scale by the ratio of the bounds.
+					const auto extent = [](const RE::TESBoundObject* a_object) {
+						const auto& b = a_object->boundData;
+						return static_cast<float>(std::max({ std::abs(b.boundMax.x - b.boundMin.x), std::abs(b.boundMax.y - b.boundMin.y), std::abs(b.boundMax.z - b.boundMin.z) }));
+					};
+					const auto ownExtent = extent(_forms.menuIcon);
+					const auto donorExtent = extent(donor);
+					if (ownExtent > 0.0f && donorExtent > 0.0f) {
+						own->data.scale = donorTransform->data.scale * std::clamp(donorExtent / ownExtent, 0.25f, 8.0f);
+					}
 					constexpr std::uint32_t aroundOrigin = RE::BGSTransform::RecordFlag::kAroundOrigin;
 					auto& ownFlags = *own->formFlags.underlying_address();
 					ownFlags = (ownFlags & ~aroundOrigin) | (donorTransform->formFlags.underlying() & aroundOrigin);

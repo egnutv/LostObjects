@@ -1,7 +1,8 @@
 // Builds meshes/LostObjects/MenuIcon.nif: the workshop menu icon of Lost
 // Objects - just the logo, cut out by the transparency of Logo/Logo.png
-// (alpha test), on two thin planes back to back (mirrored UVs on the back,
-// so it reads correctly from both sides).
+// (alpha test), on ONE plane facing -Y, centered on the origin. Unlit effect
+// shader (the image is shown as it is, like other mods' flat menu icons),
+// double sided because the menu turns the selected icon.
 //
 // Build tool only: uses nifly (https://github.com/ousnius/nifly, GPL-3.0),
 // which is NOT part of the mod. The generated .nif is our own data.
@@ -21,7 +22,6 @@ namespace
 {
 	constexpr float W = 64.0f;  // width (X)
 	constexpr float H = 64.0f;  // height (Z, up)
-	constexpr float D = 0.5f;   // gap between the two faces (Y)
 
 	struct Mesh
 	{
@@ -60,10 +60,9 @@ namespace
 		for (auto* shape : nif.GetShapes()) {
 			const auto* verts = nif.GetVertsForShape(shape);
 			std::printf("shape '%s' verts=%zu tris=%u\n", shape->name.get().c_str(), verts ? verts->size() : 0, shape->GetNumTriangles());
-			std::string tex0, tex1;
+			std::string tex0;
 			nif.GetTextureSlot(shape, tex0, 0);
-			nif.GetTextureSlot(shape, tex1, 1);
-			std::printf("  diffuse='%s' normal='%s'\n", tex0.c_str(), tex1.c_str());
+			std::printf("  texture='%s'\n", tex0.c_str());
 			if (auto* shader = nif.GetShader(shape)) {
 				std::printf("  shader=%s doubleSided=%d\n", shader->GetBlockName(), shader->IsDoubleSided() ? 1 : 0);
 			}
@@ -89,14 +88,11 @@ int main(int argc, char** argv)
 		return 2;
 	}
 
-	const float x0 = -W / 2, x1 = W / 2, z0 = 0.0f, z1 = H, yf = -D / 2, yb = D / 2;
+	const float x0 = -W / 2, x1 = W / 2, z0 = -H / 2, z1 = H / 2, y = 0.0f;
 
 	Mesh m;
-	// Front (faces -Y): viewer's right is +X; texture v=0 is the top.
-	m.Quad({ x0, yf, z1 }, { x1, yf, z1 }, { x1, yf, z0 }, { x0, yf, z0 }, { 0, -1, 0 },
-		{ 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 });
-	// Back (faces +Y): viewer's right is -X, so u runs the other way.
-	m.Quad({ x1, yb, z1 }, { x0, yb, z1 }, { x0, yb, z0 }, { x1, yb, z0 }, { 0, 1, 0 },
+	// Faces -Y: the viewer's right is +X; texture v=0 is the top.
+	m.Quad({ x0, y, z1 }, { x1, y, z1 }, { x1, y, z0 }, { x0, y, z0 }, { 0, -1, 0 },
 		{ 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 });
 
 	NifFile nif;
@@ -108,15 +104,14 @@ int main(int argc, char** argv)
 	shape->Create(version, &m.verts, &m.tris, &m.uvs, &m.normals);
 	shape->name.get() = "LostObjectsMenuIcon";
 
-	auto textures = std::make_unique<BSShaderTextureSet>(version);
-	textures->textures[0].get() = "textures\\LostObjects\\MenuIcon_d.dds";
-	textures->textures[1].get() = "textures\\LostObjects\\MenuIcon_n.dds";
-
-	auto shader = std::make_unique<BSLightingShaderProperty>(version);
-	shader->TextureSetRef()->index = hdr.AddBlock(std::move(textures));
-	shader->SetSkinned(false);
-	shader->shaderFlags2 |= SLSF2_DOUBLE_SIDED;
-	shader->specularStrength = 0.1f;
+	// Unlit: the logo keeps its own colours no matter how the menu is lit.
+	auto shader = std::make_unique<BSEffectShaderProperty>();
+	shader->sourceTexture.get() = "textures\\LostObjects\\MenuIcon_d.dds";
+	shader->shaderFlags1 = F4SF1_ZBUFFER_TEST;
+	shader->shaderFlags2 = F4SF2_ZBUFFER_WRITE | F4SF2_DOUBLE_SIDED;
+	shader->baseColor = Color4(1.0f, 1.0f, 1.0f, 1.0f);
+	shader->baseColorScale = 1.0f;
+	shader->textureClampMode = 3;  // wrap S, wrap T
 
 	shape->ShaderPropertyRef()->index = hdr.AddBlock(std::move(shader));
 

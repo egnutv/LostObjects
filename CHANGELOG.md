@@ -4,6 +4,18 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.4] - 2026-10-20
+
+### Fixed
+- The menu icon showed the logo twice on top of each other (two planes back to back,
+  each double sided) and too dark. It is now one plane like the flat icons of other
+  mods, with an unlit shader, so the logo keeps its own colours.
+- The icon is scaled to the size of the vanilla "Decorations" icon (ratio of the
+  two icons' bounds); before it was much smaller than the other icons.
+
+### Removed
+- `Textures/LostObjects/MenuIcon_n.dds` (not needed by the unlit shader).
+
 ## [0.4.3] - 2026-10-20
 
 ### Fixed

@@ -62,7 +62,7 @@ LAST_LOCAL_ID = 0xFFF
 
 ROOT_NAME = "Lost Objects"
 MENU_ICON_MODEL = "LostObjects\\MenuIcon.nif"  # relative to Data\Meshes, see tools/icon
-MENU_ICON_BOUNDS = (-32, -1, 0, 32, 1, 64)  # OBND of the icon mesh (x, y, z min / max)
+MENU_ICON_BOUNDS = (-32, -1, -32, 32, 1, 32)  # OBND of the icon mesh (x, y, z min / max)
 MENU_NAME_TEMPLATE = "Menu {:03d}"  # renamed at runtime
 LEAF_NAME_TEMPLATE = "Group {:03d}"  # renamed at runtime
 

@@ -7,7 +7,7 @@ Builds the mod archive that goes to Nexus Mods / GitHub releases:
   LostObjects-<version>.zip
     LostObjects.esp
     Meshes/LostObjects/MenuIcon.nif          (workshop menu icon)
-    Textures/LostObjects/MenuIcon_d.dds, MenuIcon_n.dds
+    Textures/LostObjects/MenuIcon_d.dds
     F4SE/Plugins/LostObjects.dll
     F4SE/Plugins/LostObjects.ini
     F4SE/Plugins/LostObjects/README.txt
