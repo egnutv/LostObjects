@@ -16,7 +16,7 @@ written to the log.
 | `bShowSummaryMessage` | `1` | Short message the first time you enter workshop mode after loading, e.g. "Lost Objects: 37 workshop item(s) recovered." |
 | `bBorrowMenuIcon` | `1` | Gives the tab and its folders the icon of the vanilla "Decorations" menu. |
 | `bWriteReport` | `1` | Writes `Documents\My Games\Fallout4\F4SE\LostObjects_Report.txt` whenever the result changes. |
-| `bWriteInventory` | `1` | Writes `LostObjects_Inventory.tsv` (one line per recovered item: name, model path, size, categories, components, keywords; opens in Excel) and `LostObjects_Patterns.txt` (common words, model folders, types) to the same folder. Used to improve the automatic sorting. |
+| `bWriteInventory` | `1` | Writes `LostObjects_Inventory.tsv` (one line per recovered item: name, model path, size, categories, components, keywords; opens in Excel) and `LostObjects_Patterns.txt` (common words, model folders, types) to the same folder. Also writes the complete workshop menu to `LostObjects_Menu.tsv` and everything that appears more than once (recipes, items, categories, sub menus, menu names) to `LostObjects_Duplicates.txt`. Used to improve the automatic sorting. |
 | `bVerboseLog` | `0` | Writes every single recovered recipe into `LostObjects.log` and enables debug messages. Useful for bug reports. |
 
 ## [Filters]

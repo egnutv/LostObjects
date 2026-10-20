@@ -1,6 +1,7 @@
 #include "Recovery.h"
 
 #include "Inventory.h"
+#include "MenuDump.h"
 #include "NameMap.h"
 #include "Notice.h"
 #include "Report.h"
@@ -179,6 +180,7 @@ namespace LO
 			}
 			if (settings.writeInventory) {
 				Inventory::Write(scan, a_reason);
+				MenuDump::Write(_forms, a_reason);
 			}
 		}
 		REX::LogDebug("Scan ({}) finished in {} ms, changed={}", a_reason, elapsed.count(), apply.changed);

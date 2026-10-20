@@ -4,6 +4,16 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.4] - 2026-10-20
+
+### Added
+- `LostObjects_Menu.tsv`: the complete workshop menu as the game sees it (every path and
+  every recipe each category shows, including the Lost Objects tab).
+- `LostObjects_Duplicates.txt`: recipes shown in several places, items buildable through
+  several recipes, categories and sub menus reachable through several paths, menu paths
+  with the same name, and a self-check that nothing in Lost Objects is also in the normal
+  menu. Both written together with the inventory (`bWriteInventory`).
+
 ## [0.1.3] - 2026-10-20
 
 ### Added
