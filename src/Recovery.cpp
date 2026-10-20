@@ -128,6 +128,7 @@ namespace LO
 		Notice::ShowIfNeeded();
 		RegisterEvents();  // in case the UI was not available at data load
 		if (_ready) {
+			Holotape::SyncGlobals(_forms);  // the save may bring old values of the option globals
 			Holotape::GiveIfMissing(_forms);
 		}
 
