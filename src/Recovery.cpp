@@ -126,7 +126,7 @@ namespace LO
 		__try {
 			a_self.ScanNow(a_reason);
 			return true;
-		} __except (EXCEPTION_EXECUTE_HANDLER) {
+		} __except (SEH_EXECUTE_HANDLER) {
 			return false;
 		}
 	}

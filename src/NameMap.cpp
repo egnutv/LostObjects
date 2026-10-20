@@ -35,7 +35,7 @@ namespace LO::NameMap
 			a_failed = false;
 			__try {
 				return LookupUnguarded(a_map, a_form);
-			} __except (EXCEPTION_EXECUTE_HANDLER) {
+			} __except (SEH_EXECUTE_HANDLER) {
 				a_failed = true;
 				return nullptr;
 			}
