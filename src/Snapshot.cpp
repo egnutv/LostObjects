@@ -261,7 +261,7 @@ namespace LO::Snapshot
 		{
 			std::ofstream file(temp, std::ios::out | std::ios::trunc);
 			if (!file.is_open()) {
-				REX::LogWarning("Snapshot: could not write {}", temp.string());
+				REX::LogWarning("Snapshot: could not write {}", temp.filename().string());
 				return;
 			}
 
@@ -301,7 +301,7 @@ namespace LO::Snapshot
 			}
 
 			if (!file.good()) {
-				REX::LogWarning("Snapshot: writing {} failed", temp.string());
+				REX::LogWarning("Snapshot: writing {} failed", temp.filename().string());
 				return;
 			}
 		}
@@ -309,7 +309,7 @@ namespace LO::Snapshot
 		std::error_code error;
 		std::filesystem::rename(temp, path, error);
 		if (error) {
-			REX::LogWarning("Snapshot: could not replace {} ({})", path.string(), error.message());
+			REX::LogWarning("Snapshot: could not replace {} ({})", path.filename().string(), error.message());
 			return;
 		}
 		REX::LogInformation("Snapshot: saved ({} menus, {} folders in other menus, {} recipes)", state.contents.size(), state.injections.size(), state.tags.size());

@@ -72,6 +72,7 @@ namespace LO
 		// only visible after a restart (see Snapshot.h).
 		bool _workshopEnteredThisProcess{ false };
 		bool _restartHintShown{ false };
+		bool _restartHintPending{ false };  // shown as soon as the result is saved (a restart before that would lose it)
 		bool _manualRequest{ false };  // "Rebuild now" on the holotape: say what happened
 		bool _userRequest{ false };  // any holotape request: save the result even if the scan just changed
 		std::size_t _savedSignature{ 0 };  // signature of the snapshot on disk

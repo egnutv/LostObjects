@@ -31,6 +31,13 @@ Documents\My Games\Fallout4\F4SE\LostObjects.log
 Documents\My Games\Fallout4\F4SE\LostObjects_Report.txt
 (bDevelopmentMode=1 in the INI writes more detailed files)
 
+FILES AND PRIVACY
+Lost Objects does not go online and collects no personal data.
+It writes small files to Documents\My Games\Fallout4\F4SE\
+(log, report, snapshot of the menus, holotape choices). Your mod manager
+does NOT remove them: to remove every trace, delete every file there whose
+name starts with "LostObjects". Full list: docs/FILES_AND_PRIVACY.md on GitHub.
+
 SOURCE CODE AND DOCUMENTATION
 https://github.com/egnutv/LostObjects
 

@@ -26,12 +26,16 @@ namespace LO
 
 		// Shown when the menus changed after the game already built its
 		// workshop menu. Static storage: the message box may read it later.
+		// It is only shown once the result is saved in the snapshot, so a restart
+		// right after reading it is always fine.
 		constexpr auto RESTART_HINT =
 			"LOST OBJECTS\n\n"
-			"Lost Objects has updated the workshop menu.\n\n"
-			"The game shows the new menu after a restart of the game. Lost Objects "
-			"remembers the result by itself - you do not need to save for Lost Objects.\n\n"
+			"Lost Objects is ready and has saved the workshop menus.\n\n"
+			"If the Lost Objects tab or the Lost Objects folders are missing in your "
+			"workshop menu, restart the game. You do not need to save for Lost Objects - "
+			"after the restart everything is there at once.\n\n"
 			"(Save as usual if you want to keep your game progress.)";
+		constexpr auto STILL_PREPARING = "Lost Objects: still preparing the workshop menus. A message follows when you leave the workshop.";
 
 		class WorkshopModeSink final : public RE::BSTEventSink<RE::Workshop::WorkshopModeEvent>
 		{
@@ -134,6 +138,7 @@ namespace LO
 
 		_summaryShown = false;
 		_restartHintShown = false;
+		_restartHintPending = false;
 		_built = false;
 		_builtSignature = 0;
 		_previousSignature = 0;
@@ -287,10 +292,11 @@ namespace LO
 		_lastApply = apply;
 
 		// The game only shows changes made after its workshop menu was built
-		// (the first time the workshop was opened) after a restart.
+		// (the first time the workshop was opened) after a restart. The hint
+		// waits until the result is saved (below).
 		if (apply.changed && _workshopEnteredThisProcess) {
 			REX::LogInformation("Scan ({}): the workshop was already opened in this game session - the change is shown after a restart", a_reason);
-			ShowRestartHint();
+			_restartHintPending = true;
 		} else if (_manualRequest) {
 			RE::SendHUDMessage::ShowHUDMessage(apply.changed ? "Lost Objects: the workshop menus were rebuilt." : "Lost Objects: the workshop menus are already up to date.");
 		}
@@ -300,12 +306,16 @@ namespace LO
 		// never the half-finished menu right after loading. What the player
 		// asked for on the holotape is saved at once.
 		const auto fingerprint = Snapshot::Fingerprint(settings);
-		const bool keep = settled && (sameAsBefore || _userRequest);
+		const bool keep = settled && (sameAsBefore || calm || _userRequest);
 		_userRequest = false;
 		if (keep && (_builder.Signature() != _savedSignature || fingerprint != _savedFingerprint)) {
 			Snapshot::Save(_builder, apply, fingerprint);
 			_savedSignature = _builder.Signature();
 			_savedFingerprint = fingerprint;
+		}
+		if (keep && _restartHintPending) {
+			_restartHintPending = false;
+			ShowRestartHint();
 		}
 	}
 
@@ -383,11 +393,14 @@ namespace LO
 		// (snapshot or earlier build), only a normal scan: an early rebuild
 		// could see the menu while other mods are still adding to it.
 		RequestScan("entering workshop mode"sv, !_builder.HasState());
+		if (_restartHintPending) {
+			RE::SendHUDMessage::ShowHUDMessage(STILL_PREPARING);  // the restart hint follows once the result is saved
+		}
 		if (firstTime) {
 			REX::LogDebug("Workshop opened for the first time in this game session");
 		}
 
-		if (!_summaryShown && _lastApply.recipeCount > 0) {
+		if (!_summaryShown && _lastApply.recipeCount > 0 && !_restartHintPending) {
 			ShowSummary(_lastApply);
 			_summaryShown = true;  // once per loaded save
 		}

@@ -119,6 +119,15 @@ sorting.
 Please attach both when you open an [issue](https://github.com/egnutv/LostObjects/issues).
 See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) first.
 
+## Files and privacy
+
+Lost Objects does not go online and collects no personal data. Besides the files your
+mod manager installs, it writes a few small files of its own to
+`Documents\My Games\Fallout4\F4SE\` (log, report, snapshot, holotape choices). A mod
+manager does not remove them - delete every file starting with `LostObjects` there if
+you want to remove every trace. The full list, with what is inside each file:
+[docs/FILES_AND_PRIVACY.md](docs/FILES_AND_PRIVACY.md).
+
 ## Documentation
 
 | Document | For |
@@ -126,6 +135,7 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) first.
 | [INSTALLATION.md](docs/INSTALLATION.md) | players |
 | [CONFIGURATION.md](docs/CONFIGURATION.md) | players |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | players |
+| [FILES_AND_PRIVACY.md](docs/FILES_AND_PRIVACY.md) | players: every file the mod installs or writes, and how to remove it |
 | [HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) | curious players, mod authors, developers |
 | [TESTING.md](docs/TESTING.md) | testers |
 | [BUILDING.md](docs/BUILDING.md) | developers |

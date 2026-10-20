@@ -44,7 +44,7 @@ namespace LO::Notice
 		{
 			std::ofstream file(GetStatePath(), std::ios::out | std::ios::trunc);
 			if (!file.is_open()) {
-				REX::LogWarning("Notice: could not write {}", GetStatePath().string());
+				REX::LogWarning("Notice: could not write {}", GetStatePath().filename().string());
 				return;
 			}
 			file << "; Written by Lost Objects. Delete this file to see the AI notice again.\n";

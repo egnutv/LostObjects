@@ -54,11 +54,14 @@ Then enable `LostObjects.esp` in `plugins.txt` or in the game's mod menu.
 
 ## Uninstall
 
-Disable or remove the mod. Lost Objects stores nothing in your save game; the settings
-holotape simply disappears from your inventory. Things you built stay where they are;
-you just cannot build new lost items anymore. You can also delete
-`LostObjects_Snapshot.txt` and `LostObjects_Settings.ini` in
-`Documents\My Games\Fallout4\F4SE\`.
+1. Disable or remove the mod in your mod manager. Things you built stay where they are;
+   you just cannot build new lost items anymore. The settings holotape disappears from
+   your inventory.
+2. **Files that stay behind:** the mod manager does not remove the files Lost Objects
+   wrote while you played. They are in `Documents\My Games\Fallout4\F4SE\` - delete
+   every file whose name starts with `LostObjects`. They are harmless if you keep them.
+
+Every single file is listed in [FILES_AND_PRIVACY.md](FILES_AND_PRIVACY.md).
 
 ## Updating
 

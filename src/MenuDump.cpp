@@ -130,7 +130,7 @@ namespace LO::MenuDump
 		const auto menuPath = F4SE::GetLogDirectoryPath() / "LostObjects_Menu.tsv";
 		std::ofstream menu(menuPath, std::ios::out | std::ios::trunc | std::ios::binary);
 		if (!menu.is_open()) {
-			REX::LogWarning("MenuDump: could not write {}", menuPath.string());
+			REX::LogWarning("MenuDump: could not write {}", menuPath.filename().string());
 			return;
 		}
 
@@ -180,7 +180,7 @@ namespace LO::MenuDump
 		const auto dupPath = F4SE::GetLogDirectoryPath() / "LostObjects_Duplicates.txt";
 		std::ofstream dup(dupPath, std::ios::out | std::ios::trunc);
 		if (!dup.is_open()) {
-			REX::LogWarning("MenuDump: could not write {}", dupPath.string());
+			REX::LogWarning("MenuDump: could not write {}", dupPath.filename().string());
 			return;
 		}
 

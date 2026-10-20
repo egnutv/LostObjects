@@ -201,7 +201,10 @@ after loading.
 
 If the menus change after the workshop was already opened in this game session (the
 very first start, mods changed, an option switched on the holotape), the change is made
-anyway, saved, and a message says that the game shows it after a restart.
+anyway. A short message says that Lost Objects is still preparing; as soon as the result
+is saved in the snapshot, a message box says so and asks for a restart if the Lost
+Objects tab or folders are missing. Because that message only comes after saving, a
+restart right after reading it never loses anything.
 
 **The menus always show the best current state.** Right after loading, other mods
 are still adding their menus. So Lost Objects first waits until the menu has settled:

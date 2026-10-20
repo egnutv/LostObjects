@@ -20,8 +20,13 @@ All notable changes to Lost Objects. Format based on
   nothing happens. The snapshot is only used when the plugins, their order, the version
   and the settings are exactly the same. Only settled results are saved.
 - **Restart hint**: if the menus change after the workshop was already opened in this
-  game session (first start, mods changed, an option switched), a message says that the
-  game shows the new menu after a restart. Saving is not needed for Lost Objects.
+  game session (first start, mods changed, an option switched), a short message says
+  "still preparing". As soon as the result is saved, a message box asks for a restart if
+  the Lost Objects tab or folders are missing - so a restart right after reading it never
+  loses the result. Saving is not needed for Lost Objects.
+- `docs/FILES_AND_PRIVACY.md`: every file the mod installs or writes, what is inside,
+  and how to remove every trace. The log no longer contains full paths (so no Windows
+  user name).
 - **Settings holotape** "Lost Objects Settings", put into the inventory when a save is
   loaded (it comes back if it is lost): "Rebuild the workshop menus now" and switches for
   sorting into existing categories, hiding ghost objects, hiding items that can already

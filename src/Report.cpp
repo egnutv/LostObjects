@@ -43,7 +43,7 @@ namespace LO::Report
 
 		std::ofstream file(path, std::ios::out | std::ios::trunc);
 		if (!file.is_open()) {
-			REX::LogWarning("Report: could not write {}", path.string());
+			REX::LogWarning("Report: could not write {}", path.filename().string());
 			return;
 		}
 

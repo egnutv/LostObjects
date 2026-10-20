@@ -222,7 +222,7 @@ namespace LO
 		const auto path = HolotapePath();
 		std::ofstream file(path, std::ios::out | std::ios::trunc);
 		if (!file.is_open()) {
-			REX::LogWarning("Settings: could not write {}", path.string());
+			REX::LogWarning("Settings: could not write {}", path.filename().string());
 			return;
 		}
 		file << "; Lost Objects - choices made on the settings holotape.\n";
@@ -235,7 +235,7 @@ namespace LO
 		file << "[Filters]\n";
 		file << "bSkipMissingModels=" << (skipMissingModels ? 1 : 0) << "\n";
 		file << "bSkipAlreadyBuildable=" << (skipAlreadyBuildable ? 1 : 0) << "\n";
-		REX::LogInformation("Settings: holotape choices saved to {}", path.string());
+		REX::LogInformation("Settings: holotape choices saved to {}", path.filename().string());
 	}
 
 	bool Settings::IsPluginIgnored(std::string_view a_fileName) const

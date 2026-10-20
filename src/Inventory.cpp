@@ -295,7 +295,7 @@ namespace LO::Inventory
 			const auto path = F4SE::GetLogDirectoryPath() / "LostObjects_Patterns.txt";
 			std::ofstream file(path, std::ios::out | std::ios::trunc);
 			if (!file.is_open()) {
-				REX::LogWarning("Inventory: could not write {}", path.string());
+				REX::LogWarning("Inventory: could not write {}", path.filename().string());
 				return;
 			}
 
@@ -359,7 +359,7 @@ namespace LO::Inventory
 		const auto path = F4SE::GetLogDirectoryPath() / "LostObjects_Inventory.tsv";
 		std::ofstream file(path, std::ios::out | std::ios::trunc | std::ios::binary);
 		if (!file.is_open()) {
-			REX::LogWarning("Inventory: could not write {}", path.string());
+			REX::LogWarning("Inventory: could not write {}", path.filename().string());
 			return;
 		}
 
