@@ -4,14 +4,18 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [0.4.5] - 2026-10-20
+## [0.4.6] - 2026-10-20
 
 ### Changed
-- The menus are built **once per loaded save** and then kept (`bLiveUpdate=0`). Lost
-  Objects waits until the workshop menu has settled (`iSettleSeconds`, default 10, and
-  two scans in a row with the same result), so menus of other mods that are injected a
-  few seconds after loading are not mistaken for lost. Changes after the player has
-  seen the menu are picked up on the next load. More follow-up scans (up to 180 s).
+- The menus are kept up to date again, but without flipping back and forth: Lost
+  Objects builds when the workshop menu has settled after loading (`iSettleSeconds`,
+  default 10, and two scans in a row with the same result) and updates whenever a
+  later scan finds something new. During the first minute a change must be seen twice
+  in a row (other mods are still adding their menus). This replaces the "build once"
+  behaviour of 0.4.5. More follow-up scans (up to 180 s) and a scan every time you
+  enter workshop mode.
+
+## [0.4.5] - 2026-10-20
 
 ### Fixed
 - Empty thumbnails in the build bar: recovered items without a preview transform get

@@ -24,7 +24,7 @@ namespace LO
 		void Load();
 
 		bool enabled{ true };
-		bool liveUpdate{ false };            // false: build once per loaded save, then keep
+		bool liveUpdate{ false };            // true: also apply changes during the first minute without waiting for a second scan
 		std::uint32_t settleSeconds{ 10 };   // earliest build after loading (two equal scans needed)
 		Placement placement{ Placement::kHome };
 		SortMode sortMode{ SortMode::kByMod };

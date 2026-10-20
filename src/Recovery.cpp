@@ -101,12 +101,8 @@ namespace LO
 
 		_summaryShown = false;
 		_built = false;
-		_provisional = false;
-		_seenByPlayer = false;
-		_deferredLogged = false;
 		_builtSignature = 0;
 		_previousSignature = 0;
-		_appliedScan = {};
 		_loadTime = std::chrono::steady_clock::now();
 
 		RequestScan(a_reason);
@@ -197,45 +193,41 @@ namespace LO
 		const bool sameAsBefore = signature == _previousSignature;
 		_previousSignature = signature;
 
-		const ScanResult* use = &scan;
+		// Right after loading, other mods are still adding their menus, so the
+		// result must be the same twice in a row before anything is built or
+		// changed. Once things have calmed down (iSettleSeconds x 6 after
+		// loading), every change is applied at once: the menus always show the
+		// best current state, but never flip back and forth while mods load.
+		const bool calm = sinceLoad >= std::chrono::seconds(settings.settleSeconds * 6);
 		std::string_view decision;
-		if (settings.liveUpdate) {
-			decision = "live update";
-		} else if (!_built) {
+		if (!_built) {
 			if (!(sameAsBefore && settled) && !a_force) {
 				if (traceSteps) {
 					REX::LogInformation("Scan ({}): waiting until the menu has settled ({} s after loading, {})", a_reason, sinceLoad.count(), sameAsBefore ? "same as before" : "changed since the last scan");
 				}
 				return;
 			}
-			decision = a_force && !(sameAsBefore && settled) ? "built early, the workshop was opened" : "built";
-			_provisional = a_force && !(sameAsBefore && settled);
+			decision = a_force && !(sameAsBefore && settled) ? "built early, the workshop was opened"sv : "built"sv;
 		} else if (signature == _builtSignature) {
-			decision = "kept";  // only re-adds entries another mod removed
-		} else if (sameAsBefore && (!_seenByPlayer || _provisional)) {
-			decision = "rebuilt, other mods finished adding their menus";
-			_provisional = false;
+			decision = "nothing new"sv;  // only re-adds entries another mod removed
+		} else if (sameAsBefore || calm || settings.liveUpdate) {
+			decision = "updated, the workshop menu changed"sv;
 		} else {
-			use = &_appliedScan;  // keep what the player has seen
-			decision = "kept, changes are applied the next time a save is loaded";
-			if (!_deferredLogged) {
-				_deferredLogged = true;
-				REX::LogInformation("Scan ({}): the workshop menu changed after Lost Objects built its menus. They stay as they are for this session; the next load picks up the change (bLiveUpdate=1 updates at once).", a_reason);
+			if (traceSteps) {
+				REX::LogInformation("Scan ({}): the workshop menu is still changing, waiting for the next scan", a_reason);
 			}
+			return;
 		}
 
-		if (traceSteps) {
+		if (traceSteps || decision != "nothing new"sv) {
 			REX::LogInformation("Scan ({}): {}", a_reason, decision);
 		}
 
-		const auto apply = _builder.Apply(_forms, *use, settings);
-		if (use == &scan && signature != _builtSignature) {
-			_appliedScan = scan;
-			_builtSignature = signature;
-		}
+		const auto apply = _builder.Apply(_forms, scan, settings);
+		_builtSignature = signature;
 		_built = true;
 
-		const auto& shown = *use;
+		const auto& shown = scan;
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
 		// Log and write the report whenever the result differs from the last one.
@@ -268,7 +260,6 @@ namespace LO
 		}
 
 		RequestScan("entering workshop mode"sv, true);
-		_seenByPlayer = _built;
 
 		if (!_summaryShown && _lastApply.recipeCount > 0) {
 			ShowSummary(_lastApply);

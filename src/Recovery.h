@@ -2,7 +2,6 @@
 
 #include "Forms.h"
 #include "MenuBuilder.h"
-#include "Scanner.h"
 
 namespace LO
 {
@@ -52,16 +51,11 @@ namespace LO
 		bool _scanPending{ false };
 		bool _pendingForce{ false };
 
-		// Build once per loaded save: the menus are built when two scans in a row
-		// agree (other mods inject their menus a few seconds after loading), then
-		// kept. Later changes are applied on the next load (bLiveUpdate=0).
-		ScanResult _appliedScan;
+		// The menus are built when the workshop menu has settled after loading
+		// (two equal scans) and updated whenever a later scan finds something new.
 		std::size_t _builtSignature{ 0 };
 		std::size_t _previousSignature{ 0 };
 		bool _built{ false };
-		bool _provisional{ false };  // built early because the player opened the workshop
-		bool _seenByPlayer{ false };
-		bool _deferredLogged{ false };
 		std::chrono::steady_clock::time_point _loadTime{};
 		bool _summaryShown{ false };
 		bool _hasLoggedOnce{ false };

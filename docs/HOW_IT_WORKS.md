@@ -180,16 +180,18 @@ the next scan adds the entries again.
 | 3, 10, 20, 30, 60, 90 and 180 seconds later | scans again: menus added by scripts (for example through Settlement Menu Manager) appear a few seconds after loading |
 | Entering workshop mode | scans again |
 
-**The menus are built once per loaded save.** Lost Objects waits until the workshop
-menu has settled: at least `iSettleSeconds` (default 10) after loading, and two scans
-in a row must find exactly the same lost recipes. Then it builds its menus and keeps
-them. Later scans only re-add entries that another mod removed. If the workshop menu
-changes after the player has seen it (a mod injects its menu very late), Lost Objects
-keeps what is there and picks up the change the next time a save is loaded - the menu
-never changes under your hands. `bLiveUpdate=1` switches back to updating at once.
+**The menus always show the best current state.** Right after loading, other mods
+are still adding their menus. So Lost Objects first waits until the menu has settled:
+at least `iSettleSeconds` (default 10) after loading, and two scans in a row must find
+exactly the same lost recipes. Then it builds its menus. Every later scan checks again;
+if something new turns up (a mod injected its menu late, an item became reachable
+elsewhere), the menus are updated. During the first minute a change must be seen twice
+in a row, so the menus do not flip back and forth while mods are loading; after that,
+changes are applied at once. A scan that finds nothing new changes nothing (it only
+re-adds entries another mod removed).
 
 If you open the workshop before the menu has settled, Lost Objects builds right away
-so nothing is missing, and allows one correction once the other mods are done.
+so nothing is missing.
 
 The menu is never changed while it is on screen.
 
