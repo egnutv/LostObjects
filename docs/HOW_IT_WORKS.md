@@ -83,22 +83,37 @@ The scan is read-only. It runs on the main thread and takes a few milliseconds.
 
 ## 4. Where recovered recipes go
 
-`LostObjects.esp` contains a pool of 192 generic sub menus and 768 generic
-categories. Lost Objects names and fills them at runtime. Every recovered recipe is
-tagged with exactly one of these categories, so it is shown exactly once.
+Every recovered recipe gets exactly one extra category, so it is shown exactly once.
+With `sPlacement=Home` (the default) the order is:
 
-The recipes are grouped by the plugin that defines them and by their original
-category, then placed (with `sPlacement=Home`, the default):
-
-1. **Back into the sub menu whose title is the category.** A lost "Decorations"
-   category goes into "Decorations". This also repairs categories that a mod put into
-   position 0 of its own sub menu, where the game never shows them.
-2. **Into the plugin's own top menu**, if the plugin has exactly one (for example
-   "Snappy HouseKit"). Lost whole menus keep their name and their categories.
+1. **Into an existing category that fits** (`bSortIntoCategories=1`). Lost Objects
+   looks at what is already in the menu: for every feature of the lost item - its
+   model file, model folder and parent folder, its name, a `[Tag]` in the name, the
+   words of the name and the name of its lost category - it checks in which
+   categories the visible items with the same feature are shown. The category that
+   holds most of them wins, if it is clearly ahead (1.5 times the runner-up) and the
+   confidence reaches `iMinConfidence` (default 45 %). Words alone never decide.
+   Candidates are the categories in which the item's own plugin already has visible
+   items; if it has none, all categories are candidates, but then at least 60 % and a
+   matching model, folder or name are required. Example: a lost Snap'n Build staircase
+   with the model `SnB\Brick\Stairs\...` goes to the Snap'n Build category whose stairs
+   use the same folder.
+2. **Into a "Lost Objects" folder inside the plugin's own top menu**, if the plugin has
+   exactly one (for example "Snappy Builds > Lost Objects"). Inside, the items are
+   sorted by their original category; lost whole menus keep their name and categories.
+   Like this everybody can see what the mod author made and what Lost Objects added.
 3. **Into the "Lost Objects" tab** otherwise: one folder per plugin, or a single
    entry named "Plugin - Category" if the plugin has only one thing to show.
 
-With `sPlacement=Tab` everything goes into the tab.
+With `sPlacement=Tab` everything goes into the tab and nothing is added to other menus.
+
+Lost recipes whose item can **already be built** through a reachable recipe (for
+example the "scrap return" recipes of decoration mods) are skipped
+(`bSkipAlreadyBuildable=1`), because they would only show the same item twice. They are
+still listed in the inventory with the place where the item can be built.
+
+The inventory and the report say for every item where it went and why (which features
+matched and how strongly, or why it was not sorted in and what the best guess was).
 
 ### Large categories are split automatically
 
@@ -117,13 +132,17 @@ useful feature exists, the recipes are split alphabetically ("A - F", ...).
 
 ## 5. What the mod changes
 
-All changes are made **in memory only**. None of them is stored in the save game.
+What you build in your settlements is saved by the game as always - Lost Objects does
+not change that, and nothing you built disappears. The changes Lost Objects makes to
+the menus are made **in memory only** and are not stored in the save game: the menu is
+rebuilt within seconds every time a save is loaded, so it always matches the mods that
+are installed right now, and no stale entries can end up in a save.
 
 | What | Change | Undone when |
 |---|---|---|
-| Recovered recipes | one keyword from the pool is added | the recipe is reachable again, or on restart |
+| Recovered recipes | one category is added (an existing one that fits, or one from the pool) | the recipe is reachable again, or on restart |
 | Pool menus and categories of `LostObjects.esp` | named and filled | every rebuild |
-| Menus of other mods / vanilla | references to pool menus or categories are appended | every rebuild (removed and added again), or on restart |
+| Top menus of other mods | a "Lost Objects" folder (pool menu) is appended | every rebuild (removed and added again), or on restart |
 | `WorkshopMenuMain` | the "Lost Objects" tab is appended if needed | every rebuild |
 | One vanilla icon art object | the tab's and the pool menus' title keywords are added | restart (`bBorrowMenuIcon=0` to disable) |
 

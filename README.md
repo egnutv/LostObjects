@@ -85,11 +85,14 @@ per version.
 
 ## Where recovered items go
 
-By default Lost Objects puts recovered items **back where they belong**: into the sub
-menu that carries their category's name, or into the mod's own top menu. Only what has
-no home ends up in the "Lost Objects" tab. Large categories are split into groups
-automatically, based on what the items have in common (tags in names, words, model
-folders) - no fixed lists. `sPlacement=Tab` puts everything into the tab instead.
+By default Lost Objects sorts recovered items **into the existing category they belong
+to**, right next to their siblings. It finds that category by comparing the item with
+what is already in the menu (model folder, name, words, tags) - no fixed lists. What it
+cannot place with confidence goes into a **"Lost Objects" folder inside the mod's own
+menu**, so you can see what the mod author made and what Lost Objects added. Only what
+has no home at all ends up in the "Lost Objects" tab. Large categories are split into
+groups automatically. Items that can already be built through another recipe are not
+shown twice. `sPlacement=Tab` puts everything into the tab instead.
 
 ## Settings
 

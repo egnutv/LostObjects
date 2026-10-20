@@ -53,10 +53,12 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T13 | `bBorrowMenuIcon=0`, restart | Tab works, maybe without icon. Did the icon look OK with `1`? |
 | T14 | Delete `LostObjects_State.ini`, load a save | The AI message appears again. |
 | T15 | Remove the mod, load the save from T8 | Save loads, built items are still there. |
-| T17 | Open the menus of the mods that had lost items (see "Added to existing menus" in `LostObjects_Report.txt`) | The recovered categories appear at the end of the mod's own menu. |
+| T17 | Open the categories listed under "Sorted into existing categories" in `LostObjects_Report.txt` | The recovered items stand next to the items they belong to. Anything in the wrong place? (Column "Why" in the inventory says why.) |
+| T17b | Open the top menus listed under "Added to existing menus" | At the end there is one folder "Lost Objects" with the rest of that mod's lost items, sorted by their original category. No loose entries next to the author's folders. |
 | T18 | Open a large recovered category | It is split into named groups (e.g. "Alcohol", "Stairs") plus "Other". Do the groups make sense? |
 | T19 | `LostObjects_Duplicates.txt` | "via Lost Objects AND normally" is 0. |
-| T20 | `sPlacement=Tab`, restart | Everything is in the "Lost Objects" tab again, nothing in the mods' menus. |
+| T19b | `LostObjects_Inventory.tsv`, column "Status" | "skipped, already buildable" items can really be built at the place in "Shown at". |
+| T20 | `sPlacement=Tab`, restart | Everything is in the "Lost Objects" tab again, nothing in other menus or categories. |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 
 ## 3. What to send back

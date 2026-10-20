@@ -4,6 +4,20 @@
 
 namespace LO
 {
+	enum class PlacedIn : std::uint8_t
+	{
+		kExistingCategory,  // sorted into a category the mod author made
+		kModFolder,         // "Lost Objects" folder inside the mod's own menu
+		kTab                // the "Lost Objects" tab in the main menu
+	};
+
+	struct Placed
+	{
+		std::string path;      // "Snappy Builds > Lost Objects > Stairs"
+		PlacedIn where{ PlacedIn::kTab };
+		std::string evidence;  // why it was (or was not) sorted into a category
+	};
+
 	struct ApplyResult
 	{
 		bool changed{ false };  // menu content differs from before
@@ -11,25 +25,26 @@ namespace LO
 		std::uint32_t folderCount{ 0 };  // folders in the tab
 		std::uint32_t entryCount{ 0 };  // menus + categories created
 		std::uint32_t recipeCount{ 0 };  // recovered recipes
-		std::uint32_t placedHome{ 0 };  // recipes put back into the menu they belong to
-		std::uint32_t placedTab{ 0 };  // recipes in the "Lost Objects" tab
+		std::uint32_t sortedIn{ 0 };  // recipes sorted into existing categories
+		std::uint32_t inModFolder{ 0 };  // recipes in a "Lost Objects" folder of their mod
+		std::uint32_t inTab{ 0 };  // recipes in the "Lost Objects" tab
 		std::uint32_t overflow{ 0 };  // recipes that did not fit into the pool
 
-		// Recipe -> where it is shown now ("Snappy HouseKit > Floors > Stairs").
-		std::unordered_map<const RE::BGSConstructibleObject*, std::string> placement;
-		// Where things were injected into existing menus (for the report).
+		std::unordered_map<const RE::BGSConstructibleObject*, Placed> placement;
+		// Where things were added to existing menus (for the report).
 		std::vector<std::string> injections;
 	};
 
 	// Turns a ScanResult into menus.
 	//
-	// Every recovered recipe is tagged with exactly one category from the pool
-	// in LostObjects.esp. The categories are named after the original category
-	// and, if large, split into groups by Grouping::Split. They are placed:
-	//   1. into the sub menu whose title is the recipe's original category
-	//      (a lost "Decorations" category goes back to "Decorations"),
-	//   2. otherwise into the plugin's own top menu ("Snappy HouseKit"),
-	//   3. otherwise into the "Lost Objects" tab, one folder per plugin.
+	// Every recovered recipe gets exactly one extra category:
+	//   1. an existing category of the menu that fits it (Matcher), so it
+	//      shows up right next to the items it belongs to,
+	//   2. otherwise a category in a "Lost Objects" folder inside the plugin's
+	//      own top menu ("Snappy Builds > Lost Objects"),
+	//   3. otherwise a category in the "Lost Objects" tab, one folder per plugin.
+	// The categories of 2. and 3. come from the pool in LostObjects.esp, are
+	// named after the original category and, if large, split into groups.
 	//
 	// Everything happens in memory only. Nothing is stored in the save game;
 	// the forms of other mods are only extended with references to our forms,

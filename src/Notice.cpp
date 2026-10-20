@@ -11,8 +11,9 @@ namespace LO::Notice
 			"This mod was vibecoded by AI (written by Claude, Anthropic) and tested by a human.\n"
 			"AI-generated code can contain mistakes. Please keep a backup save.\n\n"
 			"Lost Objects finds every craftable workshop item that cannot be reached "
-			"in the build menu and puts it back into the menu it belongs to. What has "
-			"no home goes into the new tab \"Lost Objects\".\n\n"
+			"in the build menu and sorts it into the category it belongs to. What it "
+			"cannot place goes into a \"Lost Objects\" folder in the mod's own menu, "
+			"or into the new tab \"Lost Objects\".\n\n"
 			"This message is shown once per version."sv;
 
 		constexpr auto STATE_FILE = "LostObjects_State.ini"sv;

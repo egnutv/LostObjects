@@ -1,6 +1,7 @@
 #include "MenuBuilder.h"
 
 #include "Grouping.h"
+#include "Matcher.h"
 #include "NameMap.h"
 #include "Util.h"
 
@@ -41,7 +42,6 @@ namespace LO
 		{
 			std::string name;
 			std::vector<RE::BGSConstructibleObject*> recipes;
-			RE::BGSListForm* titleTarget{ nullptr };  // sub menu whose title is this category
 		};
 
 		struct LostMenu
@@ -133,7 +133,7 @@ namespace LO
 				}
 				for (auto* recipe : a_recipes) {
 					tags[recipe] = leaf;
-					placement[recipe] = path;
+					placement[recipe] = { path, where, {} };
 				}
 				return leaf;
 			}
@@ -206,8 +206,9 @@ namespace LO
 			std::vector<std::pair<RE::BGSListForm*, RE::TESForm*>> injections;
 			std::vector<std::string> injectionLog;
 			std::unordered_map<RE::BGSConstructibleObject*, RE::BGSKeyword*> tags;
-			std::unordered_map<const RE::BGSConstructibleObject*, std::string> placement;
+			std::unordered_map<const RE::BGSConstructibleObject*, Placed> placement;
 			std::vector<RE::BGSConstructibleObject*> overflow;
+			PlacedIn where{ PlacedIn::kTab };  // where the next categories go (for the logs)
 
 		private:
 			const OwnedForms& _forms;
@@ -238,7 +239,7 @@ namespace LO
 			return true;
 		}
 
-		std::vector<Bucket> CollectBuckets(const ScanResult& a_scan)
+		std::vector<Bucket> CollectBuckets(const ScanResult& a_scan, const std::unordered_set<const RE::BGSConstructibleObject*>& a_sorted)
 		{
 			std::unordered_map<const RE::TESForm*, const MenuEntry*> entryByForm;
 			for (const auto& entry : a_scan.entries) {
@@ -248,6 +249,9 @@ namespace LO
 			std::map<std::string, Bucket> byPlugin;
 			for (const auto& lost : a_scan.lostRecipes) {
 				auto* recipe = lost.recipe;
+				if (a_sorted.contains(recipe)) {
+					continue;  // already sorted into an existing category
+				}
 				const auto plugin = Util::GetFileName(recipe, 0);
 				auto& bucket = byPlugin[Util::ToLower(plugin)];
 				bucket.plugin = plugin;
@@ -276,12 +280,6 @@ namespace LO
 					leaf = &menu.leaves[key];
 				} else {
 					leaf = &bucket.leaves[key];
-					if (category && !leaf->titleTarget) {
-						const auto title = a_scan.menuOfTitle.find(category);
-						if (title != a_scan.menuOfTitle.end()) {
-							leaf->titleTarget = title->second;
-						}
-					}
 				}
 				if (leaf->name.empty()) {
 					leaf->name = name;
@@ -391,8 +389,32 @@ namespace LO
 
 		// --- 1. Plan ------------------------------------------------------------
 		Planner plan(a_forms, a_settings);
-		const auto buckets = CollectBuckets(a_scan);
 		const bool home = a_settings.placement == Placement::kHome;
+		const auto rootName = std::string(Forms::RootName);
+
+		// 1a. Sort into existing categories where the data clearly says so.
+		std::unordered_set<const RE::BGSConstructibleObject*> sorted;
+		std::unordered_map<const RE::BGSConstructibleObject*, std::string> notSortedWhy;
+		if (home && a_settings.sortIntoCategories && !a_scan.lostRecipes.empty()) {
+			const Matcher::Index index(a_scan);
+			for (const auto& lost : a_scan.lostRecipes) {
+				auto match = index.Find(lost, a_settings.minConfidence);
+				const auto pathOf = [&a_scan](const RE::BGSKeyword* a_category) {
+					const auto it = a_scan.categoryPath.find(a_category);
+					return it != a_scan.categoryPath.end() ? it->second : Util::FormIDToString(a_category->GetFormID());
+				};
+				if (match.category) {
+					plan.tags[lost.recipe] = const_cast<RE::BGSKeyword*>(match.category);
+					plan.placement[lost.recipe] = { pathOf(match.category), PlacedIn::kExistingCategory, std::move(match.evidence) };
+					sorted.insert(lost.recipe);
+				} else {
+					notSortedWhy[lost.recipe] = match.guess ? std::format("{} - best guess: {}", match.evidence, pathOf(match.guess)) : match.evidence;
+				}
+			}
+		}
+
+		// 1b. The rest: a "Lost Objects" folder in the mod's own menu, or the tab.
+		const auto buckets = CollectBuckets(a_scan, sorted);
 
 		struct TabItem
 		{
@@ -409,35 +431,43 @@ namespace LO
 				homeMenu = it != a_scan.homeOfPlugin.end() ? it->second : nullptr;
 			}
 
+			if (homeMenu) {
+				plan.where = PlacedIn::kModFolder;
+				const auto path = PathOf(a_scan, homeMenu) + " > " + rootName;
+				if (auto* folder = plan.AllocMenu(rootName)) {
+					std::size_t count = 0;
+					for (const auto& [key, leaf] : bucket.leaves) {
+						plan.Add(folder, plan.BuildCategory(leaf.name, leaf.recipes, path));
+						count += leaf.recipes.size();
+					}
+					for (const auto& [key, menu] : bucket.menus) {
+						plan.Add(folder, plan.BuildMenu(menu, path, menu.name));
+						for (const auto& [leafKey, leaf] : menu.leaves) {
+							count += leaf.recipes.size();
+						}
+					}
+					if (plan.contents[folder].size() > 1) {
+						plan.Inject(homeMenu, folder, std::format("{} ({} recipes from {})", path, count, bucket.plugin));
+					}
+					continue;
+				}
+			}
+
 			TabItem item{ &bucket, {}, {} };
-
 			for (const auto& [key, leaf] : bucket.leaves) {
-				auto* target = home && leaf.titleTarget ? leaf.titleTarget : homeMenu;
-				if (target) {
-					const auto path = PathOf(a_scan, target);
-					plan.Inject(target, plan.BuildCategory(leaf.name, leaf.recipes, path), std::format("{} > {} ({} recipes from {})", path, leaf.name, leaf.recipes.size(), bucket.plugin));
-				} else {
-					item.leaves.push_back(&leaf);
-				}
+				item.leaves.push_back(&leaf);
 			}
-
 			for (const auto& [key, menu] : bucket.menus) {
-				if (homeMenu) {
-					const auto path = PathOf(a_scan, homeMenu);
-					plan.Inject(homeMenu, plan.BuildMenu(menu, path, menu.name), std::format("{} > {} (menu from {})", path, menu.name, bucket.plugin));
-				} else {
-					item.menus.emplace_back(menu.name, &menu);
-				}
+				item.menus.emplace_back(menu.name, &menu);
 			}
-
 			if (!item.leaves.empty() || !item.menus.empty()) {
 				tab.push_back(std::move(item));
 			}
 		}
 
 		// The tab.
+		plan.where = PlacedIn::kTab;
 		std::vector<RE::TESForm*> rootContents{ a_forms.rootKeyword };
-		const auto rootName = std::string(Forms::RootName);
 		std::uint32_t folderCount = 0;
 
 		for (const auto& item : tab) {
@@ -485,7 +515,7 @@ namespace LO
 			plan.names.emplace_back(overflowLeaf, std::string(OVERFLOW_NAME));
 			for (auto* recipe : plan.overflow) {
 				plan.tags[recipe] = overflowLeaf;
-				plan.placement[recipe] = rootName + " > " + std::string(OVERFLOW_NAME);
+				plan.placement[recipe] = { rootName + " > " + std::string(OVERFLOW_NAME), PlacedIn::kTab, {} };
 			}
 			rootContents.push_back(overflowLeaf);
 			REX::LogWarning("MenuBuilder: {} recipes did not fit into the menu pool and were put into '{}'", plan.overflow.size(), OVERFLOW_NAME);
@@ -504,11 +534,20 @@ namespace LO
 		result.overflow = static_cast<std::uint32_t>(plan.overflow.size());
 		result.placement = plan.placement;
 		result.injections = plan.injectionLog;
-		for (const auto& [recipe, path] : plan.placement) {
-			if (path.starts_with(rootName)) {
-				++result.placedTab;
-			} else {
-				++result.placedHome;
+		for (auto& [recipe, placed] : result.placement) {
+			if (const auto why = notSortedWhy.find(recipe); why != notSortedWhy.end()) {
+				placed.evidence = why->second;
+			}
+			switch (placed.where) {
+			case PlacedIn::kExistingCategory:
+				++result.sortedIn;
+				break;
+			case PlacedIn::kModFolder:
+				++result.inModFolder;
+				break;
+			default:
+				++result.inTab;
+				break;
 			}
 		}
 

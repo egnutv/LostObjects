@@ -159,15 +159,32 @@ namespace LO
 
 			for (std::size_t head = 0; head < queue.size(); ++head) {
 				const auto node = queue[head];
+				const bool isMainMenu = head == 0;
 				const auto forms = node.list->GetAllForms();
-				for (auto* form : forms) {
-					auto* subList = form ? form->As<RE::BGSListForm>() : nullptr;
-					if (!subList || a_forms.IsOwned(subList) || !seen.insert(subList).second) {
+				for (std::size_t i = 0; i < forms.size(); ++i) {
+					auto* form = forms[i];
+					if (!form || a_forms.IsOwned(form)) {
+						continue;
+					}
+
+					// Categories: the first (shallowest) path wins.
+					if (const auto* keyword = form->As<RE::BGSKeyword>()) {
+						if ((isMainMenu || i != 0) && !result.categoryPath.contains(keyword)) {
+							auto name = Util::GetFormName(keyword);
+							if (name.empty()) {
+								name = Util::GetEditorID(keyword);
+							}
+							result.categoryPath[keyword] = node.path.empty() ? name : node.path + " > " + name;
+						}
+						continue;
+					}
+
+					auto* subList = form->As<RE::BGSListForm>();
+					if (!subList || !seen.insert(subList).second) {
 						continue;
 					}
 
 					auto* title = subList->GetNthForm(0);
-					auto* titleKeyword = title ? title->As<RE::BGSKeyword>() : nullptr;
 					auto titleName = Util::GetFormName(title);
 					if (titleName.empty()) {
 						titleName = Util::GetEditorID(title);
@@ -177,10 +194,6 @@ namespace LO
 					const Node child{ subList, node.depth + 1, path };
 					queue.push_back(child);
 					result.menuPath[subList] = path;
-
-					if (titleKeyword && !result.menuOfTitle.contains(titleKeyword)) {
-						result.menuOfTitle[titleKeyword] = subList;
-					}
 
 					const auto file = Util::ToLower(Util::GetFileName(subList, 0));
 					auto& [depth, lists] = topLists.try_emplace(file, child.depth, std::unordered_set<RE::BGSListForm*>{}).first->second;
@@ -235,6 +248,13 @@ namespace LO
 			if (reachable) {
 				++workbenchCounts[recipe->benchKeyword];
 				++result.reachableRecipeCount;
+				VisibleRecipe visible{ recipe, {} };
+				for (const auto* keyword : keywords) {
+					if (reachableLeaves.contains(keyword)) {
+						visible.categories.push_back(keyword);
+					}
+				}
+				result.visible.push_back(std::move(visible));
 			} else {
 				unreachable.push_back({ recipe, std::move(keywords) });
 			}
@@ -256,6 +276,16 @@ namespace LO
 				const auto editorID = Util::GetEditorID(bench);
 				result.workbenchKeywords.push_back(std::format("{} ({} recipes)", editorID.empty() ? "<none>"s : editorID, count));
 			}
+		}
+
+		// Only workshop recipes count as "visible". Every item that can already
+		// be built is remembered, with the place it is shown at.
+		std::erase_if(result.visible, [&workshopBenches](const VisibleRecipe& a_visible) {
+			return !workshopBenches.contains(a_visible.recipe->benchKeyword);
+		});
+		std::unordered_map<const RE::TESForm*, const VisibleRecipe*> buildableItems;
+		for (const auto& visible : result.visible) {
+			buildableItems.try_emplace(visible.recipe->createdItem, &visible);
 		}
 
 		// 4) Lost recipes and the categories they use.
@@ -297,6 +327,23 @@ namespace LO
 			for (auto* keyword : candidate.keywords) {
 				if (recipeFilters.contains(keyword) && (!namesAvailable || !Util::GetFormName(keyword).empty())) {
 					usable.push_back(keyword);
+				}
+			}
+
+			// The item itself can already be built through another recipe (for
+			// example a "scrap return" recipe of a decoration mod). Showing it
+			// again would only put the same item into the menu twice.
+			if (a_settings.skipAlreadyBuildable) {
+				if (const auto it = buildableItems.find(recipe->createdItem); it != buildableItems.end()) {
+					std::string shownAt;
+					if (!it->second->categories.empty()) {
+						const auto path = result.categoryPath.find(it->second->categories.front());
+						if (path != result.categoryPath.end()) {
+							shownAt = path->second;
+						}
+					}
+					result.alreadyBuildable.push_back({ LostRecipe{ recipe, usable.empty(), usable }, std::move(shownAt) });
+					continue;
 				}
 			}
 

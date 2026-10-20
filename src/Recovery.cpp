@@ -196,7 +196,7 @@ namespace LO
 
 		RequestScan("entering workshop mode"sv);
 
-		if (!_summaryShown && _lastApply.tabVisible) {
+		if (!_summaryShown && _lastApply.recipeCount > 0) {
 			ShowSummary(_lastApply);
 			_summaryShown = true;  // once per loaded save
 		}
@@ -323,7 +323,7 @@ namespace LO
 
 		// Kept alive in static storage in case the HUD reads the text later.
 		static std::string message;
-		message = std::format("Lost Objects: {} workshop item(s) recovered. See the new tab.", a_apply.recipeCount);
+		message = std::format("Lost Objects: {} workshop item(s) recovered, {} of them sorted into existing categories.", a_apply.recipeCount, a_apply.sortedIn);
 		RE::SendHUDMessage::ShowHUDMessage(message.c_str());
 	}
 

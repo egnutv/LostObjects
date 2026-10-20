@@ -4,6 +4,26 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-20
+
+### Changed
+- Recovered items are sorted into the **existing category they belong to** (new
+  `bSortIntoCategories=1`). The category is found by comparing the item with what is
+  already in the menu: model file, model folder, parent folder, name, `[Tag]`, words and
+  the name of its lost category. Candidates are the categories where the item's plugin
+  already has visible items. Only clear matches are used (`iMinConfidence`, default 45 %).
+- What cannot be sorted in goes into a **"Lost Objects" folder inside the mod's own top
+  menu** instead of a loose entry next to the author's folders.
+- Removed: putting a lost category loosely into a sub menu with the same title.
+- New filter `bSkipAlreadyBuildable=1`: lost recipes whose item can already be built
+  through a reachable recipe are skipped (for example about 980 "scrap return" recipes of
+  OCDecorator), so items no longer appear twice.
+- Inventory: new columns "Status" and "Why" (what happened to each item, which features
+  matched, confidence, best guess when not sorted in); skipped items are listed too.
+- Report: summary per placement and a list of everything sorted into existing categories.
+- `LostObjects_Menu.tsv`: new column "Model".
+- The summary message also counts the items sorted into existing categories.
+
 ## [0.2.0] - 2026-10-20
 
 ### Changed

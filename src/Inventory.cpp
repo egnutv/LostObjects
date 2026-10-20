@@ -11,6 +11,8 @@ namespace LO::Inventory
 		struct Row
 		{
 			std::string folder;
+			std::string status;
+			std::string why;
 			std::string entry;
 			std::string recipeID;
 			std::string recipePlugin;
@@ -105,8 +107,24 @@ namespace LO::Inventory
 			const auto* item = recipe->createdItem;
 
 			// Where it is shown now.
-			const auto placed = a_apply.placement.find(recipe);
-			row.folder = placed != a_apply.placement.end() ? placed->second : "(not placed)"s;
+			if (const auto placed = a_apply.placement.find(recipe); placed != a_apply.placement.end()) {
+				row.folder = placed->second.path;
+				row.why = placed->second.evidence;
+				switch (placed->second.where) {
+				case PlacedIn::kExistingCategory:
+					row.status = "sorted into category";
+					break;
+				case PlacedIn::kModFolder:
+					row.status = "Lost Objects folder of the mod";
+					break;
+				default:
+					row.status = "Lost Objects tab";
+					break;
+				}
+			} else {
+				row.folder = "(not placed)";
+				row.status = "not placed";
+			}
 
 			// Where it came from (the lost menu or category the scan found).
 			const MenuEntry* entry = nullptr;
@@ -119,7 +137,14 @@ namespace LO::Inventory
 					}
 				}
 			}
-			row.entry = entry ? std::format("{}{} ({})", entry->isMenu ? "[menu] " : "", entry->displayName, entry->pluginFile) : "Uncategorized"s;
+			if (entry) {
+				row.entry = std::format("{}{} ({})", entry->isMenu ? "[menu] " : "", entry->displayName, entry->pluginFile);
+			} else if (!a_lost.categories.empty()) {
+				auto name = Util::GetFormName(a_lost.categories.front());
+				row.entry = std::format("{} ({})", name.empty() ? Util::GetEditorID(a_lost.categories.front()) : name, Util::GetFileName(a_lost.categories.front(), 0));
+			} else {
+				row.entry = "Uncategorized";
+			}
 
 			row.recipeID = Util::FormIDToString(recipe->GetFormID());
 			row.recipePlugin = Util::GetFileName(recipe, 0);
@@ -221,10 +246,11 @@ namespace LO::Inventory
 
 		void WritePatterns(const std::vector<Row>& a_rows, std::string_view a_reason)
 		{
-			Counter nameWords, modelFolders1, modelFolders2, itemTypes, folders, entries, recipePlugins, itemKeywords, workbenches, sizeClasses;
+			Counter statuses, nameWords, modelFolders1, modelFolders2, itemTypes, folders, entries, recipePlugins, itemKeywords, workbenches, sizeClasses;
 			std::uint32_t withConditions = 0, withoutComponents = 0, withoutModel = 0, withoutName = 0;
 
 			for (const auto& row : a_rows) {
+				++statuses[row.status];
 				for (auto& word : Words(row.itemName)) {
 					++nameWords[word];
 				}
@@ -285,6 +311,7 @@ namespace LO::Inventory
 			file << "No item name   : " << withoutName << "\n\n";
 			file << "Full data: LostObjects_Inventory.tsv\n\n";
 
+			WriteTop(file, "What happened to them", statuses, 10);
 			WriteTop(file, "Where the recipes are shown now", folders, 300);
 			WriteTop(file, "Original lost categories", entries, 200);
 			WriteTop(file, "Recipe plugins", recipePlugins, 100);
@@ -306,13 +333,20 @@ namespace LO::Inventory
 		}
 
 		std::vector<Row> rows;
-		rows.reserve(a_scan.lostRecipes.size());
+		rows.reserve(a_scan.lostRecipes.size() + a_scan.alreadyBuildable.size());
 		for (const auto& lost : a_scan.lostRecipes) {
 			rows.push_back(MakeRow(a_scan, lost, a_apply, entries));
 		}
+		for (const auto& skipped : a_scan.alreadyBuildable) {
+			auto row = MakeRow(a_scan, skipped.lost, a_apply, entries);
+			row.folder = skipped.shownAt.empty() ? "(already buildable)"s : skipped.shownAt;
+			row.status = "skipped, already buildable";
+			row.why = "the same item is already in the menu (bSkipAlreadyBuildable)";
+			rows.push_back(std::move(row));
+		}
 
 		std::ranges::sort(rows, [](const Row& a_lhs, const Row& a_rhs) {
-			return std::tie(a_lhs.folder, a_lhs.entry, a_lhs.itemName, a_lhs.recipeID) < std::tie(a_rhs.folder, a_rhs.entry, a_rhs.itemName, a_rhs.recipeID);
+			return std::tie(a_lhs.status, a_lhs.folder, a_lhs.entry, a_lhs.itemName, a_lhs.recipeID) < std::tie(a_rhs.status, a_rhs.folder, a_rhs.entry, a_rhs.itemName, a_rhs.recipeID);
 		});
 
 		const auto path = F4SE::GetLogDirectoryPath() / "LostObjects_Inventory.tsv";
@@ -322,9 +356,9 @@ namespace LO::Inventory
 			return;
 		}
 
-		file << "Shown at\tOriginal category\tRecipe ID\tRecipe plugin\tRecipe last changed in\tItem ID\tItem type\tItem name\tItem editor ID\tItem plugin\tModel\tSize X\tSize Y\tSize Z\tCategories\tWorkbench\tComponents\tConditions\tItem keywords\r\n";
+		file << "Status\tShown at\tWhy\tOriginal category\tRecipe ID\tRecipe plugin\tRecipe last changed in\tItem ID\tItem type\tItem name\tItem editor ID\tItem plugin\tModel\tSize X\tSize Y\tSize Z\tCategories\tWorkbench\tComponents\tConditions\tItem keywords\r\n";
 		for (const auto& r : rows) {
-			const std::array cells{ &r.folder, &r.entry, &r.recipeID, &r.recipePlugin, &r.recipeLastPlugin, &r.itemID, &r.itemType, &r.itemName, &r.itemEditorID, &r.itemPlugin, &r.model, &r.sizeX, &r.sizeY, &r.sizeZ, &r.categories, &r.workbench, &r.components, &r.hasConditions, &r.itemKeywords };
+			const std::array cells{ &r.status, &r.folder, &r.why, &r.entry, &r.recipeID, &r.recipePlugin, &r.recipeLastPlugin, &r.itemID, &r.itemType, &r.itemName, &r.itemEditorID, &r.itemPlugin, &r.model, &r.sizeX, &r.sizeY, &r.sizeZ, &r.categories, &r.workbench, &r.components, &r.hasConditions, &r.itemKeywords };
 			for (std::size_t i = 0; i < cells.size(); ++i) {
 				if (i != 0) {
 					file << '\t';

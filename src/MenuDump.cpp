@@ -1,5 +1,6 @@
 #include "MenuDump.h"
 
+#include "Grouping.h"
 #include "Util.h"
 
 namespace LO::MenuDump
@@ -133,7 +134,7 @@ namespace LO::MenuDump
 			return;
 		}
 
-		menu << "Menu path\tCategory ID\tCategory plugin\tRecipe ID\tRecipe plugin\tItem ID\tItem type\tItem name\tItem plugin\tConditions\r\n";
+		menu << "Menu path\tCategory ID\tCategory plugin\tRecipe ID\tRecipe plugin\tItem ID\tItem type\tItem name\tItem plugin\tModel\tConditions\r\n";
 
 		std::unordered_map<const RE::BGSConstructibleObject*, std::vector<std::string>> recipePaths;
 		std::unordered_map<const RE::BGSConstructibleObject*, std::pair<bool, bool>> recipeVia;  // (via Lost Objects, via normal menu)
@@ -148,7 +149,7 @@ namespace LO::MenuDump
 
 			const auto it = recipesByCategory.find(occurrence.category);
 			if (it == recipesByCategory.end()) {
-				menu << Clean(occurrence.path) << '\t' << Util::FormIDToString(occurrence.category->GetFormID()) << '\t' << Clean(Util::GetFileName(occurrence.category, 0)) << "\t(empty category)\t\t\t\t\t\t\r\n";
+				menu << Clean(occurrence.path) << '\t' << Util::FormIDToString(occurrence.category->GetFormID()) << '\t' << Clean(Util::GetFileName(occurrence.category, 0)) << "\t(empty category)\t\t\t\t\t\t\t\r\n";
 				continue;
 			}
 
@@ -168,6 +169,7 @@ namespace LO::MenuDump
 					 << item->GetFormTypeString() << '\t'
 					 << Clean(Util::GetFormName(item)) << '\t'
 					 << Clean(Util::GetFileName(item, 0)) << '\t'
+					 << Clean(Grouping::ItemModel(recipe)) << '\t'
 					 << (recipe->conditions ? "yes" : "no") << "\r\n";
 				++rowCount;
 			}

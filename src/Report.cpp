@@ -63,8 +63,10 @@ namespace LO::Report
 		file << "Recovered menus/categories : " << a_scan.entries.size() << "\n";
 		file << "Uncategorized recipes      : " << a_scan.uncategorized.size() << "\n";
 		file << "Skipped (no category)      : " << a_scan.skippedWithoutCategory << " (filter bSkipWithoutCategory)\n";
-		file << "Put back where they belong : " << a_apply.placedHome << " recipes\n";
-		file << "In the Lost Objects tab    : " << a_apply.placedTab << " recipes\n";
+		file << "Sorted into existing categ.: " << a_apply.sortedIn << " recipes\n";
+		file << "In a Lost Objects folder   : " << a_apply.inModFolder << " recipes (inside the mod's own menu)\n";
+		file << "In the Lost Objects tab    : " << a_apply.inTab << " recipes\n";
+		file << "Skipped, already buildable : " << a_scan.alreadyBuildable.size() << " recipes (the same item is already in the menu)\n";
 		file << "Did not fit (pool full)    : " << a_apply.overflow << " recipes\n";
 		file << "Menus/categories created   : " << a_apply.entryCount << "\n";
 		file << "Folders in the tab         : " << a_apply.folderCount << "\n";
@@ -76,6 +78,27 @@ namespace LO::Report
 		}
 		for (const auto& injection : a_apply.injections) {
 			file << "  " << injection << "\n";
+		}
+		file << "\n";
+
+		// Sorted in, grouped by target, so it can be checked quickly.
+		std::map<std::string, std::vector<std::string>> byTarget;
+		for (const auto& [recipe, placed] : a_apply.placement) {
+			if (placed.where == PlacedIn::kExistingCategory) {
+				auto name = Util::GetFormName(recipe->createdItem);
+				byTarget[placed.path].push_back(std::format("{} (recipe {} from {}) - {}", name.empty() ? "<no name>"s : name, Util::FormIDToString(recipe->GetFormID()), Util::GetFileName(recipe, 0), placed.evidence));
+			}
+		}
+		file << "Sorted into existing categories\n-------------------------------\n";
+		if (byTarget.empty()) {
+			file << "  (none)\n";
+		}
+		for (auto& [target, lines] : byTarget) {
+			std::ranges::sort(lines);
+			file << "  " << target << "\n";
+			for (const auto& line : lines) {
+				file << "      " << line << "\n";
+			}
 		}
 		file << "\n";
 
@@ -106,7 +129,7 @@ namespace LO::Report
 	void Log(const ScanResult& a_scan, const ApplyResult& a_apply, std::string_view a_reason, bool a_verbose)
 	{
 		REX::LogInformation(
-			"Scan ({}): {} reachable recipes in {} categories / {} menus; {} lost recipes -> {} entries, {} uncategorized ({} skipped by filter), {} put back, {} in the tab, {} folders, tab {}",
+			"Scan ({}): {} reachable recipes in {} categories / {} menus; {} lost recipes -> {} entries, {} uncategorized ({} skipped by filter, {} already buildable), {} sorted into categories, {} in mod folders, {} in the tab, {} folders, tab {}",
 			a_reason,
 			a_scan.reachableRecipeCount,
 			a_scan.reachableCategoryCount,
@@ -115,8 +138,10 @@ namespace LO::Report
 			a_scan.entries.size(),
 			a_scan.uncategorized.size(),
 			a_scan.skippedWithoutCategory,
-			a_apply.placedHome,
-			a_apply.placedTab,
+			a_scan.alreadyBuildable.size(),
+			a_apply.sortedIn,
+			a_apply.inModFolder,
+			a_apply.inTab,
 			a_apply.folderCount,
 			a_apply.tabVisible ? "visible" : "hidden");
 

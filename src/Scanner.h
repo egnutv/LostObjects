@@ -25,6 +25,20 @@ namespace LO
 		std::vector<RE::BGSKeyword*> categories;  // usable (named) categories of the recipe
 	};
 
+	// A recipe the player can reach, with the reachable categories it is shown in.
+	struct VisibleRecipe
+	{
+		RE::BGSConstructibleObject* recipe{ nullptr };
+		std::vector<const RE::BGSKeyword*> categories;
+	};
+
+	// A lost recipe whose item can already be built through a reachable recipe.
+	struct AlreadyBuildable
+	{
+		LostRecipe lost;
+		std::string shownAt;  // where the item can already be built
+	};
+
 	struct ScanResult
 	{
 		bool valid{ false };  // false = scan aborted, keep the previous menu
@@ -37,19 +51,19 @@ namespace LO
 		std::uint32_t reachableCategoryCount{ 0 };
 		std::uint32_t reachableMenuCount{ 0 };
 		std::uint32_t skippedWithoutCategory{ 0 };  // recipes removed by bSkipWithoutCategory=1
+		std::vector<AlreadyBuildable> alreadyBuildable;  // skipped by bSkipAlreadyBuildable=1
+		std::vector<VisibleRecipe> visible;  // reachable workshop recipes
 		std::vector<std::string> workbenchKeywords;  // for the log
 
 		// Category keyword -> the lost menu or category it was found in.
 		std::unordered_map<const RE::BGSKeyword*, const RE::TESForm*> entryOfCategory;
 
-		// Where things belong in the normal menu:
-		//   homeOfPlugin: lower-case plugin file -> the plugin's own top menu, if
-		//                 it has exactly one (e.g. "Snappy HouseKit").
-		//   menuOfTitle:  keyword -> reachable sub menu that uses it as its title
-		//                 (a lost "Decorations" category belongs to "Decorations").
+		// homeOfPlugin: lower-case plugin file -> the plugin's own top menu, if it
+		//               has exactly one (e.g. "Snappy Builds"). The "Lost Objects"
+		//               folder of that plugin goes there.
 		std::unordered_map<std::string, RE::BGSListForm*> homeOfPlugin;
-		std::unordered_map<const RE::BGSKeyword*, RE::BGSListForm*> menuOfTitle;
-		std::unordered_map<const RE::BGSListForm*, std::string> menuPath;  // reachable sub menu -> path for logs
+		std::unordered_map<const RE::BGSListForm*, std::string> menuPath;  // reachable sub menu -> "Furniture > Containers"
+		std::unordered_map<const RE::BGSKeyword*, std::string> categoryPath;  // reachable category -> "Furniture > Containers > Boxes"
 
 		[[nodiscard]] bool Empty() const noexcept { return entries.empty() && uncategorized.empty(); }
 	};

@@ -31,6 +31,9 @@ namespace LO
 		std::uint32_t minGroupSize{ 3 };
 		bool skipUntouchedBaseGame{ false };  // filter, off = show everything
 		bool skipWithoutCategory{ false };    // filter, off = show everything
+		bool skipAlreadyBuildable{ true };    // the item itself can already be built through another recipe
+		bool sortIntoCategories{ true };      // put lost items into matching existing categories
+		std::uint32_t minConfidence{ 45 };    // percent a match needs
 		bool showSummaryMessage{ true };
 		bool borrowMenuIcon{ true };
 		bool writeReport{ true };
