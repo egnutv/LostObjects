@@ -1,0 +1,31 @@
+# Code style used by Lost Objects (close to CommonLibF4's style).
+BasedOnStyle: Microsoft
+Language: Cpp
+Standard: Latest
+UseTab: ForContinuationAndIndentation
+TabWidth: 4
+IndentWidth: 4
+ColumnLimit: 0
+AccessModifierOffset: -4
+AlignAfterOpenBracket: DontAlign
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: Never
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  SplitEmptyFunction: true
+IndentCaseLabels: false
+NamespaceIndentation: All
+PointerAlignment: Left
+SortIncludes: CaseInsensitive
+SpaceAfterTemplateKeyword: true

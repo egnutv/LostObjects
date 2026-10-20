@@ -1,0 +1,77 @@
+[center][size=6][b]Lost Objects[/b][/size]
+[size=3]Every craftable workshop item you cannot reach in the build menu - found and collected in one new tab.[/size][/center]
+
+[quote][b]Vibecoded by AI.[/b] The code of this mod was written by Claude (Anthropic), an AI model, directed and tested by egnutv.
+AI-generated code can contain mistakes. Keep a backup save. The mod tells you this in game once per version.[/quote]
+
+[size=4][b]The problem[/b][/size]
+You install a settlement mod or a menu reorganizer, and some pieces never show up in the workshop menu - new ones from the mod, or vanilla and DLC pieces that another mod pushed out. They are loaded and have a recipe - there is just no way to click on them. The usual causes are a menu that was never connected (for example a broken Settlement Menu Manager setup), a menu replacer that dropped a category, or two mods overwriting the same vanilla menu list. Fixing that by hand needs xEdit and a lot of patience.
+
+[size=4][b]What this mod does[/b][/size]
+Lost Objects walks through the whole workshop menu tree exactly the way the game does and finds every workshop recipe that cannot be reached - from mods, DLCs or the base game, whatever it builds: walls, furniture, buildings, trees, clutter. If it is craftable and not listed, it goes into a new tab [b]Lost Objects[/b] at the end of the main workshop menu:
+
+[list]
+[*]one folder per plugin file - mod, DLC or base game (or all in one list, your choice)
+[*]lost menus are restored with their original structure, names and icons
+[*]lost categories keep their original names
+[*]items keep their original costs and requirements
+[*]lost items without any category go to "Uncategorized" inside their folder
+[*]the tab only appears when something is actually lost
+[*]optional filters (all off by default) hide untouched vanilla recipes, recipes without a category or whole plugins
+[/list]
+
+[size=4][b]Safe to use and to remove[/b][/size]
+[list]
+[*]Everything happens in memory. Nothing is written into your save game.
+[*]Other mods' menus are not edited - only referenced from the new tab.
+[*]No Papyrus scripts.
+[*]Only settlement workshop recipes are considered. Chemistry, cooking, armor and weapon workbenches are not touched.
+[*]Remove the mod at any time. Things you built stay where they are.
+[/list]
+
+[size=4][b]Requirements[/b][/size]
+[list]
+[*]Fallout 4 Anniversary Edition 1.11.191 or newer (target: 1.11.240), Next-Gen 1.10.984 or Old-Gen 1.10.163 - one DLL for all
+[*][url=https://www.nexusmods.com/fallout4/mods/42147]F4SE[/url] matching your game version
+[*][url=https://www.nexusmods.com/fallout4/mods/47327]Address Library for F4SE Plugins[/url] matching your game version
+[/list]
+
+[size=4][b]Installation[/b][/size]
+Install with Vortex, the Nexus app or Mod Organizer 2 and enable LostObjects.esp. It is a light plugin (ESL flagged) and does not use a regular plugin slot. Load order does not matter.
+
+[size=4][b]Settings[/b][/size]
+Data\F4SE\Plugins\LostObjects.ini
+[list]
+[*]sSortMode = ByMod / Flat
+[*]sIgnorePlugins = mods whose items should never be shown
+[*]bSkipUntouchedBaseGame, bSkipWithoutCategory (filters, off by default)
+[*]bShowSummaryMessage, bBorrowMenuIcon, bWriteReport, bVerboseLog
+[/list]
+
+[size=4][b]Something wrong?[/b][/size]
+The mod writes two files to Documents\My Games\Fallout4\F4SE\:
+[list]
+[*]LostObjects.log - what the mod did
+[*]LostObjects_Report.txt - every recovered menu, category and item
+[/list]
+Please attach both to your bug report. Items hidden by a condition of their mod (for example a holotape option) stay hidden on purpose, and objects without any recipe are not part of this mod.
+
+[size=4][b]Source code[/b][/size]
+Open source on GitHub: [url=https://github.com/egnutv/LostObjects]github.com/egnutv/LostObjects[/url]
+Documentation, build instructions and the full technical explanation are there.
+
+[size=4][b]Permissions[/b][/size]
+[list]
+[*]Code: PolyForm Noncommercial 1.0.0 - use, change and share for noncommercial purposes
+[*]What you create with the mod (settlements, blueprints, screenshots, videos) is yours, also commercially
+[*]Forks, ports, patches and translations are welcome without asking
+[*]No warranty, no support obligation
+[/list]
+
+[size=4][b]Credits[/b][/size]
+[list]
+[*]egnutv - idea, project owner, tester
+[*]Claude (Anthropic) - code and documentation (vibecoded by AI)
+[*]CommonLibF4 AV by LucaDotGit, based on work by Ryan McKenzie and alandtse
+[*]The F4SE team and the authors of the Address Library
+[/list]

@@ -1,0 +1,48 @@
+# --- Build output -------------------------------------------------------------
+/build/
+/out/
+/dist/
+/vcpkg_installed/
+/vcpkg/
+
+# --- IDE / editor -------------------------------------------------------------
+/.vs/
+/.vscode/
+/.idea/
+/.cache/
+*.user
+*.suo
+CMakeUserPresets.json
+compile_commands.json
+
+# --- Compiler / linker leftovers ----------------------------------------------
+*.obj
+*.pch
+*.ilk
+*.exp
+*.lib
+*.iobj
+*.ipdb
+*.pdb
+*.dll
+
+# --- Python -------------------------------------------------------------------
+__pycache__/
+*.pyc
+
+# --- Game / test files that must never be committed ---------------------------
+*.log
+*.ess
+*.f4se
+LostObjects_Report.txt
+LostObjects_State.ini
+
+# --- Archives -----------------------------------------------------------------
+*.zip
+*.7z
+*.rar
+
+# --- OS -----------------------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store

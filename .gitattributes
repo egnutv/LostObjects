@@ -1,2 +1,21 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalise line endings in the repository, keep Windows endings where tools need them.
+* text=auto eol=lf
+
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+*.ini  text eol=crlf
+*.txt  text eol=crlf
+
+# Binary files
+*.esp  binary
+*.esm  binary
+*.esl  binary
+*.dll  binary
+*.pdb  binary
+*.png  binary
+*.jpg  binary
+*.zip  binary
+
+# GitHub language statistics
+*.h    linguist-language=C++

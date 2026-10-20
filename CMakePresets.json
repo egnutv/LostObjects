@@ -1,0 +1,56 @@
+{
+	"version": 8,
+	"cmakeMinimumRequired": {
+		"major": 4,
+		"minor": 3,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name": "base",
+			"hidden": true,
+			"generator": "Visual Studio 18 2026",
+			"architecture": {
+				"value": "x64",
+				"strategy": "set"
+			},
+			"toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"cacheVariables": {
+				"CMAKE_SYSTEM_VERSION": "10.0",
+				"VCPKG_TARGET_TRIPLET": "x64-windows-static-md-release",
+				"VCPKG_HOST_TRIPLET": "x64-windows-static-md-release",
+				"CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
+			}
+		},
+		{
+			"name": "release",
+			"displayName": "Release (Visual Studio 2026, x64)",
+			"inherits": "base"
+		},
+		{
+			"name": "debug",
+			"displayName": "Debug (Visual Studio 2026, x64)",
+			"inherits": "base",
+			"cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+				"VCPKG_HOST_TRIPLET": "x64-windows-static-md",
+				"CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebugDLL"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "release",
+			"displayName": "Release",
+			"configurePreset": "release",
+			"configuration": "RelWithDebInfo"
+		},
+		{
+			"name": "debug",
+			"displayName": "Debug",
+			"configurePreset": "debug",
+			"configuration": "Debug"
+		}
+	]
+}

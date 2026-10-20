@@ -1,0 +1,88 @@
+# Builds Lost Objects on every push and pull request.
+# A tag like "v0.1.0" additionally creates a GitHub release with the mod archive.
+#
+# Where to find the result: Actions tab -> the latest run -> "Artifacts"
+# (LostObjects-zip contains the ready-to-install mod).
+
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to publish releases for tags
+
+jobs:
+  plugin-file:
+    name: Check plugin file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Plugin file is up to date with the generator
+        run: python tools/build_plugin.py --check
+
+      - name: Plugin file is well formed
+        run: python tools/verify_plugin.py
+
+  build:
+    name: Build DLL (Windows, Visual Studio 2026)
+    needs: plugin-file
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CMake and Ninja (latest)
+        uses: lukka/get-cmake@latest
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 802d61d714db2714e3fefcfc59447431166b8367
+
+      - name: Configure
+        run: cmake --preset release
+
+      - name: Build
+        run: cmake --build --preset release
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Package
+        run: >
+          python tools/package.py
+          --dll build/release/RelWithDebInfo/LostObjects.dll
+          --pdb build/release/RelWithDebInfo/LostObjects.pdb
+          --out dist
+
+      - name: Upload mod archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: LostObjects-zip
+          path: dist/LostObjects-*[0-9].zip
+          if-no-files-found: error
+
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: LostObjects-pdb
+          path: dist/LostObjects-*-pdb.zip
+          if-no-files-found: warn
+
+      - name: Publish GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/LostObjects-*.zip
+          generate_release_notes: true

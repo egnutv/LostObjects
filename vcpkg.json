@@ -1,0 +1,12 @@
+{
+	"$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+	"name": "lostobjects",
+	"version-semver": "0.1.0",
+	"description": "Lost Objects - F4SE plugin for Fallout 4",
+	"license": "PolyForm-Noncommercial-1.0.0",
+	"dependencies": [
+		"fmt",
+		"spdlog"
+	],
+	"builtin-baseline": "802d61d714db2714e3fefcfc59447431166b8367"
+}
