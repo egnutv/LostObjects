@@ -4,6 +4,12 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] - 2026-10-20
+
+### Changed
+- The menu icon is now just the logo, exactly as the transparent `Logo/Logo.png` -
+  no frame, no background (alpha tested, two planes back to back).
+
 ## [0.4.1] - 2026-10-20
 
 ### Added

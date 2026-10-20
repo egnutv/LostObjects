@@ -1,6 +1,7 @@
 # Workshop menu icon
 
-The "Lost Objects" tab and folders show a small picture frame with the logo.
+The "Lost Objects" tab and folders show the logo as their icon - exactly the
+transparent `Logo/Logo.png`, nothing added.
 
 | File | Made by |
 |---|---|
@@ -8,9 +9,11 @@ The "Lost Objects" tab and folders show a small picture frame with the logo.
 | `data/Textures/LostObjects/MenuIcon_d.dds`, `MenuIcon_n.dds` | `make_icon_textures.py` (from `Logo/Logo.png`) |
 | `LO_MenuIcon` (ARTO) in `LostObjects.esp` | `tools/build_plugin.py` |
 
-The mesh is a 64 x 4 x 64 slab (bottom at Z = 0) with the logo on both faces and
-the frame color on the edges, one `BSTriShape` with a `BSLightingShaderProperty`
-(double sided) and a texture set pointing to the two textures.
+The mesh is two 64 x 64 planes back to back (bottom at Z = 0, the back one with
+mirrored UVs so the logo reads correctly from both sides): one `BSTriShape` with a
+`BSLightingShaderProperty` (double sided), a texture set pointing to the two
+textures and a `NiAlphaProperty` (alpha test, threshold 128) that cuts out
+everything transparent in the logo.
 
 ## Rebuilding
 

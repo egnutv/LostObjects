@@ -1,7 +1,7 @@
-// Builds meshes/LostObjects/MenuIcon.nif: a small picture frame for the
-// workshop menu icon of Lost Objects. The logo is painted on both faces
-// (mirrored UVs on the back, so it reads correctly from both sides); the
-// edges use the frame color of the texture.
+// Builds meshes/LostObjects/MenuIcon.nif: the workshop menu icon of Lost
+// Objects - just the logo, cut out by the transparency of Logo/Logo.png
+// (alpha test), on two thin planes back to back (mirrored UVs on the back,
+// so it reads correctly from both sides).
 //
 // Build tool only: uses nifly (https://github.com/ousnius/nifly, GPL-3.0),
 // which is NOT part of the mod. The generated .nif is our own data.
@@ -21,9 +21,7 @@ namespace
 {
 	constexpr float W = 64.0f;  // width (X)
 	constexpr float H = 64.0f;  // height (Z, up)
-	constexpr float D = 4.0f;   // thickness (Y)
-	constexpr float EDGE_U = 0.02f;  // a texel inside the painted frame border
-	constexpr float EDGE_V = 0.02f;
+	constexpr float D = 0.5f;   // gap between the two faces (Y)
 
 	struct Mesh
 	{
@@ -69,6 +67,11 @@ namespace
 			if (auto* shader = nif.GetShader(shape)) {
 				std::printf("  shader=%s doubleSided=%d\n", shader->GetBlockName(), shader->IsDoubleSided() ? 1 : 0);
 			}
+			if (const auto* alphaRef = shape->AlphaPropertyRef(); alphaRef && !alphaRef->IsEmpty()) {
+				if (auto* alpha = nif.GetHeader().GetBlock<NiAlphaProperty>(alphaRef)) {
+					std::printf("  alpha flags=%u threshold=%u\n", alpha->flags, alpha->threshold);
+				}
+			}
 			const auto bounds = shape->GetBounds();
 			std::printf("  bounds center=(%.1f %.1f %.1f) radius=%.1f\n", bounds.center.x, bounds.center.y, bounds.center.z, bounds.radius);
 		}
@@ -87,7 +90,6 @@ int main(int argc, char** argv)
 	}
 
 	const float x0 = -W / 2, x1 = W / 2, z0 = 0.0f, z1 = H, yf = -D / 2, yb = D / 2;
-	const Vector2 edge(EDGE_U, EDGE_V);
 
 	Mesh m;
 	// Front (faces -Y): viewer's right is +X; texture v=0 is the top.
@@ -96,11 +98,6 @@ int main(int argc, char** argv)
 	// Back (faces +Y): viewer's right is -X, so u runs the other way.
 	m.Quad({ x1, yb, z1 }, { x0, yb, z1 }, { x0, yb, z0 }, { x1, yb, z0 }, { 0, 1, 0 },
 		{ 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 });
-	// Edges: frame color.
-	m.Quad({ x0, yb, z1 }, { x1, yb, z1 }, { x1, yf, z1 }, { x0, yf, z1 }, { 0, 0, 1 }, edge, edge, edge, edge);    // top
-	m.Quad({ x0, yf, z0 }, { x1, yf, z0 }, { x1, yb, z0 }, { x0, yb, z0 }, { 0, 0, -1 }, edge, edge, edge, edge);   // bottom
-	m.Quad({ x0, yb, z0 }, { x0, yb, z1 }, { x0, yf, z1 }, { x0, yf, z0 }, { -1, 0, 0 }, edge, edge, edge, edge);   // left
-	m.Quad({ x1, yf, z0 }, { x1, yf, z1 }, { x1, yb, z1 }, { x1, yb, z0 }, { 1, 0, 0 }, edge, edge, edge, edge);    // right
 
 	NifFile nif;
 	auto version = NiVersion::getFO4();
@@ -122,6 +119,12 @@ int main(int argc, char** argv)
 	shader->specularStrength = 0.1f;
 
 	shape->ShaderPropertyRef()->index = hdr.AddBlock(std::move(shader));
+
+	// Alpha test: only the letters of the logo are drawn, the rest is see-through.
+	auto alpha = std::make_unique<NiAlphaProperty>();
+	alpha->flags = 4844;  // alpha test on (greater than threshold), no blending
+	alpha->threshold = 128;
+	shape->AlphaPropertyRef()->index = hdr.AddBlock(std::move(alpha));
 	const auto shapeID = hdr.AddBlock(std::move(shape));
 	nif.GetRootNode()->childRefs.AddBlockRef(shapeID);
 

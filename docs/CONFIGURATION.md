@@ -18,7 +18,7 @@ written to the log.
 | `sSortMode` | `ByMod` | `ByMod`: one folder per plugin file (mod, DLC or base game) inside the tab. `Flat`: all recovered menus directly in the tab. |
 | `bShowSummaryMessage` | `1` | Short message the first time you enter workshop mode after loading, e.g. "Lost Objects: 37 workshop item(s) recovered." |
 | `bBorrowMenuIcon` | `1` | Gives the tab and the "Lost Objects" folders an icon in the workshop menu. |
-| `bCustomMenuIcon` | `1` | `1`: the Lost Objects icon (a picture frame with the logo, `Meshes\LostObjects\MenuIcon.nif`). `0`: the icon of the vanilla "Decorations" menu. If the mesh is missing, the vanilla icon is used automatically. |
+| `bCustomMenuIcon` | `1` | `1`: the Lost Objects icon (the logo, `Meshes\LostObjects\MenuIcon.nif`). `0`: the icon of the vanilla "Decorations" menu. If the mesh is missing, the vanilla icon is used automatically. |
 | `bWriteReport` | `1` | Writes `Documents\My Games\Fallout4\F4SE\LostObjects_Report.txt` whenever the result changes. |
 | `bWriteInventory` | `1` | Writes `LostObjects_Inventory.tsv` (one line per recovered item: name, model path, size, categories, components, keywords; opens in Excel) and `LostObjects_Patterns.txt` (common words, model folders, types) to the same folder. Also writes the complete workshop menu to `LostObjects_Menu.tsv` and everything that appears more than once (recipes, items, categories, sub menus, menu names) to `LostObjects_Duplicates.txt`. Used to improve the automatic sorting. |
 | `bVerboseLog` | `0` | Writes every single recovered recipe into `LostObjects.log` and enables debug messages. Useful for bug reports. |

@@ -238,7 +238,7 @@ namespace LO
 		_iconBorrowed = true;
 
 		// Workshop menu icons are art objects (ARTO) that list the category
-		// keyword. Our own icon (a picture frame with the logo, from
+		// keyword. Our own icon (the logo, from
 		// LostObjects.esp + Meshes\LostObjects\MenuIcon.nif) is used if it is
 		// there; otherwise we link our keywords to the icon of the vanilla
 		// "Decorations" category.

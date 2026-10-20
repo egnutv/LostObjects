@@ -1,6 +1,6 @@
 """Builds the textures of the workshop menu icon from Logo/Logo.png.
 
-  textures/LostObjects/MenuIcon_d.dds   picture frame with the logo (512x512)
+  textures/LostObjects/MenuIcon_d.dds   the logo with its transparency (512x512)
   textures/LostObjects/MenuIcon_n.dds   flat normal map (64x64)
   tools/icon/MenuIcon_preview.png       what the diffuse map looks like
 
@@ -12,14 +12,11 @@ import struct
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZE = 512
-FRAME = 40            # frame border in pixels (the mesh edges sample this color)
-FRAME_COLOR = (74, 52, 34, 255)      # dark wood
-FRAME_LIGHT = (112, 82, 54, 255)     # inner bevel
-CANVAS = (236, 230, 216, 255)        # off-white canvas
+MARGIN = 8            # transparent border around the logo, in pixels
 
 
 def dds_bytes(image: Image.Image) -> bytes:
@@ -51,20 +48,22 @@ def dds_bytes(image: Image.Image) -> bytes:
 
 
 def diffuse() -> Image.Image:
-    image = Image.new("RGBA", (SIZE, SIZE), FRAME_COLOR)
-    draw = ImageDraw.Draw(image)
-    draw.rectangle([FRAME - 8, FRAME - 8, SIZE - FRAME + 7, SIZE - FRAME + 7], fill=FRAME_LIGHT)
-    draw.rectangle([FRAME, FRAME, SIZE - FRAME - 1, SIZE - FRAME - 1], fill=CANVAS)
-
+    """The logo exactly as in Logo.png (transparent background), centered."""
     logo = Image.open(ROOT / "Logo" / "Logo.png").convert("RGBA")
-    box = logo.getbbox()  # crop transparent margins
+    box = logo.getbbox()  # crop the empty margins
     if box:
         logo = logo.crop(box)
-    inner = SIZE - 2 * FRAME - 40
+    inner = SIZE - 2 * MARGIN
     scale = min(inner / logo.width, inner / logo.height)
-    logo = logo.resize((max(1, int(logo.width * scale)), max(1, int(logo.height * scale))), Image.LANCZOS)
+    logo = logo.resize((max(1, round(logo.width * scale)), max(1, round(logo.height * scale))), Image.LANCZOS)
+
+    # Transparent pixels get the logo's average colour, so the edges of the
+    # letters do not turn dark in the smaller mipmaps.
+    data = logo.get_flattened_data() if hasattr(logo, "get_flattened_data") else logo.getdata()
+    pixels = [p for p in data if p[3] > 200]
+    average = tuple(sum(p[i] for p in pixels) // max(1, len(pixels)) for i in range(3)) if pixels else (0, 0, 0)
+    image = Image.new("RGBA", (SIZE, SIZE), average + (0,))
     image.alpha_composite(logo, ((SIZE - logo.width) // 2, (SIZE - logo.height) // 2))
-    image.putalpha(255)  # fully opaque, the mesh uses no alpha
     return image
 
 
@@ -74,7 +73,7 @@ def main() -> int:
 
     image = diffuse()
     (out / "MenuIcon_d.dds").write_bytes(dds_bytes(image))
-    image.convert("RGB").save(ROOT / "tools" / "icon" / "MenuIcon_preview.png")
+    image.save(ROOT / "tools" / "icon" / "MenuIcon_preview.png")
 
     normal = Image.new("RGBA", (64, 64), (128, 128, 255, 255))
     (out / "MenuIcon_n.dds").write_bytes(dds_bytes(normal))
