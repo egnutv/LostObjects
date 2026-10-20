@@ -32,8 +32,9 @@ namespace LO
 		bool skipUntouchedBaseGame{ false };  // filter, off = show everything
 		bool skipWithoutCategory{ false };    // filter, off = show everything
 		bool skipAlreadyBuildable{ true };    // the item itself can already be built through another recipe
+		bool skipMissingModels{ true };       // ghost objects: no model file the game can load
 		bool sortIntoCategories{ true };      // put lost items into matching existing categories
-		std::uint32_t minConfidence{ 45 };    // percent a match needs
+		std::uint32_t minConfidence{ 30 };    // percent a match needs
 		bool showSummaryMessage{ true };
 		bool borrowMenuIcon{ true };
 		bool writeReport{ true };

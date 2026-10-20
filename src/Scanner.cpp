@@ -1,5 +1,7 @@
 #include "Scanner.h"
 
+#include "Grouping.h"
+#include "ModelCheck.h"
 #include "Util.h"
 
 // -----------------------------------------------------------------------------
@@ -143,8 +145,11 @@ namespace LO
 		ListSet reachableLists;
 		CollectReachable(a_forms.workshopMenuMain, a_forms, reachableLeaves, reachableLists);
 
-		// 1b) Depth of every reachable sub menu (breadth first), to find the
-		//     menu each plugin and each category title belongs to.
+		// 1b) Depth and parent of every reachable sub menu (breadth first), the
+		//     menus each category is shown in, and the plugins' own top menus.
+		std::unordered_map<const RE::BGSListForm*, const RE::BGSListForm*> parentOf;
+		std::unordered_map<const RE::BGSListForm*, std::uint32_t> depthOf;
+		std::unordered_map<const RE::BGSKeyword*, std::vector<const RE::BGSListForm*>> menusOfCategory;
 		{
 			struct Node
 			{
@@ -169,6 +174,9 @@ namespace LO
 
 					// Categories: the first (shallowest) path wins.
 					if (const auto* keyword = form->As<RE::BGSKeyword>()) {
+						if (!isMainMenu && i != 0) {
+							menusOfCategory[keyword].push_back(node.list);
+						}
 						if ((isMainMenu || i != 0) && !result.categoryPath.contains(keyword)) {
 							auto name = Util::GetFormName(keyword);
 							if (name.empty()) {
@@ -194,6 +202,8 @@ namespace LO
 					const Node child{ subList, node.depth + 1, path };
 					queue.push_back(child);
 					result.menuPath[subList] = path;
+					parentOf[subList] = node.list;
+					depthOf[subList] = child.depth;
 
 					const auto file = Util::ToLower(Util::GetFileName(subList, 0));
 					auto& [depth, lists] = topLists.try_emplace(file, child.depth, std::unordered_set<RE::BGSListForm*>{}).first->second;
@@ -288,6 +298,96 @@ namespace LO
 			buildableItems.try_emplace(visible.recipe->createdItem, &visible);
 		}
 
+		// Self-test of the model check with items that are visible right now.
+		if (a_settings.skipMissingModels && !ModelCheck::IsActive()) {
+			std::vector<std::string> sample;
+			for (const auto& visible : result.visible) {
+				auto model = Grouping::ItemModel(visible.recipe);
+				if (!model.empty()) {
+					sample.push_back(std::move(model));
+				}
+				if (sample.size() >= 300) {
+					break;
+				}
+			}
+			ModelCheck::SelfTest(sample);
+		}
+
+		// 3b) Plugins without a menu of their own (for example an add-on that
+		//     puts its items into the menu of its main mod): their home is the
+		//     shallowest menu that holds at least 80 % of their visible items,
+		//     if that menu mostly shows items of this plugin or of the plugin
+		//     that made the menu. Counted from the data only.
+		{
+			std::unordered_map<std::string, std::uint32_t> visibleOfPlugin;
+			std::unordered_map<std::string, std::unordered_map<const RE::BGSListForm*, std::uint32_t>> pluginInMenu;
+			std::unordered_map<const RE::BGSListForm*, std::uint32_t> menuTotal;
+
+			for (const auto& visible : result.visible) {
+				std::unordered_set<const RE::BGSListForm*> menus;
+				for (const auto* category : visible.categories) {
+					const auto it = menusOfCategory.find(category);
+					if (it == menusOfCategory.end()) {
+						continue;
+					}
+					for (const auto* menu : it->second) {
+						for (auto* current = menu; current && current != a_forms.workshopMenuMain;) {
+							if (!menus.insert(current).second) {
+								break;  // the rest of the chain is already counted
+							}
+							const auto parent = parentOf.find(current);
+							current = parent != parentOf.end() ? parent->second : nullptr;
+						}
+					}
+				}
+				const auto plugin = Util::ToLower(Util::GetFileName(visible.recipe, 0));
+				++visibleOfPlugin[plugin];
+				auto& inMenu = pluginInMenu[plugin];
+				for (const auto* menu : menus) {
+					++inMenu[menu];
+					++menuTotal[menu];
+				}
+			}
+
+			for (const auto& [plugin, total] : visibleOfPlugin) {
+				if (result.homeOfPlugin.contains(plugin) || total == 0) {
+					continue;
+				}
+
+				const RE::BGSListForm* best = nullptr;
+				std::uint32_t bestDepth = std::numeric_limits<std::uint32_t>::max();
+				std::uint32_t bestCount = 0;
+				const auto& inMenu = pluginInMenu[plugin];
+				for (const auto& [menu, count] : inMenu) {
+					if (static_cast<double>(count) < 0.8 * static_cast<double>(total)) {
+						continue;
+					}
+					// Does the menu belong to this plugin's "family"?
+					const auto owner = Util::ToLower(Util::GetFileName(menu, 0));
+					std::uint32_t family = count;
+					if (owner != plugin) {
+						if (const auto ownerIt = pluginInMenu.find(owner); ownerIt != pluginInMenu.end()) {
+							if (const auto c = ownerIt->second.find(menu); c != ownerIt->second.end()) {
+								family += c->second;
+							}
+						}
+					}
+					if (static_cast<double>(family) < 0.5 * static_cast<double>(menuTotal[menu])) {
+						continue;  // a shared menu like "Structures"
+					}
+					const auto depth = depthOf[menu];
+					if (!best || depth < bestDepth || (depth == bestDepth && count > bestCount)) {
+						best = menu;
+						bestDepth = depth;
+						bestCount = count;
+					}
+				}
+				if (best) {
+					result.homeOfPlugin[plugin] = const_cast<RE::BGSListForm*>(best);
+				}
+			}
+		}
+
 		// 4) Lost recipes and the categories they use.
 		std::unordered_map<RE::BGSKeyword*, std::uint32_t> lostCategories;  // category -> recipe count
 
@@ -342,7 +442,15 @@ namespace LO
 							shownAt = path->second;
 						}
 					}
-					result.alreadyBuildable.push_back({ LostRecipe{ recipe, usable.empty(), usable }, std::move(shownAt) });
+					result.alreadyBuildable.push_back({ LostRecipe{ recipe, usable.empty(), usable }, std::move(shownAt), "the same item is already in the menu" });
+					continue;
+				}
+			}
+
+			// Ghost objects: nothing of the item can be seen in the game.
+			if (a_settings.skipMissingModels) {
+				if (auto problem = ModelCheck::FindProblem(recipe); !problem.empty()) {
+					result.missingModel.push_back({ LostRecipe{ recipe, usable.empty(), usable }, std::string(), std::move(problem) });
 					continue;
 				}
 			}

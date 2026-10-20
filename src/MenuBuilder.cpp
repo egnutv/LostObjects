@@ -42,7 +42,23 @@ namespace LO
 		{
 			std::string name;
 			std::vector<RE::BGSConstructibleObject*> recipes;
+			bool borrowed{ false };  // the category comes from another plugin (or there is none): its name says little
 		};
+
+		// Inside a mod's "Lost Objects" folder: a borrowed category (for example
+		// the base game's "Scrap" used by a mod) says nothing about its items, so
+		// they are grouped by what they have in common themselves (words of the
+		// names, tags, model folders - see Grouping). Small sets stay together.
+		std::vector<Grouping::Group> RegroupBorrowed(const Leaf& a_leaf, const Grouping::Options& a_options)
+		{
+			if (a_leaf.borrowed && a_leaf.recipes.size() >= 2 * a_options.minGroupSize) {
+				auto groups = Grouping::Split(a_leaf.recipes, a_options);
+				if (groups.size() >= 2 && groups.size() < a_leaf.recipes.size()) {
+					return groups;
+				}
+			}
+			return { Grouping::Group{ a_leaf.name, a_leaf.recipes } };
+		}
 
 		struct LostMenu
 		{
@@ -283,6 +299,7 @@ namespace LO
 				}
 				if (leaf->name.empty()) {
 					leaf->name = name;
+					leaf->borrowed = !category || Util::ToLower(Util::GetFileName(category, 0)) != Util::ToLower(plugin);
 				}
 				leaf->recipes.push_back(recipe);
 			}
@@ -415,6 +432,10 @@ namespace LO
 
 		// 1b. The rest: a "Lost Objects" folder in the mod's own menu, or the tab.
 		const auto buckets = CollectBuckets(a_scan, sorted);
+		Grouping::Options groupOptions;
+		groupOptions.maxGroups = a_settings.maxGroups;
+		groupOptions.minGroupSize = a_settings.minGroupSize;
+		groupOptions.chunkSize = std::max<std::size_t>(a_settings.minGroupSize, a_settings.splitThreshold * 3 / 4);
 
 		struct TabItem
 		{
@@ -437,7 +458,9 @@ namespace LO
 				if (auto* folder = plan.AllocMenu(rootName)) {
 					std::size_t count = 0;
 					for (const auto& [key, leaf] : bucket.leaves) {
-						plan.Add(folder, plan.BuildCategory(leaf.name, leaf.recipes, path));
+						for (const auto& group : RegroupBorrowed(leaf, groupOptions)) {
+							plan.Add(folder, plan.BuildCategory(group.label, group.recipes, path));
+						}
 						count += leaf.recipes.size();
 					}
 					for (const auto& [key, menu] : bucket.menus) {

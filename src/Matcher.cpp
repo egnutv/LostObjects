@@ -11,18 +11,19 @@ namespace LO::Matcher
 		{
 			kModel = 0,  // same model file
 			kFolder,     // same model folder
-			kParent,     // same parent folder of the model folder
+			kParent,     // same parent folder of the model folder (only a hint)
 			kName,       // same item name
+			kPrefix,     // same first word of the item name
 			kTag,        // same "[Tag]" at the start of the name
 			kCategory,   // category with the same name as the lost category
-			kWord,       // a word of the item name
+			kWord,       // a word of the item name (only a hint)
 			kCount
 		};
 
-		constexpr std::array<double, static_cast<std::size_t>(Kind::kCount)> WEIGHTS{ 4.0, 3.0, 1.5, 3.0, 2.0, 2.0, 1.0 };
-		constexpr std::array<std::string_view, static_cast<std::size_t>(Kind::kCount)> LABELS{ "model", "model folder", "parent folder", "name", "tag", "category", "word" };
+		constexpr std::array<double, static_cast<std::size_t>(Kind::kCount)> WEIGHTS{ 4.0, 3.0, 1.5, 3.0, 2.0, 2.0, 2.0, 1.0 };
+		constexpr std::array<std::string_view, static_cast<std::size_t>(Kind::kCount)> LABELS{ "model", "model folder", "parent folder", "name", "first word", "tag", "category", "word" };
 
-		constexpr double MIN_LEAD = 1.5;               // the winner needs 1.5x the score of the runner-up
+		constexpr double MIN_LEAD = 1.5;                     // the winner needs 1.5x the score of the runner-up
 		constexpr std::uint32_t MIN_CONFIDENCE_GLOBAL = 60;  // when the plugin has no visible items at all
 
 		std::uint32_t Percent(double a_fraction) { return static_cast<std::uint32_t>(100.0 * a_fraction + 0.5); }
@@ -30,11 +31,9 @@ namespace LO::Matcher
 		double Weight(Kind a_kind) { return WEIGHTS[static_cast<std::size_t>(a_kind)]; }
 		std::string_view Label(Kind a_kind) { return LABELS[static_cast<std::size_t>(a_kind)]; }
 
-		// Words alone are too weak to decide anything.
-		bool IsStrong(Kind a_kind) { return a_kind != Kind::kWord; }
-
-		// Evidence that is specific to the object itself (required without plugin candidates).
-		bool IsSpecific(Kind a_kind) { return a_kind == Kind::kModel || a_kind == Kind::kFolder || a_kind == Kind::kName; }
+		// The winner must have at least one of these in common with the lost item.
+		// Words and parent folders alone are too broad ("box", "setdressing").
+		bool IsSpecific(Kind a_kind) { return a_kind != Kind::kWord && a_kind != Kind::kParent; }
 
 		struct Feature
 		{
@@ -93,11 +92,12 @@ namespace LO::Matcher
 				}
 			}
 
+			std::vector<std::string> words;
 			std::string word;
 			const auto flush = [&]() {
 				const bool allDigits = std::ranges::all_of(word, [](unsigned char c) { return std::isdigit(c) != 0; });
 				if (word.size() >= 3 && !allDigits) {
-					a_list.Add(Kind::kWord, word);
+					words.push_back(word);
 				}
 				word.clear();
 			};
@@ -109,6 +109,12 @@ namespace LO::Matcher
 				}
 			}
 			flush();
+			for (const auto& w : words) {
+				a_list.Add(Kind::kWord, w);
+			}
+			if (!words.empty()) {
+				a_list.Add(Kind::kPrefix, words.front());
+			}
 
 			auto model = LowerAscii(Grouping::ItemModel(a_recipe));
 			std::ranges::replace(model, '/', '\\');
@@ -186,11 +192,10 @@ namespace LO::Matcher
 		struct Score
 		{
 			double total{ 0.0 };
-			double strong{ 0.0 };
 			double specific{ 0.0 };
 		};
 		std::unordered_map<const RE::BGSKeyword*, Score> scores;
-		double present = 0.0;  // weight of all features that exist among the candidates
+		double present = 0.0;  // weight of all features that exist anywhere in the menu
 
 		struct Share
 		{
@@ -205,11 +210,11 @@ namespace LO::Matcher
 				continue;
 			}
 
+			// Share of the WHOLE menu: a folder that is everywhere ("setdressing")
+			// gives every single category only a small part.
 			std::uint32_t total = 0;
 			for (const auto& [category, count] : it->second) {
-				if (candidates->contains(category)) {
-					total += count;
-				}
+				total += count;
 			}
 			if (total == 0) {
 				continue;
@@ -226,9 +231,6 @@ namespace LO::Matcher
 				const auto part = static_cast<double>(count) / static_cast<double>(total);
 				auto& score = scores[category];
 				score.total += weight * part;
-				if (IsStrong(feature.kind)) {
-					score.strong += weight * part;
-				}
 				if (IsSpecific(feature.kind)) {
 					score.specific += weight * part;
 				}
@@ -261,7 +263,7 @@ namespace LO::Matcher
 
 		const auto& bestDetail = scores.at(best);
 		match.guess = best;
-		match.confidence = static_cast<std::uint32_t>(Percent(bestScore / present));
+		match.confidence = Percent(bestScore / present);
 
 		// Why: the strongest contributions to the winner.
 		std::vector<std::pair<double, std::string>> reasons;
@@ -280,10 +282,8 @@ namespace LO::Matcher
 
 		const auto minConfidence = global ? std::max(a_minConfidence, MIN_CONFIDENCE_GLOBAL) : a_minConfidence;
 		std::string rejected;
-		if (bestDetail.strong <= 0.0) {
-			rejected = "only common words";
-		} else if (global && bestDetail.specific <= 0.0) {
-			rejected = "plugin has no visible items and nothing specific matches";
+		if (bestDetail.specific <= 0.0) {
+			rejected = "no model, folder, name, first word, tag or category in common";
 		} else if (match.confidence < minConfidence) {
 			rejected = std::format("below {}%", minConfidence);
 		} else if (secondScore > 0.0 && bestScore < MIN_LEAD * secondScore) {

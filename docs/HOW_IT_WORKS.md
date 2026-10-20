@@ -87,21 +87,34 @@ Every recovered recipe gets exactly one extra category, so it is shown exactly o
 With `sPlacement=Home` (the default) the order is:
 
 1. **Into an existing category that fits** (`bSortIntoCategories=1`). Lost Objects
-   looks at what is already in the menu: for every feature of the lost item - its
-   model file, model folder and parent folder, its name, a `[Tag]` in the name, the
-   words of the name and the name of its lost category - it checks in which
-   categories the visible items with the same feature are shown. The category that
-   holds most of them wins, if it is clearly ahead (1.5 times the runner-up) and the
-   confidence reaches `iMinConfidence` (default 45 %). Words alone never decide.
+   looks at what is already in the menu. For every feature of the lost item - its
+   model file, model folder and parent folder, its name, the first word of the name,
+   a `[Tag]` in the name, the other words of the name and the name of its lost
+   category - it checks in which categories ALL visible items with the same feature
+   are shown, across the whole menu. A category that holds most of them gets most of
+   the feature's weight; a feature that is everywhere ("setdressing", "box") gives
+   every category only a tiny part. The category with the highest total wins if
+   - it shares at least the model, the model folder, the name, the first word, a tag
+     or the category name with the lost item (words and parent folders alone never
+     decide),
+   - the confidence reaches `iMinConfidence` (default 30 %), and
+   - it is clearly ahead of the runner-up (1.5 times its score).
+
    Candidates are the categories in which the item's own plugin already has visible
-   items; if it has none, all categories are candidates, but then at least 60 % and a
-   matching model, folder or name are required. Example: a lost Snap'n Build staircase
-   with the model `SnB\Brick\Stairs\...` goes to the Snap'n Build category whose stairs
-   use the same folder.
-2. **Into a "Lost Objects" folder inside the plugin's own top menu**, if the plugin has
-   exactly one (for example "Snappy Builds > Lost Objects"). Inside, the items are
-   sorted by their original category; lost whole menus keep their name and categories.
-   Like this everybody can see what the mod author made and what Lost Objects added.
+   items; if it has none, all categories are candidates, but then at least 60 % are
+   required. Nothing in this is a fixed list: the mod only compares features of the
+   lost item with the same features of the items that are already visible.
+2. **Into a "Lost Objects" folder inside the plugin's own top menu.** The top menu is
+   the plugin's own sub menu if it has exactly one (for example "Snappy Builds").
+   A plugin without a menu of its own (an add-on such as `Snappy_DLC03.esp`) gets the
+   shallowest menu that holds at least 80 % of its visible items, if that menu mostly
+   shows items of this plugin or of the plugin that made the menu - so a shared menu
+   like "Structures" never counts. Inside the folder the items are sorted by their
+   original category. If that category comes from another plugin (for example the
+   base game's "Scrap", which many mods borrow), its name says nothing, so the items
+   are grouped by what they have in common themselves ("Wallpapers", "Roof",
+   "Fungus", ...). Lost whole menus keep their name and categories. Like this
+   everybody can see what the mod author made and what Lost Objects added.
 3. **Into the "Lost Objects" tab** otherwise: one folder per plugin, or a single
    entry named "Plugin - Category" if the plugin has only one thing to show.
 
@@ -111,6 +124,14 @@ Lost recipes whose item can **already be built** through a reachable recipe (for
 example the "scrap return" recipes of decoration mods) are skipped
 (`bSkipAlreadyBuildable=1`), because they would only show the same item twice. They are
 still listed in the inventory with the place where the item can be built.
+
+**Ghost objects** are skipped too (`bSkipMissingModels=1`): recipes whose item - or,
+for a list of variants, every single variant - points to a model file that does not
+exist, so the build menu would only show an empty slot. Lost Objects asks the game's
+own file system (loose files in `Data` and all loaded `.ba2` archives). Forms that
+have no model by nature (an NPC from a spawner mod) are never hidden. The check only
+runs after a self-test: the model files of items that are visible right now must be
+found; otherwise it stays off and the report says so ("Model check").
 
 The inventory and the report say for every item where it went and why (which features
 matched and how strongly, or why it was not sorted in and what the best guess was).

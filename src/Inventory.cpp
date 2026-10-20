@@ -333,7 +333,7 @@ namespace LO::Inventory
 		}
 
 		std::vector<Row> rows;
-		rows.reserve(a_scan.lostRecipes.size() + a_scan.alreadyBuildable.size());
+		rows.reserve(a_scan.lostRecipes.size() + a_scan.alreadyBuildable.size() + a_scan.missingModel.size());
 		for (const auto& lost : a_scan.lostRecipes) {
 			rows.push_back(MakeRow(a_scan, lost, a_apply, entries));
 		}
@@ -341,7 +341,14 @@ namespace LO::Inventory
 			auto row = MakeRow(a_scan, skipped.lost, a_apply, entries);
 			row.folder = skipped.shownAt.empty() ? "(already buildable)"s : skipped.shownAt;
 			row.status = "skipped, already buildable";
-			row.why = "the same item is already in the menu (bSkipAlreadyBuildable)";
+			row.why = skipped.reason + " (bSkipAlreadyBuildable)";
+			rows.push_back(std::move(row));
+		}
+		for (const auto& skipped : a_scan.missingModel) {
+			auto row = MakeRow(a_scan, skipped.lost, a_apply, entries);
+			row.folder = "(not shown)";
+			row.status = "skipped, model file missing";
+			row.why = skipped.reason + " (bSkipMissingModels)";
 			rows.push_back(std::move(row));
 		}
 

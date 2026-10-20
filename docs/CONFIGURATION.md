@@ -14,7 +14,7 @@ written to the log.
 | `bEnabled` | `1` | Master switch. `0` = the mod does nothing at all. |
 | `sPlacement` | `Home` | `Home`: sort recovered items into an existing category that fits; what does not fit goes into a "Lost Objects" folder inside the mod's own menu; only what has no home goes into the tab. `Tab`: everything into the "Lost Objects" tab, nothing is added to other menus. |
 | `bSortIntoCategories` | `1` | `0`: do not sort into existing categories, use the "Lost Objects" folder of the mod (or the tab) for everything. Only with `sPlacement=Home`. |
-| `iMinConfidence` | `45` | How sure (in percent) the match into an existing category must be. Higher = fewer items sorted in, but fewer mistakes. The inventory shows the confidence of every item. |
+| `iMinConfidence` | `30` | How sure (in percent) the match into an existing category must be. Higher = fewer items sorted in, but fewer mistakes. The inventory shows the confidence of every item. |
 | `sSortMode` | `ByMod` | `ByMod`: one folder per plugin file (mod, DLC or base game) inside the tab. `Flat`: all recovered menus directly in the tab. |
 | `bShowSummaryMessage` | `1` | Short message the first time you enter workshop mode after loading, e.g. "Lost Objects: 37 workshop item(s) recovered." |
 | `bBorrowMenuIcon` | `1` | Gives the tab and its folders the icon of the vanilla "Decorations" menu. |
@@ -33,13 +33,15 @@ written to the log.
 ## [Filters]
 
 By default Lost Objects shows **everything** that has a workshop recipe and cannot be
-reached in the build menu. The only filter that is on by default is
-`bSkipAlreadyBuildable`, because it removes nothing you could not build anyway.
+reached in the build menu. The only filters that are on by default are
+`bSkipAlreadyBuildable` and `bSkipMissingModels`, because they remove nothing you could
+build or see anyway. Both are listed in the inventory with the reason.
 
 | Setting | Default | Meaning |
 |---|---|---|
 | `bSkipUntouchedBaseGame` | `0` | `1` hides vanilla and DLC recipes that no mod changed. The base game hides a few recipes on purpose (for example a duplicate mattress). |
 | `bSkipAlreadyBuildable` | `1` | Skips lost recipes whose item can already be built through a reachable recipe (for example "scrap return" recipes of decoration mods). They would only show the same item twice. `0` shows them anyway. |
+| `bSkipMissingModels` | `1` | Hides "ghost objects": recipes whose item (or every variant of it) points to a model file that does not exist, so the build menu only shows an empty slot. Checked through the game's own file system (loose files and archives) after a self-test. `0` shows them anyway. |
 | `bSkipWithoutCategory` | `0` | `1` hides recipes that have no named category. Many mods create such recipes only to define scrap results, often hundreds of buildings, trees and clutter. |
 | `sIgnorePlugins` | *(empty)* | Comma separated plugin file names. Recipes defined or last changed in these files never appear in the tab. Example: `sIgnorePlugins=SomeMod.esp, AnotherMod.esl` |
 

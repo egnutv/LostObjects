@@ -6,19 +6,25 @@
 // already in the menu, no fixed lists.
 //
 // Every recipe is described by features: its model path, the model's folder
-// and parent folder, the item name, a "[Tag]" at the start of the name, the
-// single words of the name and the name of its (lost) category.
+// and parent folder, the item name, its first word, a "[Tag]" at the start of
+// the name, the single words of the name and the name of its (lost) category.
 //
-// For each feature of a lost recipe the index looks at where the visible
-// recipes with the same feature are shown. A category that holds most of
-// them gets most of the feature's weight. The category with the highest
-// total wins if it is clearly ahead and the evidence is strong enough;
-// otherwise the recipe is not sorted in (it goes into a "Lost Objects"
-// folder instead - better there than in the wrong place).
+// For each feature of a lost recipe the index looks at where ALL visible
+// recipes with the same feature are shown in the whole menu. A category that
+// holds most of them gets most of the feature's weight; a feature that is
+// everywhere ("setdressing", "box") gives each category only a tiny part.
+// The category with the highest total wins if
+//   * it shares at least the model, the model folder, the name, the first
+//     word, a tag or the category name with the lost item (words and parent
+//     folders alone never decide),
+//   * the confidence reaches iMinConfidence and
+//   * it is clearly ahead of the runner-up.
+// Otherwise the recipe is not sorted in (it goes into a "Lost Objects" folder
+// instead - better there than in the wrong place).
 //
 // Candidates are the categories in which the recipe's own plugin already has
 // visible items. If the plugin has none, all categories are candidates, but
-// then a much stronger match is required.
+// then at least 60 % confidence is required.
 
 namespace LO::Matcher
 {

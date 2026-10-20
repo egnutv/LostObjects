@@ -154,8 +154,9 @@ namespace LO
 		skipUntouchedBaseGame = GetBool(data, "filters.bskipuntouchedbasegame", false);
 		skipWithoutCategory = GetBool(data, "filters.bskipwithoutcategory", false);
 		skipAlreadyBuildable = GetBool(data, "filters.bskipalreadybuildable", true);
+		skipMissingModels = GetBool(data, "filters.bskipmissingmodels", true);
 		sortIntoCategories = GetBool(data, "general.bsortintocategories", true);
-		minConfidence = GetUInt(data, "general.iminconfidence", 45, 1, 100);
+		minConfidence = GetUInt(data, "general.iminconfidence", 30, 1, 100);
 		const auto placementText = Util::ToLower(GetString(data, "general.splacement", "Home"));
 		if (placementText == "tab") {
 			placement = Placement::kTab;
@@ -173,12 +174,13 @@ namespace LO
 		ignoredPlugins = SplitList(GetString(data, "filters.signoreplugins", ""));
 
 		REX::LogInformation(
-			"Settings: enabled={} placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
+			"Settings: enabled={} placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
 			enabled,
 			placement == Placement::kTab ? "Tab" : "Home",
 			sortIntoCategories,
 			minConfidence,
 			skipAlreadyBuildable,
+			skipMissingModels,
 			splitThreshold,
 			maxGroups,
 			minGroupSize,

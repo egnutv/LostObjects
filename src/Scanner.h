@@ -32,11 +32,12 @@ namespace LO
 		std::vector<const RE::BGSKeyword*> categories;
 	};
 
-	// A lost recipe whose item can already be built through a reachable recipe.
-	struct AlreadyBuildable
+	// A lost recipe that is not shown, and why.
+	struct SkippedRecipe
 	{
 		LostRecipe lost;
-		std::string shownAt;  // where the item can already be built
+		std::string shownAt;  // already buildable: where the item can be built
+		std::string reason;
 	};
 
 	struct ScanResult
@@ -51,7 +52,8 @@ namespace LO
 		std::uint32_t reachableCategoryCount{ 0 };
 		std::uint32_t reachableMenuCount{ 0 };
 		std::uint32_t skippedWithoutCategory{ 0 };  // recipes removed by bSkipWithoutCategory=1
-		std::vector<AlreadyBuildable> alreadyBuildable;  // skipped by bSkipAlreadyBuildable=1
+		std::vector<SkippedRecipe> alreadyBuildable;  // skipped by bSkipAlreadyBuildable=1
+		std::vector<SkippedRecipe> missingModel;      // ghost objects, skipped by bSkipMissingModels=1
 		std::vector<VisibleRecipe> visible;  // reachable workshop recipes
 		std::vector<std::string> workbenchKeywords;  // for the log
 

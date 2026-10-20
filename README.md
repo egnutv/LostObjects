@@ -92,7 +92,7 @@ cannot place with confidence goes into a **"Lost Objects" folder inside the mod'
 menu**, so you can see what the mod author made and what Lost Objects added. Only what
 has no home at all ends up in the "Lost Objects" tab. Large categories are split into
 groups automatically. Items that can already be built through another recipe are not
-shown twice. `sPlacement=Tab` puts everything into the tab instead.
+shown twice, and "ghost objects" whose model file does not exist are hidden. `sPlacement=Tab` puts everything into the tab instead.
 
 ## Settings
 

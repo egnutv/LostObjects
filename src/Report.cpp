@@ -1,5 +1,6 @@
 #include "Report.h"
 
+#include "ModelCheck.h"
 #include "Util.h"
 
 namespace LO::Report
@@ -67,6 +68,8 @@ namespace LO::Report
 		file << "In a Lost Objects folder   : " << a_apply.inModFolder << " recipes (inside the mod's own menu)\n";
 		file << "In the Lost Objects tab    : " << a_apply.inTab << " recipes\n";
 		file << "Skipped, already buildable : " << a_scan.alreadyBuildable.size() << " recipes (the same item is already in the menu)\n";
+		file << "Skipped, model file missing: " << a_scan.missingModel.size() << " recipes (ghost objects)\n";
+		file << "Model check                : " << ModelCheck::Status() << "\n";
 		file << "Did not fit (pool full)    : " << a_apply.overflow << " recipes\n";
 		file << "Menus/categories created   : " << a_apply.entryCount << "\n";
 		file << "Folders in the tab         : " << a_apply.folderCount << "\n";
@@ -102,6 +105,15 @@ namespace LO::Report
 		}
 		file << "\n";
 
+		file << "Ghost objects (not shown, model file missing)\n---------------------------------------------\n";
+		if (a_scan.missingModel.empty()) {
+			file << "  (none)\n";
+		}
+		for (const auto& skipped : a_scan.missingModel) {
+			file << "  " << DescribeRecipe(skipped.lost.recipe) << " - " << skipped.reason << "\n";
+		}
+		file << "\n";
+
 		file << "Workbench keywords used by workshop recipes\n-------------------------------------------\n";
 		for (const auto& bench : a_scan.workbenchKeywords) {
 			file << "  " << bench << "\n";
@@ -129,7 +141,7 @@ namespace LO::Report
 	void Log(const ScanResult& a_scan, const ApplyResult& a_apply, std::string_view a_reason, bool a_verbose)
 	{
 		REX::LogInformation(
-			"Scan ({}): {} reachable recipes in {} categories / {} menus; {} lost recipes -> {} entries, {} uncategorized ({} skipped by filter, {} already buildable), {} sorted into categories, {} in mod folders, {} in the tab, {} folders, tab {}",
+			"Scan ({}): {} reachable recipes in {} categories / {} menus; {} lost recipes -> {} entries, {} uncategorized ({} skipped by filter, {} already buildable, {} ghost objects), {} sorted into categories, {} in mod folders, {} in the tab, {} folders, tab {}",
 			a_reason,
 			a_scan.reachableRecipeCount,
 			a_scan.reachableCategoryCount,
@@ -139,6 +151,7 @@ namespace LO::Report
 			a_scan.uncategorized.size(),
 			a_scan.skippedWithoutCategory,
 			a_scan.alreadyBuildable.size(),
+			a_scan.missingModel.size(),
 			a_apply.sortedIn,
 			a_apply.inModFolder,
 			a_apply.inTab,

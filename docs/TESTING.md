@@ -58,6 +58,8 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T18 | Open a large recovered category | It is split into named groups (e.g. "Alcohol", "Stairs") plus "Other". Do the groups make sense? |
 | T19 | `LostObjects_Duplicates.txt` | "via Lost Objects AND normally" is 0. |
 | T19b | `LostObjects_Inventory.tsv`, column "Status" | "skipped, already buildable" items can really be built at the place in "Shown at". |
+| T19c | Report, "Model check" and "Ghost objects" | The model check is "active". The listed ghost objects really show only an empty slot when `bSkipMissingModels=0`. |
+| T19d | Add-on without own menu (e.g. Snappy_DLC03) | Its lost items are in the "Lost Objects" folder of the main mod's menu, not in the tab. |
 | T20 | `sPlacement=Tab`, restart | Everything is in the "Lost Objects" tab again, nothing in other menus or categories. |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 

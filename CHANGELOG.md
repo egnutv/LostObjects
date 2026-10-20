@@ -4,6 +4,31 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-20
+
+### Changed
+- Sorting into existing categories is stricter and fairer: the share of a feature is
+  now counted over the whole menu, so a folder that is everywhere ("setdressing",
+  "props") no longer looks like a perfect match. New feature: the first word of the
+  name. The winner must share the model, the model folder, the name, the first word, a
+  tag or the category name with the lost item - words and parent folders alone never
+  decide. This removes wrong placements like a film projector in "Floor coverings".
+  `iMinConfidence` default is now 30 % (the numbers are lower because of the fairer
+  counting).
+- Plugins without a menu of their own (add-ons like `Snappy_DLC03.esp`) now get the
+  menu that holds at least 80 % of their visible items as home, if that menu mostly
+  belongs to them or to the plugin that made it. Their "Lost Objects" folder goes there
+  instead of the tab.
+- In a "Lost Objects" folder, items of a borrowed category (for example the base game's
+  "Scrap" used by a mod) are grouped by what they have in common ("Wallpapers",
+  "Roof", ...) instead of all landing in "Scrap".
+
+### Added
+- Ghost objects are hidden (`bSkipMissingModels=1`): recipes whose item, or every
+  variant of it, points to a model file that does not exist. Checked through the
+  game's file system (loose files and archives) after a self-test; listed in the
+  report and the inventory ("skipped, model file missing").
+
 ## [0.3.0] - 2026-10-20
 
 ### Changed
