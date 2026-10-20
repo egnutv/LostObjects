@@ -1,0 +1,95 @@
+[center][img]https://raw.githubusercontent.com/egnutv/LostObjects/main/Logo/Logo.png[/img]
+
+[size=6][b]Lost Objects[/b][/size]
+[size=3]Every craftable workshop item you cannot reach in the build menu - found and put back where it belongs.[/size]
+
+[b]Public beta[/b] - tested on Fallout 4 [b]1.11.240[/b] with F4SE [b]0.7.9[/b][/center]
+
+[quote][b]Vibecoded by AI.[/b] The code of this mod was written by Claude (Anthropic), an AI model, directed and tested by egnutv. AI-generated code can contain mistakes. Keep a backup save. The mod tells you this in game once per version.[/quote]
+
+[size=4][b]The problem[/b][/size]
+You install a settlement mod or a menu reorganizer, and some pieces never show up in the workshop menu - new ones from the mod, or vanilla and DLC pieces that another mod pushed out. They are loaded and have a recipe - there is just no way to click on them. The usual causes are a menu that was never connected, a menu replacer that dropped a category, or two mods overwriting the same vanilla menu list. Fixing that by hand needs xEdit and a lot of patience.
+
+[size=4][b]What this mod does[/b][/size]
+Lost Objects walks through the whole workshop menu exactly the way the game does and finds every workshop recipe that cannot be reached - from mods, DLCs or the base game, whatever it builds. Then it puts each item back:
+
+[list=1]
+[*][b]Into the existing category it belongs to[/b], right next to its siblings. The category is found by comparing the item with what is already in your menu - model file, model folder, name, first word, tags. No fixed lists, so it works with any mod.
+[*][b]Into a "Lost Objects" folder inside the mod's own menu[/b] if no category fits clearly - better there than in the wrong place. You always see what the mod author made and what Lost Objects added.
+[*][b]Into the "Lost Objects" tab[/b] of the main workshop menu only if the item has no home at all.
+[/list]
+
+[list]
+[*]Large groups are split automatically ("Wallpapers", "Walls", "Roof", ...).
+[*]Items that can already be built elsewhere are not shown twice.
+[*]"Ghost objects" whose model file does not exist are hidden.
+[*]Recovered items get a thumbnail in the build bar.
+[*]Items keep their original costs and requirements; conditions of their mod still apply.
+[*]The menus are built once your workshop menu has settled after loading and are updated when something new turns up - they never flip back and forth.
+[*]Only settlement workshop recipes are considered. Chemistry, cooking, armor and weapon workbenches are not touched.
+[/list]
+
+[size=4][b]Safe to use and to remove[/b][/size]
+[list]
+[*]Everything happens in memory. Nothing is written into your save game.
+[*]No Papyrus scripts.
+[*]Remove the mod at any time. Things you built stay where they are.
+[/list]
+
+[size=4][b]Requirements[/b][/size]
+[list]
+[*]Fallout 4 [b]1.11.240[/b] (current Steam version) - tested. 1.10.984 (Next-Gen) and 1.10.163 (Old-Gen) are supported by the DLL but untested - reports welcome.
+[*][url=https://www.nexusmods.com/fallout4/mods/42147]Fallout 4 Script Extender (F4SE)[/url] 0.7.9 for 1.11.240
+[*][url=https://www.nexusmods.com/fallout4/mods/47327]Address Library for F4SE Plugins[/url] for your game version
+[/list]
+
+[size=4][b]Tested with[/b][/size]
+A large settlement load order: Workshop Framework, Settlement Menu Manager (+ patches), Workshop Rearranged, Homemaker, Settlement Objects Expansion Pack (+ Vanilla Menu Fixer), Snap'n Build, Snappy HouseKit (+ DLC03), The Master Plan, Vanilla Extensions, Red Rocket Reborn, OC Decorator, Chuck Yufarley Collection, Renovated Furniture and Decorations, Settlement Keywords Expanded, Place Everywhere, Scrap Everything and more, plus all DLCs and the Creation Club content. Full list on GitHub: [url=https://github.com/egnutv/LostObjects/blob/main/docs/TESTED_WITH.md]TESTED_WITH.md[/url]
+
+[size=4][b]Installation[/b][/size]
+Install with Vortex, the Nexus app or Mod Organizer 2 and enable LostObjects.esp. It is a light plugin (ESL flagged) and does not use a regular plugin slot. Load order does not matter. After loading a save, give it about ten seconds before you open the workshop - other mods add their menus right after loading.
+
+[size=4][b]Settings[/b][/size]
+Data\F4SE\Plugins\LostObjects.ini - every option is explained in the file.
+[list]
+[*]sPlacement = Home / Tab - sort into the mods' menus, or everything into one tab
+[*]iMinConfidence - how sure a match must be before an item is sorted into a category
+[*]sIgnorePlugins - mods whose items should never be shown
+[*]bSkipUntouchedBaseGame, bSkipWithoutCategory - optional filters, off by default
+[*]bCustomMenuIcon - the Lost Objects logo or the vanilla icon
+[*]bDevelopmentMode - detailed analysis files for bug reports
+[/list]
+
+[size=4][b]Something wrong?[/b][/size]
+The mod writes two files to Documents\My Games\Fallout4\F4SE\:
+[list]
+[*]LostObjects.log - what the mod did
+[*]LostObjects_Report.txt - every recovered item and where it went
+[/list]
+Please attach both to your bug report. For problems with the sorting, set bDevelopmentMode=1 in the INI first - it writes a full inventory that says why each item was put where it is.
+
+[size=4][b]Planned[/b][/size]
+[list]
+[*]Language packs for the few texts the mod shows itself
+[*]A "scan again now" button in the Mod Configuration Menu
+[/list]
+
+[size=4][b]Source code[/b][/size]
+Open source on GitHub: [url=https://github.com/egnutv/LostObjects]github.com/egnutv/LostObjects[/url] - documentation, build instructions and the full technical explanation.
+
+[size=4][b]Permissions[/b][/size]
+[list]
+[*]Code: PolyForm Noncommercial 1.0.0 - use, change and share for noncommercial purposes.
+[*]Videos, streams, screenshots and reviews of the mod are allowed, also monetized (YouTube, Twitch, ...). No need to ask. Bethesda's video policy still applies to the game content.
+[*]What you build with the mod is yours.
+[*]Forks, ports, patches and translations are welcome without asking.
+[*]No warranty, no support obligation.
+[/list]
+
+[size=4][b]Credits[/b][/size]
+[list]
+[*]egnutv - idea, project owner, tester, logo
+[*]Claude (Anthropic) - code and documentation (vibecoded by AI)
+[*]CommonLibF4 AV by LucaDotGit, based on work by Ryan McKenzie and alandtse
+[*]The F4SE team and the authors of the Address Library
+[/list]

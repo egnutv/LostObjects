@@ -4,6 +4,21 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-10-20 - public beta
+
+First public release. Tested on Fallout 4 1.11.240 with F4SE 0.7.9 and a large
+settlement load order (see `docs/TESTED_WITH.md`).
+
+### Changed
+- New setting `bDevelopmentMode` (default `0`): the large analysis files (inventory,
+  patterns, complete menu, duplicates) are only written for testers. The report and
+  the log are always written. The old name `bWriteInventory` still works.
+- Lost Objects tab: borrowed categories (for example the base game's "Scrap" used by a
+  DLC) are grouped by what their items have in common, like in the mod folders.
+- Documentation brought up to date: README, installation, troubleshooting, tested
+  configuration, Nexus page kit (`nexus/`), planned features (language packs).
+- Build: GitHub Actions updated to the Node 24 versions.
+
 ## [0.4.6] - 2026-10-20
 
 ### Changed

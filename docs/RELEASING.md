@@ -31,22 +31,13 @@ A new version also shows the AI message in game once more.
 
 ## Nexus Mods page
 
-- Description: copy `docs/NEXUS_PAGE.bbcode`.
-- Main image: upload `Logo/Logo.png` (1000 x 1000) as the mod's primary image.
-- Requirements: *Fallout 4 Script Extender (F4SE)* and *Address Library for F4SE Plugins*.
-- Tags: Settlement, Utilities, F4SE.
-- Permissions (matching `NOTICE.md`):
-  - Upload to other sites: yes, with credit
-  - Modification: yes
-  - Conversion to other games: yes
-  - Asset use: yes, with credit
-  - Commercial use: **no** (the code is noncommercial; what players build is theirs)
-- Mark the AI use in the description (already in the BBCode).
-- File credits: "Vibecoded by AI (Claude, Anthropic). Project owner and tester: egnutv."
+Everything for the page is in `nexus/`: the description (`nexus/description.bbcode`),
+all fields and permissions (`nexus/page_fields.md`), the screenshot list
+(`nexus/screenshots.md`) and a header image (`nexus/header.png`).
 
 ## Checklist before uploading
 
 - [ ] `tools/build_plugin.py --check` and `tools/verify_plugin.py` pass (CI does this)
-- [ ] Tested in game with [TESTING.md](TESTING.md)
+- [ ] Tested in game with [TESTING.md](TESTING.md); [TESTED_WITH.md](TESTED_WITH.md) updated
 - [ ] `CHANGELOG.md` updated
 - [ ] AI notice text still correct (`src/Notice.cpp`)

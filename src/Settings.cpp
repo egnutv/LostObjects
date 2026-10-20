@@ -141,7 +141,9 @@ namespace LO
 		borrowMenuIcon = GetBool(data, "general.bborrowmenuicon", true);
 		customMenuIcon = GetBool(data, "general.bcustommenuicon", true);
 		writeReport = GetBool(data, "general.bwritereport", true);
-		writeInventory = GetBool(data, "general.bwriteinventory", true);
+		// Development mode: the large analysis files (inventory, patterns, full
+		// menu, duplicates). Off for players; bWriteInventory is the old name.
+		writeInventory = GetBool(data, "general.bdevelopmentmode", GetBool(data, "general.bwriteinventory", false));
 		verboseLog = GetBool(data, "general.bverboselog", false);
 
 		const auto sortText = Util::ToLower(GetString(data, "general.ssortmode", "ByMod"));
@@ -177,7 +179,7 @@ namespace LO
 		ignoredPlugins = SplitList(GetString(data, "filters.signoreplugins", ""));
 
 		REX::LogInformation(
-			"Settings: enabled={} liveUpdate={} settle={}s placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
+			"Settings: enabled={} liveUpdate={} settle={}s placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} developmentMode={} verbose={} ignoredPlugins={}",
 			enabled,
 			liveUpdate,
 			settleSeconds,
@@ -195,6 +197,7 @@ namespace LO
 			showSummaryMessage,
 			borrowMenuIcon,
 			writeReport,
+			writeInventory,
 			verboseLog,
 			ignoredPlugins.size());
 	}

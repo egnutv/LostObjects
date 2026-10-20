@@ -595,7 +595,16 @@ namespace LO
 
 		for (const auto& item : tab) {
 			const auto stem = Util::StripExtension(item.bucket->plugin.empty() ? "Unknown"s : item.bucket->plugin);
-			const auto count = item.leaves.size() + item.menus.size();
+
+			// Borrowed categories (the base game's "Scrap" used by a DLC, ...) are
+			// grouped by what their items have in common, like in the mod folders.
+			std::vector<Grouping::Group> groups;
+			for (const auto* leaf : item.leaves) {
+				for (auto& group : RegroupBorrowed(*leaf, groupOptions)) {
+					groups.push_back(std::move(group));
+				}
+			}
+			const auto count = groups.size() + item.menus.size();
 			const bool byMod = a_settings.sortMode == SortMode::kByMod;
 
 			RE::BGSListForm* folder = nullptr;
@@ -623,8 +632,8 @@ namespace LO
 				}
 			};
 
-			for (const auto* leaf : item.leaves) {
-				place(plan.BuildCategory(prefix + leaf->name, leaf->recipes, path));
+			for (const auto& group : groups) {
+				place(plan.BuildCategory(prefix + group.label, group.recipes, path));
 			}
 			for (const auto& [name, menu] : item.menus) {
 				place(plan.BuildMenu(*menu, path, prefix + name));

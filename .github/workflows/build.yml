@@ -25,9 +25,9 @@ jobs:
     name: Check plugin file
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -42,7 +42,7 @@ jobs:
     needs: plugin-file
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install CMake and Ninja (latest)
         uses: lukka/get-cmake@latest
@@ -58,7 +58,7 @@ jobs:
       - name: Build
         run: cmake --build --preset release
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -70,14 +70,14 @@ jobs:
           --out dist
 
       - name: Upload mod archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: LostObjects-zip
           path: dist/LostObjects-*[0-9].zip
           if-no-files-found: error
 
       - name: Upload debug symbols
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: LostObjects-pdb
           path: dist/LostObjects-*-pdb.zip

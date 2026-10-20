@@ -66,7 +66,7 @@ Mark each case with OK / FAIL / NOT TESTED.
 ## 3. What to send back
 
 - The table above with your results.
-- `LostObjects.log`, `LostObjects_Report.txt`, `LostObjects_Inventory.tsv`, `LostObjects_Patterns.txt`, `LostObjects_Menu.tsv` and `LostObjects_Duplicates.txt` (for a full picture set
+- set `bDevelopmentMode=1` in the INI first, then send `LostObjects.log`, `LostObjects_Report.txt`, `LostObjects_Inventory.tsv`, `LostObjects_Patterns.txt`, `LostObjects_Menu.tsv` and `LostObjects_Duplicates.txt` (for a full picture set
   `bVerboseLog=1` once).
 - Screenshots of the tab (main menu with tab, one folder opened).
 - For a crash: the crash log (Buffout 4 or similar) and `f4se.log`.

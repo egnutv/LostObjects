@@ -41,7 +41,7 @@ namespace LO
 		bool borrowMenuIcon{ true };   // give the tab and folders an icon
 		bool customMenuIcon{ true };   // the Lost Objects icon instead of the vanilla "Decorations" icon
 		bool writeReport{ true };
-		bool writeInventory{ true };
+		bool writeInventory{ false };  // bDevelopmentMode: large analysis files
 		bool verboseLog{ false };
 		std::vector<std::string> ignoredPlugins;  // lower case file names
 
