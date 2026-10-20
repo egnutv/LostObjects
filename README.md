@@ -127,7 +127,6 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) first.
 - **Language packs**: translations of the few texts Lost Objects shows itself (the AI
   notice, the summary message, folder names like "Lost Objects" and "Other"). Item and
   category names already come from the game and the mods in your language.
-- A button in the Mod Configuration Menu to scan again at once.
 
 ## Credits
 
