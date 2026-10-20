@@ -2,6 +2,8 @@
 
 // Small helpers shared by the other source files.
 
+#include "NameMap.h"
+
 namespace LO::Util
 {
 	[[nodiscard]] inline std::string ToLower(std::string_view a_text)
@@ -74,20 +76,11 @@ namespace LO::Util
 		return static_cast<std::uint32_t>(file->compileIndex) << 12;
 	}
 
-	// Display name of a form. Keywords and form lists keep their names in the
-	// game's sparse name map, which GetFormFullName() also checks.
+	// Display name of a form (see NameMap.h - never use
+	// RE::TESFullName::GetFormFullName, its address is wrong on 1.11.x).
 	[[nodiscard]] inline std::string GetFormName(const RE::TESForm* a_form)
 	{
-		if (!a_form) {
-			return {};
-		}
-
-		const auto name = RE::TESFullName::GetFormFullName(a_form);
-		if (!name || name->empty() || !name->c_str()) {
-			return {};
-		}
-
-		return std::string(name->c_str());
+		return NameMap::GetName(a_form);
 	}
 
 	// Editor IDs are only kept at runtime for a few form types (keywords are one of them).

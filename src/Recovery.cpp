@@ -1,5 +1,6 @@
 #include "Recovery.h"
 
+#include "NameMap.h"
 #include "Notice.h"
 #include "Report.h"
 #include "Scanner.h"
@@ -76,6 +77,13 @@ namespace LO
 			return;
 		}
 
+		// Names of keywords (folder names, category names) come from the game's
+		// name table. It is verified first; without it the mod still works.
+		if (!NameMap::Initialize(_forms.rootKeyword, Forms::RootName) && settings.sortMode == SortMode::kByMod) {
+			REX::LogWarning("Folder names are not available, using sSortMode=Flat for this session");
+			settings.sortMode = SortMode::kFlat;
+		}
+
 		_ready = true;
 		BorrowMenuIcon();
 		RegisterEvents();
@@ -106,11 +114,49 @@ namespace LO
 		}
 		_scanPending = false;
 
+		if (!ScanGuarded(*this, a_reason)) {
+			OnScanFailed(a_reason);
+		}
+	}
+
+	// Safety net: if anything inside the scan crashes, Lost Objects switches
+	// itself off for this session instead of taking the game down with it.
+	bool Recovery::ScanGuarded(Recovery& a_self, std::string_view a_reason)
+	{
+		__try {
+			a_self.ScanNow(a_reason);
+			return true;
+		} __except (EXCEPTION_EXECUTE_HANDLER) {
+			return false;
+		}
+	}
+
+	void Recovery::OnScanFailed(std::string_view a_reason)
+	{
+		_ready = false;
+		REX::LogError("Scan ({}) failed with an internal error. Lost Objects is switched off until the game is restarted.", a_reason);
+		REX::LogError("Please send this log file (LostObjects.log) with your bug report.");
+		RE::SendHUDMessage::ShowHUDMessage("Lost Objects stopped after an error. Please send LostObjects.log.");
+	}
+
+	void Recovery::ScanNow(std::string_view a_reason)
+	{
+		const auto& settings = Settings::Get();
+		const bool traceSteps = ++_scanCount <= 5;  // detailed progress for the first scans only
+
+		if (traceSteps) {
+			REX::LogInformation("Scan ({}) started", a_reason);
+		}
+
 		const auto start = std::chrono::steady_clock::now();
 
 		const auto scan = Scanner::Run(_forms, settings, _builder.OriginalKeywords());
 		if (!scan.valid) {
 			return;
+		}
+
+		if (traceSteps) {
+			REX::LogInformation("Scan ({}): analysis done, updating the menu", a_reason);
 		}
 
 		const auto apply = _builder.Apply(_forms, scan, settings);

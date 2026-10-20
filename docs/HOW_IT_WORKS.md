@@ -114,6 +114,11 @@ The menu is never changed while it is on screen.
 
 ## 6. Folders per plugin file ("ByMod")
 
+Folder and category names come from the game's name table for keywords and form lists.
+Lost Objects resolves the address of that table itself and verifies it at startup by
+looking up its own keyword `LO_RootKeyword`, whose name must be "Lost Objects". If the
+check fails, names are not read or written and `sSortMode=Flat` is used for the session.
+
 `LostObjects.esp` contains 48 folder form lists, each with its own name keyword and
 its own "Uncategorized" keyword. At runtime the name keywords are renamed to the file
 name of the plugin that defined the content (a mod, a DLC or `Fallout4`) through the

@@ -55,6 +55,12 @@ Renaming the folders failed. Please report it with the log. As a workaround use
 
 Set `bBorrowMenuIcon=0`. The tab then shows without an icon; everything else works.
 
+## "Lost Objects stopped after an error"
+
+A scan failed with an internal error. Lost Objects switched itself off for this session
+so the game keeps running. Please report it with `LostObjects.log` - the last lines show
+where it stopped.
+
 ## Crash
 
 1. Disable the mod and check whether the crash is gone.

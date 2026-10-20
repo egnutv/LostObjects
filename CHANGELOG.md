@@ -4,6 +4,20 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-10-20
+
+### Fixed
+- Crash after loading a save on Fallout 4 1.11.240. CommonLibF4 AV points to the wrong
+  address for the game's name table (names of keywords and form lists) on the Anniversary
+  Edition. Lost Objects now resolves this address itself and verifies it with one of its
+  own keywords before using it. If the check fails, names are not used and the mod keeps
+  working (folders fall back to `sSortMode=Flat`).
+
+### Added
+- Safety net: if a scan ever fails with an internal error, Lost Objects switches itself
+  off for the session and shows a message instead of crashing the game.
+- More detailed progress lines in `LostObjects.log` for the first scans after loading.
+
 ## [0.1.0] - 2026-10-20
 
 First test version.

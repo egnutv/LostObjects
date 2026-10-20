@@ -11,6 +11,7 @@
 namespace LO::Forms
 {
 	inline constexpr std::string_view PluginFile = "LostObjects.esp";
+	inline constexpr std::string_view RootName = "Lost Objects";  // FULL of RootKeyword
 
 	inline constexpr std::uint32_t RootKeyword = 0x800;
 	inline constexpr std::uint32_t UncategorizedKeyword = 0x801;

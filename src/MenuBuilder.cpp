@@ -93,24 +93,7 @@ namespace LO
 
 	bool SetKeywordName(RE::BGSKeyword* a_keyword, std::string_view a_name)
 	{
-		if (!a_keyword) {
-			return false;
-		}
-
-		auto& nameMap = RE::TESFullName::GetSparseFullNameMap();
-		const auto it = nameMap.find(a_keyword);
-		if (it == nameMap.end()) {
-			return false;
-		}
-
-		const char* current = it->second.c_str();
-		if (current && std::string_view(current) == a_name) {
-			return true;
-		}
-
-		const std::string copy(a_name);
-		it->second = RE::BGSLocalizedString(copy.c_str());
-		return true;
+		return NameMap::SetName(a_keyword, a_name);
 	}
 
 	void MenuBuilder::Reset()

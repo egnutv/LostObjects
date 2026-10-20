@@ -29,6 +29,10 @@ namespace LO
 	private:
 		Recovery() = default;
 
+		void ScanNow(std::string_view a_reason);
+		void OnScanFailed(std::string_view a_reason);
+		static bool ScanGuarded(Recovery& a_self, std::string_view a_reason);
+
 		void RegisterEvents();
 		void BorrowMenuIcon();
 		void ScheduleFollowUpScans();
@@ -46,6 +50,7 @@ namespace LO
 		bool _summaryShown{ false };
 		bool _hasLoggedOnce{ false };
 		std::size_t _lastSignature{ 0 };
+		std::uint32_t _scanCount{ 0 };
 
 		std::atomic<std::uint32_t> _loadGeneration{ 0 };
 	};

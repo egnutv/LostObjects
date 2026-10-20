@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 4.3.0)
 
 project(
 	LostObjects
-	VERSION 0.1.0.0
+	VERSION 0.1.1.0
 	DESCRIPTION "Adds a workshop menu tab that collects every craftable workshop item which is not reachable in the build menu."
 	LANGUAGES CXX
 )
@@ -66,6 +66,7 @@ set(SOURCES
 	src/Forms.cpp
 	src/Main.cpp
 	src/MenuBuilder.cpp
+	src/NameMap.cpp
 	src/Notice.cpp
 	src/Recovery.cpp
 	src/Report.cpp
@@ -76,6 +77,7 @@ set(SOURCES
 set(HEADERS
 	src/Forms.h
 	src/MenuBuilder.h
+	src/NameMap.h
 	src/Notice.h
 	src/PCH.h
 	src/PluginForms.h

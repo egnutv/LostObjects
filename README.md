@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Logo/Logo.png" alt="Lost Objects logo" width="256">
+</p>
+
 # Lost Objects
 
 **A Fallout 4 mod that finds every craftable workshop item you cannot reach in the build menu - from mods, DLCs or the base game - and puts it into a new tab called "Lost Objects".**

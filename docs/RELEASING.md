@@ -32,6 +32,7 @@ A new version also shows the AI message in game once more.
 ## Nexus Mods page
 
 - Description: copy `docs/NEXUS_PAGE.bbcode`.
+- Main image: upload `Logo/Logo.png` (1000 x 1000) as the mod's primary image.
 - Requirements: *Fallout 4 Script Extender (F4SE)* and *Address Library for F4SE Plugins*.
 - Tags: Settlement, Utilities, F4SE.
 - Permissions (matching `NOTICE.md`):

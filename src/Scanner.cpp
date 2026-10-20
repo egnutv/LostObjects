@@ -222,9 +222,12 @@ namespace LO
 				continue;
 			}
 
+			// A category is usable if it is a recipe filter with a name. If the
+			// game's name table is not available, names cannot be checked.
+			const bool namesAvailable = NameMap::IsAvailable();
 			std::vector<RE::BGSKeyword*> usable;
 			for (auto* keyword : candidate.keywords) {
-				if (recipeFilters.contains(keyword) && !Util::GetFormName(keyword).empty()) {
+				if (recipeFilters.contains(keyword) && (!namesAvailable || !Util::GetFormName(keyword).empty())) {
 					usable.push_back(keyword);
 				}
 			}
@@ -302,6 +305,9 @@ namespace LO
 
 			const auto* titleKeyword = list->GetNthForm(0);
 			auto name = Util::GetFormName(titleKeyword);
+			if (name.empty() && !NameMap::IsAvailable()) {
+				name = Util::GetEditorID(titleKeyword);
+			}
 
 			// Only restore the whole menu if it is mostly lost, otherwise the
 			// tab would fill up with duplicates of reachable categories.
@@ -330,10 +336,15 @@ namespace LO
 				continue;
 			}
 
+			auto displayName = Util::GetFormName(keyword);
+			if (displayName.empty()) {
+				displayName = Util::GetEditorID(keyword);
+			}
+
 			result.entries.push_back(MenuEntry{
 				.form = keyword,
 				.isMenu = false,
-				.displayName = Util::GetFormName(keyword),
+				.displayName = std::move(displayName),
 				.pluginFile = Util::GetFileName(keyword, 0),
 				.loadOrderKey = Util::GetLoadOrderKey(keyword),
 				.recipeCount = count });

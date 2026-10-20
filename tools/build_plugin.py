@@ -233,6 +233,7 @@ def build_header(ids: dict[str, int]) -> str:
         "namespace LO::Forms",
         "{",
         f'\tinline constexpr std::string_view PluginFile = "{PLUGIN_FILE}";',
+        f'\tinline constexpr std::string_view RootName = "{ROOT_NAME}";  // FULL of RootKeyword',
         "",
         f"\tinline constexpr std::uint32_t RootKeyword = 0x{ids['RootKeyword']:03X};",
         f"\tinline constexpr std::uint32_t UncategorizedKeyword = 0x{ids['UncategorizedKeyword']:03X};",
