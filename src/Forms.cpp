@@ -15,9 +15,9 @@ namespace LO
 	{
 		_valid = false;
 		_owned.clear();
-		slotMenus.clear();
-		slotKeywords.clear();
-		slotUncategorizedKeywords.clear();
+		menus.clear();
+		menuTitles.clear();
+		leaves.clear();
 
 		auto* dataHandler = RE::TESDataHandler::GetSingleton();
 		if (!dataHandler) {
@@ -33,30 +33,23 @@ namespace LO
 		workshopMenuMain = Find<RE::BGSListForm>(dataHandler, Forms::WorkshopMenuMain, Forms::BaseGameFile);
 		rootMenu = Find<RE::BGSListForm>(dataHandler, Forms::RootMenu, Forms::PluginFile);
 		rootKeyword = Find<RE::BGSKeyword>(dataHandler, Forms::RootKeyword, Forms::PluginFile);
-		uncategorizedKeyword = Find<RE::BGSKeyword>(dataHandler, Forms::UncategorizedKeyword, Forms::PluginFile);
 
-		for (std::uint32_t i = 0; i < Forms::SlotCount; ++i) {
-			slotMenus.push_back(Find<RE::BGSListForm>(dataHandler, Forms::FirstSlotMenu + i, Forms::PluginFile));
-			slotKeywords.push_back(Find<RE::BGSKeyword>(dataHandler, Forms::FirstSlotKeyword + i, Forms::PluginFile));
-			slotUncategorizedKeywords.push_back(Find<RE::BGSKeyword>(dataHandler, Forms::FirstSlotUncategorizedKeyword + i, Forms::PluginFile));
+		bool ok = workshopMenuMain && rootMenu && rootKeyword;
+		if (!workshopMenuMain) {
+			REX::LogError("Forms: missing WorkshopMenuMain (Fallout4.esm 106DA2)");
 		}
 
-		bool ok = true;
-		const auto require = [&ok](const void* a_form, std::string_view a_what) {
-			if (!a_form) {
-				REX::LogError("Forms: missing {}", a_what);
-				ok = false;
-			}
-		};
-
-		require(workshopMenuMain, "WorkshopMenuMain (Fallout4.esm 106DA2)");
-		require(rootMenu, "LO_RootMenu");
-		require(rootKeyword, "LO_RootKeyword");
-		require(uncategorizedKeyword, "LO_UncategorizedKeyword");
-		for (std::uint32_t i = 0; i < Forms::SlotCount; ++i) {
-			require(slotMenus[i], "LO_SlotMenu");
-			require(slotKeywords[i], "LO_SlotKeyword");
-			require(slotUncategorizedKeywords[i], "LO_SlotUncategorizedKeyword");
+		for (std::uint32_t i = 0; i < Forms::MenuCount; ++i) {
+			auto* menu = Find<RE::BGSListForm>(dataHandler, Forms::FirstMenu + i, Forms::PluginFile);
+			auto* title = Find<RE::BGSKeyword>(dataHandler, Forms::FirstMenuTitle + i, Forms::PluginFile);
+			ok = ok && menu && title;
+			menus.push_back(menu);
+			menuTitles.push_back(title);
+		}
+		for (std::uint32_t i = 0; i < Forms::LeafCount; ++i) {
+			auto* leaf = Find<RE::BGSKeyword>(dataHandler, Forms::FirstLeaf + i, Forms::PluginFile);
+			ok = ok && leaf;
+			leaves.push_back(leaf);
 		}
 
 		if (!ok) {
@@ -66,15 +59,16 @@ namespace LO
 
 		_owned.insert(rootMenu);
 		_owned.insert(rootKeyword);
-		_owned.insert(uncategorizedKeyword);
-		for (std::uint32_t i = 0; i < Forms::SlotCount; ++i) {
-			_owned.insert(slotMenus[i]);
-			_owned.insert(slotKeywords[i]);
-			_owned.insert(slotUncategorizedKeywords[i]);
+		for (std::uint32_t i = 0; i < Forms::MenuCount; ++i) {
+			_owned.insert(menus[i]);
+			_owned.insert(menuTitles[i]);
+		}
+		for (auto* leaf : leaves) {
+			_owned.insert(leaf);
 		}
 
 		_valid = true;
-		REX::LogInformation("Forms: resolved WorkshopMenuMain and {} plugin forms", _owned.size());
+		REX::LogInformation("Forms: resolved WorkshopMenuMain and {} plugin forms ({} menus, {} categories)", _owned.size(), menus.size(), leaves.size());
 		return true;
 	}
 

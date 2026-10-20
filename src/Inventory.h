@@ -15,5 +15,5 @@ namespace LO::Inventory
 	//                              common words in names, model folders, form
 	//                              types, plugins. Used to design better
 	//                              automatic categories.
-	void Write(const ScanResult& a_scan, std::string_view a_reason);
+	void Write(const ScanResult& a_scan, const ApplyResult& a_apply, std::string_view a_reason);
 }

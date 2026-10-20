@@ -1,5 +1,6 @@
 #include "Inventory.h"
 
+#include "Grouping.h"
 #include "Util.h"
 
 namespace LO::Inventory
@@ -52,16 +53,6 @@ namespace LO::Inventory
 			return name.empty() ? editorID : std::format("{} \"{}\"", editorID, name);
 		}
 
-		std::string GetModelPath(const RE::TESForm* a_form)
-		{
-			const auto* model = RE::DynamicCast<const RE::TESModel*>(a_form);
-			if (!model) {
-				return {};
-			}
-			const char* path = model->GetModel();
-			return path ? std::string(path) : std::string();
-		}
-
 		std::string ItemKeywords(const RE::TESForm* a_form)
 		{
 			const auto* keywordForm = RE::DynamicCast<const RE::BGSKeywordForm*>(a_form);
@@ -107,13 +98,17 @@ namespace LO::Inventory
 			return result;
 		}
 
-		Row MakeRow(const ScanResult& a_scan, const LostRecipe& a_lost, const std::unordered_map<const RE::TESForm*, const MenuEntry*>& a_entries)
+		Row MakeRow(const ScanResult& a_scan, const LostRecipe& a_lost, const ApplyResult& a_apply, const std::unordered_map<const RE::TESForm*, const MenuEntry*>& a_entries)
 		{
 			Row row;
 			const auto* recipe = a_lost.recipe;
 			const auto* item = recipe->createdItem;
 
-			// Where it is shown in the tab.
+			// Where it is shown now.
+			const auto placed = a_apply.placement.find(recipe);
+			row.folder = placed != a_apply.placement.end() ? placed->second : "(not placed)"s;
+
+			// Where it came from (the lost menu or category the scan found).
 			const MenuEntry* entry = nullptr;
 			for (const auto* category : a_lost.categories) {
 				const auto it = a_scan.entryOfCategory.find(category);
@@ -124,13 +119,7 @@ namespace LO::Inventory
 					}
 				}
 			}
-			if (entry) {
-				row.folder = Util::StripExtension(entry->pluginFile);
-				row.entry = std::format("{}{}", entry->isMenu ? "[menu] " : "", entry->displayName);
-			} else {
-				row.folder = Util::StripExtension(Util::GetFileName(recipe, 0));
-				row.entry = "Uncategorized";
-			}
+			row.entry = entry ? std::format("{}{} ({})", entry->isMenu ? "[menu] " : "", entry->displayName, entry->pluginFile) : "Uncategorized"s;
 
 			row.recipeID = Util::FormIDToString(recipe->GetFormID());
 			row.recipePlugin = Util::GetFileName(recipe, 0);
@@ -142,7 +131,7 @@ namespace LO::Inventory
 				row.itemName = Util::GetFormName(item);
 				row.itemEditorID = Util::GetEditorID(item);
 				row.itemPlugin = Util::GetFileName(item, 0);
-				row.model = GetModelPath(item);
+				row.model = Grouping::ItemModel(recipe);
 				row.itemKeywords = ItemKeywords(item);
 
 				if (const auto* bound = RE::DynamicCast<const RE::TESBoundObject*>(item)) {
@@ -250,7 +239,7 @@ namespace LO::Inventory
 				}
 				++itemTypes[row.itemType.empty() ? "(none)" : row.itemType];
 				++folders[row.folder];
-				++entries[row.folder + " > " + row.entry];
+				++entries[row.entry];
 				++recipePlugins[row.recipePlugin];
 				++workbenches[row.workbench.empty() ? "(none)" : row.workbench];
 				if (row.hasConditions == "yes") {
@@ -296,8 +285,8 @@ namespace LO::Inventory
 			file << "No item name   : " << withoutName << "\n\n";
 			file << "Full data: LostObjects_Inventory.tsv\n\n";
 
-			WriteTop(file, "Folders in the tab", folders, 100);
-			WriteTop(file, "Entries in the tab (folder > entry)", entries, 200);
+			WriteTop(file, "Where the recipes are shown now", folders, 300);
+			WriteTop(file, "Original lost categories", entries, 200);
 			WriteTop(file, "Recipe plugins", recipePlugins, 100);
 			WriteTop(file, "Item form types", itemTypes, 50);
 			WriteTop(file, "Item sizes (largest side, game units)", sizeClasses, 10);
@@ -309,7 +298,7 @@ namespace LO::Inventory
 		}
 	}
 
-	void Write(const ScanResult& a_scan, std::string_view a_reason)
+	void Write(const ScanResult& a_scan, const ApplyResult& a_apply, std::string_view a_reason)
 	{
 		std::unordered_map<const RE::TESForm*, const MenuEntry*> entries;
 		for (const auto& entry : a_scan.entries) {
@@ -319,7 +308,7 @@ namespace LO::Inventory
 		std::vector<Row> rows;
 		rows.reserve(a_scan.lostRecipes.size());
 		for (const auto& lost : a_scan.lostRecipes) {
-			rows.push_back(MakeRow(a_scan, lost, entries));
+			rows.push_back(MakeRow(a_scan, lost, a_apply, entries));
 		}
 
 		std::ranges::sort(rows, [](const Row& a_lhs, const Row& a_rhs) {
@@ -333,7 +322,7 @@ namespace LO::Inventory
 			return;
 		}
 
-		file << "Folder\tEntry\tRecipe ID\tRecipe plugin\tRecipe last changed in\tItem ID\tItem type\tItem name\tItem editor ID\tItem plugin\tModel\tSize X\tSize Y\tSize Z\tCategories\tWorkbench\tComponents\tConditions\tItem keywords\r\n";
+		file << "Shown at\tOriginal category\tRecipe ID\tRecipe plugin\tRecipe last changed in\tItem ID\tItem type\tItem name\tItem editor ID\tItem plugin\tModel\tSize X\tSize Y\tSize Z\tCategories\tWorkbench\tComponents\tConditions\tItem keywords\r\n";
 		for (const auto& r : rows) {
 			const std::array cells{ &r.folder, &r.entry, &r.recipeID, &r.recipePlugin, &r.recipeLastPlugin, &r.itemID, &r.itemType, &r.itemName, &r.itemEditorID, &r.itemPlugin, &r.model, &r.sizeX, &r.sizeY, &r.sizeZ, &r.categories, &r.workbench, &r.components, &r.hasConditions, &r.itemKeywords };
 			for (std::size_t i = 0; i < cells.size(); ++i) {

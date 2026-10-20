@@ -179,7 +179,7 @@ namespace LO
 				Report::Write(scan, apply, a_reason);
 			}
 			if (settings.writeInventory) {
-				Inventory::Write(scan, a_reason);
+				Inventory::Write(scan, apply, a_reason);
 				MenuDump::Write(_forms, a_reason);
 			}
 		}
@@ -284,9 +284,8 @@ namespace LO
 
 		auto* keywordForm = static_cast<RE::BGSKeywordForm*>(donor);
 		keywordForm->AddKeyword(_forms.rootKeyword);
-		keywordForm->AddKeyword(_forms.uncategorizedKeyword);
-		for (auto* keyword : _forms.slotKeywords) {
-			keywordForm->AddKeyword(keyword);
+		for (auto* title : _forms.menuTitles) {
+			keywordForm->AddKeyword(title);
 		}
 
 		REX::LogInformation("Icon: using art object {} for the tab icon", Util::FormIDToString(donor->GetFormID()));

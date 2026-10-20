@@ -5,18 +5,21 @@
 namespace LO
 {
 	// Forms provided by LostObjects.esp plus the vanilla main workshop menu.
+	//
+	// The plugin contains a pool of generic sub menus and categories. Lost
+	// Objects names and fills them at runtime, so the menu structure can be
+	// built from whatever the scan finds - no fixed lists.
 	class OwnedForms
 	{
 	public:
 		RE::BGSListForm* workshopMenuMain{ nullptr };  // Fallout4.esm "WorkshopMenuMain"
 
-		RE::BGSListForm* rootMenu{ nullptr };  // our tab
-		RE::BGSKeyword* rootKeyword{ nullptr };  // name + icon of our tab (entry 0)
-		RE::BGSKeyword* uncategorizedKeyword{ nullptr };
+		RE::BGSListForm* rootMenu{ nullptr };  // the "Lost Objects" tab
+		RE::BGSKeyword* rootKeyword{ nullptr };  // name + icon of the tab (entry 0)
 
-		std::vector<RE::BGSListForm*> slotMenus;  // per-mod folders
-		std::vector<RE::BGSKeyword*> slotKeywords;
-		std::vector<RE::BGSKeyword*> slotUncategorizedKeywords;  // "Uncategorized" inside each folder
+		std::vector<RE::BGSListForm*> menus;  // pool: sub menus (entry 0 = matching title keyword)
+		std::vector<RE::BGSKeyword*> menuTitles;  // pool: names of the sub menus
+		std::vector<RE::BGSKeyword*> leaves;  // pool: categories lost recipes are tagged with
 
 		// Looks everything up. Returns false (and logs why) if something is missing.
 		bool Resolve();

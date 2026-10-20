@@ -143,6 +143,64 @@ namespace LO
 		ListSet reachableLists;
 		CollectReachable(a_forms.workshopMenuMain, a_forms, reachableLeaves, reachableLists);
 
+		// 1b) Depth of every reachable sub menu (breadth first), to find the
+		//     menu each plugin and each category title belongs to.
+		{
+			struct Node
+			{
+				RE::BGSListForm* list;
+				std::uint32_t depth;
+				std::string path;
+			};
+
+			std::unordered_map<std::string, std::pair<std::uint32_t, std::unordered_set<RE::BGSListForm*>>> topLists;
+			std::unordered_set<const RE::BGSListForm*> seen{ a_forms.workshopMenuMain };
+			std::vector<Node> queue{ { a_forms.workshopMenuMain, 0, std::string() } };
+
+			for (std::size_t head = 0; head < queue.size(); ++head) {
+				const auto node = queue[head];
+				const auto forms = node.list->GetAllForms();
+				for (auto* form : forms) {
+					auto* subList = form ? form->As<RE::BGSListForm>() : nullptr;
+					if (!subList || a_forms.IsOwned(subList) || !seen.insert(subList).second) {
+						continue;
+					}
+
+					auto* title = subList->GetNthForm(0);
+					auto* titleKeyword = title ? title->As<RE::BGSKeyword>() : nullptr;
+					auto titleName = Util::GetFormName(title);
+					if (titleName.empty()) {
+						titleName = Util::GetEditorID(title);
+					}
+					const auto path = node.path.empty() ? titleName : node.path + " > " + titleName;
+
+					const Node child{ subList, node.depth + 1, path };
+					queue.push_back(child);
+					result.menuPath[subList] = path;
+
+					if (titleKeyword && !result.menuOfTitle.contains(titleKeyword)) {
+						result.menuOfTitle[titleKeyword] = subList;
+					}
+
+					const auto file = Util::ToLower(Util::GetFileName(subList, 0));
+					auto& [depth, lists] = topLists.try_emplace(file, child.depth, std::unordered_set<RE::BGSListForm*>{}).first->second;
+					if (child.depth < depth) {
+						depth = child.depth;
+						lists.clear();
+					}
+					if (child.depth == depth) {
+						lists.insert(subList);
+					}
+				}
+			}
+
+			for (const auto& [file, entry] : topLists) {
+				if (entry.second.size() == 1) {
+					result.homeOfPlugin[file] = *entry.second.begin();
+				}
+			}
+		}
+
 		result.reachableCategoryCount = static_cast<std::uint32_t>(reachableLeaves.size());
 		result.reachableMenuCount = static_cast<std::uint32_t>(reachableLists.size());
 

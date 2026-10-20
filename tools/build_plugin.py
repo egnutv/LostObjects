@@ -50,14 +50,18 @@ HEDR_VERSION = 1.0  # 1.0 allows light plugin form IDs 0x800-0xFFF
 FORM_VERSION = 131  # current Fallout 4 form version
 KEYWORD_TYPE_RECIPE_FILTER = 9  # KYWD TNAM value for workshop categories
 
-# Layout of the menu skeleton.
-SLOT_COUNT = 48  # per-origin folders available in "ByMod" sort mode
+# Layout of the menu skeleton. Lost Objects builds its menus at runtime from a
+# pool of generic, renamable menus and categories:
+#   * MENU_COUNT sub menus (form list + title keyword) for folders and groups
+#   * LEAF_COUNT categories (recipe filter keywords) that lost recipes are tagged with
+MENU_COUNT = 192
+LEAF_COUNT = 768
 FIRST_LOCAL_ID = 0x800
 LAST_LOCAL_ID = 0xFFF
 
 ROOT_NAME = "Lost Objects"
-UNCATEGORIZED_NAME = "Uncategorized"
-SLOT_NAME_TEMPLATE = "Mod Slot {:02d}"  # renamed at runtime to the mod name
+MENU_NAME_TEMPLATE = "Menu {:03d}"  # renamed at runtime
+LEAF_NAME_TEMPLATE = "Group {:03d}"  # renamed at runtime
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_PATH = REPO_ROOT / "data" / PLUGIN_FILE
@@ -154,25 +158,14 @@ def build_layout() -> tuple[list[Keyword], list[FormList], dict[str, int]]:
     formlists: list[FormList] = []
 
     keywords.append(Keyword(take("RootKeyword"), "LO_RootKeyword", ROOT_NAME))
-    keywords.append(
-        Keyword(take("UncategorizedKeyword"), "LO_UncategorizedKeyword", UNCATEGORIZED_NAME)
-    )
-    for i in range(1, SLOT_COUNT + 1):
-        local = take(f"SlotKeyword{i:02d}")
-        keywords.append(Keyword(local, f"LO_SlotKeyword{i:02d}", SLOT_NAME_TEMPLATE.format(i)))
-    # One "Uncategorized" category per folder, for recipes without a category.
-    for i in range(1, SLOT_COUNT + 1):
-        local = take(f"SlotUncategorizedKeyword{i:02d}")
-        keywords.append(Keyword(local, f"LO_SlotUncategorizedKeyword{i:02d}", UNCATEGORIZED_NAME))
+    for i in range(1, MENU_COUNT + 1):
+        keywords.append(Keyword(take(f"MenuTitle{i:03d}"), f"LO_MenuTitle{i:03d}", MENU_NAME_TEMPLATE.format(i)))
+    for i in range(1, LEAF_COUNT + 1):
+        keywords.append(Keyword(take(f"Leaf{i:03d}"), f"LO_Leaf{i:03d}", LEAF_NAME_TEMPLATE.format(i)))
 
-    # Form lists start at a round number for readability in xEdit.
-    next_id = max(next_id, 0x880)
     formlists.append(FormList(take("RootMenu"), "LO_RootMenu", [ids["RootKeyword"]]))
-    for i in range(1, SLOT_COUNT + 1):
-        local = take(f"SlotMenu{i:02d}")
-        formlists.append(
-            FormList(local, f"LO_SlotMenu{i:02d}", [ids[f"SlotKeyword{i:02d}"]])
-        )
+    for i in range(1, MENU_COUNT + 1):
+        formlists.append(FormList(take(f"Menu{i:03d}"), f"LO_Menu{i:03d}", [ids[f"MenuTitle{i:03d}"]]))
 
     ids["NextObjectID"] = next_id
     return keywords, formlists, ids
@@ -236,13 +229,14 @@ def build_header(ids: dict[str, int]) -> str:
         f'\tinline constexpr std::string_view RootName = "{ROOT_NAME}";  // FULL of RootKeyword',
         "",
         f"\tinline constexpr std::uint32_t RootKeyword = 0x{ids['RootKeyword']:03X};",
-        f"\tinline constexpr std::uint32_t UncategorizedKeyword = 0x{ids['UncategorizedKeyword']:03X};",
         f"\tinline constexpr std::uint32_t RootMenu = 0x{ids['RootMenu']:03X};",
         "",
-        f"\tinline constexpr std::uint32_t SlotCount = {SLOT_COUNT};",
-        f"\tinline constexpr std::uint32_t FirstSlotKeyword = 0x{ids['SlotKeyword01']:03X};",
-        f"\tinline constexpr std::uint32_t FirstSlotMenu = 0x{ids['SlotMenu01']:03X};",
-        f"\tinline constexpr std::uint32_t FirstSlotUncategorizedKeyword = 0x{ids['SlotUncategorizedKeyword01']:03X};",
+        f"\tinline constexpr std::uint32_t MenuCount = {MENU_COUNT};",
+        f"\tinline constexpr std::uint32_t FirstMenuTitle = 0x{ids['MenuTitle001']:03X};",
+        f"\tinline constexpr std::uint32_t FirstMenu = 0x{ids['Menu001']:03X};",
+        "",
+        f"\tinline constexpr std::uint32_t LeafCount = {LEAF_COUNT};",
+        f"\tinline constexpr std::uint32_t FirstLeaf = 0x{ids['Leaf001']:03X};",
         "",
         "\t// Vanilla forms (Fallout4.esm).",
         '\tinline constexpr std::string_view BaseGameFile = "Fallout4.esm";',

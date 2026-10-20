@@ -4,6 +4,25 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-20
+
+### Changed
+- Recovered items are put back where they belong (`sPlacement=Home`, default): into the
+  sub menu whose title is their category, or into the plugin's own top menu. Only what
+  has no home goes into the "Lost Objects" tab. A plugin with a single entry in the tab
+  gets no extra folder level.
+- Every recovered recipe is now tagged with exactly one category from a pool in
+  `LostObjects.esp`. This fixes duplicates: before, a whole foreign category was shown,
+  including recipes that were reachable elsewhere.
+- Large categories are split automatically into groups by tags in names (`[Alcohol]`),
+  words and model folders - derived from the data, no fixed lists. Settings in the new
+  `[Grouping]` section: `iSplitThreshold`, `iMaxGroups`, `iMinGroupSize`.
+- The menus are only rebuilt when the result changes; entries removed by other mods are
+  added again on the next scan.
+- Inventory column "Shown at" now contains the real place in the menu.
+- The duplicate report detects Lost Objects entries by their forms, also inside other
+  mods' menus.
+
 ## [0.1.4] - 2026-10-20
 
 ### Added

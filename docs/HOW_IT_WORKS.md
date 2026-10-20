@@ -81,26 +81,57 @@ The scan is read-only. It runs on the main thread and takes a few milliseconds.
    folder of the file that defined the recipe (in `Flat` mode: one
    "Uncategorized" entry in the tab).
 
-## 4. What the mod changes
+## 4. Where recovered recipes go
 
-All changes are made **in memory only**. None of them is stored in the save game,
-because form list contents that come from plugins are never saved and the mod does
-not use Papyrus.
+`LostObjects.esp` contains a pool of 192 generic sub menus and 768 generic
+categories. Lost Objects names and fills them at runtime. Every recovered recipe is
+tagged with exactly one of these categories, so it is shown exactly once.
+
+The recipes are grouped by the plugin that defines them and by their original
+category, then placed (with `sPlacement=Home`, the default):
+
+1. **Back into the sub menu whose title is the category.** A lost "Decorations"
+   category goes into "Decorations". This also repairs categories that a mod put into
+   position 0 of its own sub menu, where the game never shows them.
+2. **Into the plugin's own top menu**, if the plugin has exactly one (for example
+   "Snappy HouseKit"). Lost whole menus keep their name and their categories.
+3. **Into the "Lost Objects" tab** otherwise: one folder per plugin, or a single
+   entry named "Plugin - Category" if the plugin has only one thing to show.
+
+With `sPlacement=Tab` everything goes into the tab.
+
+### Large categories are split automatically
+
+A category with more than `iSplitThreshold` recipes (default 40) becomes a sub menu
+of groups. The groups are found in the data itself - no fixed word lists:
+
+- a tag in brackets at the start of the item name (`[Alcohol] Beer` -> "Alcohol"),
+- the words of the item names ("Stairs", "Concrete", ...),
+- the folders of the model paths ("Flora", ...).
+
+Features shared by more than half of the recipes are too broad and ignored. Then,
+tags first, words second, folders last, the feature shared by the most remaining
+recipes becomes a group (at least `iMinGroupSize`, at most `iMaxGroups` groups). The
+rest goes to "Other", and large groups are split again (up to three levels). If no
+useful feature exists, the recipes are split alphabetically ("A - F", ...).
+
+## 5. What the mod changes
+
+All changes are made **in memory only**. None of them is stored in the save game.
 
 | What | Change | Undone when |
 |---|---|---|
-| `WorkshopMenuMain` | `LO_RootMenu` is appended | nothing is lost any more, or the game is restarted without the mod |
-| `LO_RootMenu` (own) | filled with the folders or recovered menus | every scan |
-| `LO_SlotMenuNN` (own) | filled with one mod's recovered menus | every scan |
-| `LO_SlotKeywordNN` (own) | renamed to the mod's file name | every scan |
-| Lost recipes **without a usable category** | one of the keywords `LO_SlotUncategorizedKeywordNN` (or `LO_UncategorizedKeyword` in `Flat` mode) is added to the recipe | as soon as the recipe is reachable again |
-| One vanilla icon art object | the mod's keywords are added to its keyword list so the tab gets an icon | game restart (`bBorrowMenuIcon=0` to disable) |
+| Recovered recipes | one keyword from the pool is added | the recipe is reachable again, or on restart |
+| Pool menus and categories of `LostObjects.esp` | named and filled | every rebuild |
+| Menus of other mods / vanilla | references to pool menus or categories are appended | every rebuild (removed and added again), or on restart |
+| `WorkshopMenuMain` | the "Lost Objects" tab is appended if needed | every rebuild |
+| One vanilla icon art object | the tab's and the pool menus' title keywords are added | restart (`bBorrowMenuIcon=0` to disable) |
 
-Lost menus and categories of other mods are **not modified**. They are only
-referenced from the new tab, so they appear there with their original names,
-icons, costs and conditions.
+The menus are only rebuilt when the result of a scan changes, and never while the
+workshop menu is open. If another mod resets one of the menus (Papyrus `Revert()`),
+the next scan adds the entries again.
 
-## 5. When the scan runs
+## 6. When the scan runs
 
 | Moment | Why |
 |---|---|
@@ -112,27 +143,24 @@ icons, costs and conditions.
 
 The menu is never changed while it is on screen.
 
-## 6. Folders per plugin file ("ByMod")
+## 7. Names
 
-Folder and category names come from the game's name table for keywords and form lists.
-Lost Objects resolves the address of that table itself and verifies it at startup by
+Menu and category names are written into the game's name table for keywords. Lost
+Objects resolves the address of that table itself and verifies it at startup by
 looking up its own keyword `LO_RootKeyword`, whose name must be "Lost Objects". If the
-check fails, names are not read or written and `sSortMode=Flat` is used for the session.
+check fails, names are not read or written.
 
-`LostObjects.esp` contains 48 folder form lists, each with its own name keyword and
-its own "Uncategorized" keyword. At runtime the name keywords are renamed to the file
-name of the plugin that defined the content (a mod, a DLC or `Fallout4`) through the
-game's name table for keywords. With more than 48 files, the last folder becomes
-"Other". With `sSortMode=Flat` the folders are not used.
-
-## 7. Files of the project
+## 8. Files of the project
 
 | File | Purpose |
 |---|---|
 | `src/Main.cpp` | F4SE entry point, game messages |
 | `src/Recovery.*` | when to scan, events, icon, summary message |
 | `src/Scanner.*` | the read-only analysis described above |
-| `src/MenuBuilder.*` | writes the result into the menu forms |
+| `src/MenuBuilder.*` | decides where recovered recipes go and builds the menus |
+| `src/Grouping.*` | splits large categories into groups by common features |
+| `src/Inventory.*`, `src/MenuDump.*` | the inventory, pattern, menu and duplicate logs |
+| `src/NameMap.*` | verified access to the game's name table |
 | `src/Report.*` | log output and `LostObjects_Report.txt` |
 | `src/Notice.*` | the AI disclosure shown once per version |
 | `src/Settings.*` | INI file |
@@ -142,7 +170,7 @@ game's name table for keywords. With more than 48 files, the last folder becomes
 | `tools/verify_plugin.py` | independent check of the plugin file |
 | `tools/package.py` | builds the release archive |
 
-## 8. Known limits
+## 9. Known limits
 
 - Recipes hidden by **conditions** (for example "only show if a holotape option is
   on") stay hidden, because the mod keeps conditions untouched. A future version may

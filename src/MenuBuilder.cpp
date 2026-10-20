@@ -1,5 +1,7 @@
 #include "MenuBuilder.h"
 
+#include "Grouping.h"
+#include "NameMap.h"
 #include "Util.h"
 
 namespace LO
@@ -7,15 +9,212 @@ namespace LO
 	namespace
 	{
 		constexpr std::size_t MAX_FOLDER_NAME = 48;
-		constexpr auto OVERFLOW_FOLDER_NAME = "Other"sv;
+		constexpr std::uint32_t MAX_SPLIT_DEPTH = 3;
+		constexpr auto UNCATEGORIZED = "Uncategorized"sv;
+		constexpr auto OVERFLOW_NAME = "More (pool full)"sv;
 
-		// Everything that goes into one origin folder ("ByMod").
-		struct Group
+		std::string ShortName(std::string a_name)
 		{
-			std::string pluginFile;
+			if (a_name.size() > MAX_FOLDER_NAME) {
+				a_name.resize(MAX_FOLDER_NAME);
+			}
+			return a_name;
+		}
+
+		std::string CategoryName(const RE::BGSKeyword* a_keyword)
+		{
+			auto name = Util::GetFormName(a_keyword);
+			if (name.empty()) {
+				name = Util::GetEditorID(a_keyword);
+			}
+			return name.empty() ? std::string(UNCATEGORIZED) : name;
+		}
+
+		std::size_t Mix(std::size_t a_seed, std::size_t a_value)
+		{
+			return a_seed ^ (a_value + 0x9E3779B97F4A7C15ull + (a_seed << 6) + (a_seed >> 2));
+		}
+
+		// --- What was found, grouped by plugin ----------------------------------
+
+		struct Leaf
+		{
+			std::string name;
+			std::vector<RE::BGSConstructibleObject*> recipes;
+			RE::BGSListForm* titleTarget{ nullptr };  // sub menu whose title is this category
+		};
+
+		struct LostMenu
+		{
+			std::string name;
+			std::map<std::string, Leaf> leaves;  // lower-case name -> leaf
+		};
+
+		struct Bucket
+		{
+			std::string plugin;
 			std::uint32_t loadOrderKey{ std::numeric_limits<std::uint32_t>::max() };
-			std::vector<RE::TESForm*> forms;  // recovered menus and categories
-			std::vector<RE::BGSConstructibleObject*> recipes;  // recipes without a category
+			std::map<std::string, LostMenu> menus;
+			std::map<std::string, Leaf> leaves;
+		};
+
+		// --- The plan: which pool form gets which name and content ---------------
+
+		class Planner
+		{
+		public:
+			Planner(const OwnedForms& a_forms, const Settings& a_settings) :
+				_forms(a_forms),
+				_settings(a_settings)
+			{
+				_options.maxGroups = a_settings.maxGroups;
+				_options.minGroupSize = a_settings.minGroupSize;
+				_options.chunkSize = std::max<std::size_t>(a_settings.minGroupSize, a_settings.splitThreshold * 3 / 4);
+			}
+
+			RE::BGSListForm* AllocMenu(const std::string& a_name)
+			{
+				// The last menu of the pool is never used, so a folder is always possible.
+				if (_menuIndex + 1 >= _forms.menus.size()) {
+					return nullptr;
+				}
+				auto* menu = _forms.menus[_menuIndex];
+				auto* title = _forms.menuTitles[_menuIndex];
+				++_menuIndex;
+				names.emplace_back(title, ShortName(a_name));
+				contents[menu] = { title };
+				menuOrder.push_back(menu);
+				return menu;
+			}
+
+			RE::BGSKeyword* AllocLeaf(const std::string& a_name)
+			{
+				// The last leaf is reserved for the overflow category.
+				if (_leafIndex + 1 >= _forms.leaves.size()) {
+					return nullptr;
+				}
+				auto* leaf = _forms.leaves[_leafIndex++];
+				names.emplace_back(leaf, ShortName(a_name));
+				return leaf;
+			}
+
+			void Add(RE::BGSListForm* a_menu, RE::TESForm* a_child)
+			{
+				if (a_menu && a_child) {
+					contents[a_menu].push_back(a_child);
+				}
+			}
+
+			// A category: one leaf, or - if large - a sub menu of groups.
+			RE::TESForm* BuildCategory(const std::string& a_name, const std::vector<RE::BGSConstructibleObject*>& a_recipes, const std::string& a_path, std::uint32_t a_depth = 0)
+			{
+				if (a_recipes.empty()) {
+					return nullptr;
+				}
+
+				const auto path = a_path.empty() ? a_name : a_path + " > " + a_name;
+
+				if (a_recipes.size() > _settings.splitThreshold && a_depth < MAX_SPLIT_DEPTH) {
+					auto groups = Grouping::Split(a_recipes, _options);
+					if (groups.size() >= 2) {
+						if (auto* menu = AllocMenu(a_name)) {
+							for (const auto& group : groups) {
+								Add(menu, BuildCategory(group.label, group.recipes, path, a_depth + 1));
+							}
+							return menu;
+						}
+					}
+				}
+
+				auto* leaf = AllocLeaf(a_name);
+				if (!leaf) {
+					overflow.insert(overflow.end(), a_recipes.begin(), a_recipes.end());
+					return nullptr;
+				}
+				for (auto* recipe : a_recipes) {
+					tags[recipe] = leaf;
+					placement[recipe] = path;
+				}
+				return leaf;
+			}
+
+			RE::TESForm* BuildMenu(const LostMenu& a_menu, const std::string& a_path, const std::string& a_name)
+			{
+				if (a_menu.leaves.size() == 1) {
+					// A menu with a single category: no extra level.
+					const auto& leaf = a_menu.leaves.begin()->second;
+					return BuildCategory(a_name == leaf.name ? a_name : a_name + " - " + leaf.name, leaf.recipes, a_path);
+				}
+
+				auto* menu = AllocMenu(a_name);
+				if (!menu) {
+					for (const auto& [key, leaf] : a_menu.leaves) {
+						overflow.insert(overflow.end(), leaf.recipes.begin(), leaf.recipes.end());
+					}
+					return nullptr;
+				}
+				const auto path = a_path.empty() ? a_name : a_path + " > " + a_name;
+				for (const auto& [key, leaf] : a_menu.leaves) {
+					Add(menu, BuildCategory(leaf.name, leaf.recipes, path));
+				}
+				return menu;
+			}
+
+			void Inject(RE::BGSListForm* a_target, RE::TESForm* a_node, const std::string& a_description)
+			{
+				if (a_target && a_node) {
+					injections.emplace_back(a_target, a_node);
+					injectionLog.push_back(a_description);
+				}
+			}
+
+			[[nodiscard]] std::size_t Signature() const
+			{
+				std::size_t seed = 0;
+				for (const auto& [form, name] : names) {
+					seed = Mix(seed, form->GetFormID());
+					seed = Mix(seed, std::hash<std::string>{}(name));
+				}
+				for (auto* menu : menuOrder) {
+					seed = Mix(seed, menu->GetFormID());
+					for (const auto* child : contents.at(menu)) {
+						seed = Mix(seed, child->GetFormID());
+					}
+				}
+				for (const auto& [target, node] : injections) {
+					seed = Mix(seed, target->GetFormID());
+					seed = Mix(seed, node->GetFormID());
+				}
+				std::vector<std::pair<std::uint32_t, std::uint32_t>> sortedTags;
+				for (const auto& [recipe, leaf] : tags) {
+					sortedTags.emplace_back(recipe->GetFormID(), leaf->GetFormID());
+				}
+				std::ranges::sort(sortedTags);
+				for (const auto& [recipe, leaf] : sortedTags) {
+					seed = Mix(seed, recipe);
+					seed = Mix(seed, leaf);
+				}
+				return Mix(seed, overflow.size());
+			}
+
+			[[nodiscard]] std::size_t MenusUsed() const noexcept { return _menuIndex; }
+			[[nodiscard]] std::size_t LeavesUsed() const noexcept { return _leafIndex; }
+
+			std::vector<std::pair<RE::TESForm*, std::string>> names;
+			std::unordered_map<RE::BGSListForm*, std::vector<RE::TESForm*>> contents;
+			std::vector<RE::BGSListForm*> menuOrder;
+			std::vector<std::pair<RE::BGSListForm*, RE::TESForm*>> injections;
+			std::vector<std::string> injectionLog;
+			std::unordered_map<RE::BGSConstructibleObject*, RE::BGSKeyword*> tags;
+			std::unordered_map<const RE::BGSConstructibleObject*, std::string> placement;
+			std::vector<RE::BGSConstructibleObject*> overflow;
+
+		private:
+			const OwnedForms& _forms;
+			const Settings& _settings;
+			Grouping::Options _options;
+			std::size_t _menuIndex{ 0 };
+			std::size_t _leafIndex{ 0 };
 		};
 
 		// Replaces the editor entries of a form list. Returns true if anything changed.
@@ -39,67 +238,81 @@ namespace LO
 			return true;
 		}
 
-		std::string MakeFolderName(std::string_view a_pluginFile)
+		std::vector<Bucket> CollectBuckets(const ScanResult& a_scan)
 		{
-			auto name = Util::StripExtension(a_pluginFile);
-			if (name.empty()) {
-				name = "Unknown";
-			}
-			if (name.size() > MAX_FOLDER_NAME) {
-				name.resize(MAX_FOLDER_NAME);
-			}
-			return name;
-		}
-
-		// Groups recovered menus/categories and category-less recipes by the file
-		// that defined them, ordered roughly like the load order.
-		std::vector<Group> BuildGroups(const ScanResult& a_scan)
-		{
-			std::unordered_map<std::string, std::size_t> indexByFile;  // lower case file -> index
-			std::vector<Group> groups;
-
-			const auto groupFor = [&](const std::string& a_file, std::uint32_t a_order) -> Group& {
-				const auto key = Util::ToLower(a_file);
-				auto it = indexByFile.find(key);
-				if (it == indexByFile.end()) {
-					it = indexByFile.emplace(key, groups.size()).first;
-					Group group;
-					group.pluginFile = a_file;
-					groups.push_back(std::move(group));
-				}
-				auto& group = groups[it->second];
-				group.loadOrderKey = std::min(group.loadOrderKey, a_order);
-				return group;
-			};
-
+			std::unordered_map<const RE::TESForm*, const MenuEntry*> entryByForm;
 			for (const auto& entry : a_scan.entries) {
-				groupFor(entry.pluginFile, entry.loadOrderKey).forms.push_back(entry.form);
+				entryByForm.emplace(entry.form, &entry);
 			}
 
-			for (auto* recipe : a_scan.uncategorized) {
-				groupFor(Util::GetFileName(recipe, 0), Util::GetLoadOrderKey(recipe)).recipes.push_back(recipe);
-			}
+			std::map<std::string, Bucket> byPlugin;
+			for (const auto& lost : a_scan.lostRecipes) {
+				auto* recipe = lost.recipe;
+				const auto plugin = Util::GetFileName(recipe, 0);
+				auto& bucket = byPlugin[Util::ToLower(plugin)];
+				bucket.plugin = plugin;
+				bucket.loadOrderKey = std::min(bucket.loadOrderKey, Util::GetLoadOrderKey(recipe));
 
-			std::ranges::stable_sort(groups, [](const Group& a_lhs, const Group& a_rhs) {
-				if (a_lhs.loadOrderKey != a_rhs.loadOrderKey) {
-					return a_lhs.loadOrderKey < a_rhs.loadOrderKey;
+				// The first category that the scan knows about decides where it goes.
+				const RE::BGSKeyword* category = nullptr;
+				const MenuEntry* entry = nullptr;
+				for (const auto* candidate : lost.categories) {
+					const auto it = a_scan.entryOfCategory.find(candidate);
+					if (it != a_scan.entryOfCategory.end()) {
+						category = candidate;
+						const auto e = entryByForm.find(it->second);
+						entry = e != entryByForm.end() ? e->second : nullptr;
+						break;
+					}
 				}
-				return Util::ToLower(a_lhs.pluginFile) < Util::ToLower(a_rhs.pluginFile);
+
+				const auto name = category ? CategoryName(category) : std::string(UNCATEGORIZED);
+				const auto key = Util::ToLower(name);
+
+				Leaf* leaf = nullptr;
+				if (entry && entry->isMenu) {
+					auto& menu = bucket.menus[Util::ToLower(entry->displayName)];
+					menu.name = entry->displayName;
+					leaf = &menu.leaves[key];
+				} else {
+					leaf = &bucket.leaves[key];
+					if (category && !leaf->titleTarget) {
+						const auto title = a_scan.menuOfTitle.find(category);
+						if (title != a_scan.menuOfTitle.end()) {
+							leaf->titleTarget = title->second;
+						}
+					}
+				}
+				if (leaf->name.empty()) {
+					leaf->name = name;
+				}
+				leaf->recipes.push_back(recipe);
+			}
+
+			std::vector<Bucket> buckets;
+			for (auto& [key, bucket] : byPlugin) {
+				buckets.push_back(std::move(bucket));
+			}
+			std::ranges::sort(buckets, [](const Bucket& a_lhs, const Bucket& a_rhs) {
+				return a_lhs.loadOrderKey != a_rhs.loadOrderKey ? a_lhs.loadOrderKey < a_rhs.loadOrderKey : a_lhs.plugin < a_rhs.plugin;
 			});
-
-			return groups;
+			return buckets;
 		}
-	}
 
-	bool SetKeywordName(RE::BGSKeyword* a_keyword, std::string_view a_name)
-	{
-		return NameMap::SetName(a_keyword, a_name);
+		std::string PathOf(const ScanResult& a_scan, const RE::BGSListForm* a_list)
+		{
+			const auto it = a_scan.menuPath.find(a_list);
+			return it != a_scan.menuPath.end() ? it->second : Util::FormIDToString(a_list->GetFormID());
+		}
 	}
 
 	void MenuBuilder::Reset()
 	{
 		_originalKeywords.clear();
 		_currentTags.clear();
+		_injectedInto.clear();
+		_lastSignature = 0;
+		_lastResult = {};
 	}
 
 	void MenuBuilder::UpdateTags(const TagMap& a_wanted)
@@ -144,99 +357,206 @@ namespace LO
 		}
 	}
 
+	void MenuBuilder::RemoveInjections(const OwnedForms& a_forms)
+	{
+		const auto strip = [&a_forms](RE::BGSListForm* a_list) {
+			auto& array = a_list->arrayOfForms;
+			std::vector<RE::TESForm*> kept;
+			kept.reserve(array.size());
+			bool removed = false;
+			for (auto* form : array) {
+				if (a_forms.IsOwned(form)) {
+					removed = true;
+				} else {
+					kept.push_back(form);
+				}
+			}
+			if (removed) {
+				SetListContents(a_list, kept);
+			}
+		};
+
+		for (auto* list : _injectedInto) {
+			strip(list);
+		}
+		_injectedInto.clear();
+		strip(a_forms.workshopMenuMain);
+	}
+
 	ApplyResult MenuBuilder::Apply(const OwnedForms& a_forms, const ScanResult& a_scan, const Settings& a_settings)
 	{
-		ApplyResult result;
 		if (!a_forms.IsValid() || !a_scan.valid) {
-			return result;
+			return {};
 		}
 
-		std::vector<RE::TESForm*> rootContents{ a_forms.rootKeyword };
-		TagMap wantedTags;
+		// --- 1. Plan ------------------------------------------------------------
+		Planner plan(a_forms, a_settings);
+		const auto buckets = CollectBuckets(a_scan);
+		const bool home = a_settings.placement == Placement::kHome;
 
-		if (a_settings.sortMode == SortMode::kByMod) {
-			const auto groups = BuildGroups(a_scan);
-			const auto slotCount = a_forms.slotMenus.size();
+		struct TabItem
+		{
+			const Bucket* bucket;
+			std::vector<std::pair<std::string, const LostMenu*>> menus;
+			std::vector<const Leaf*> leaves;
+		};
+		std::vector<TabItem> tab;
 
-			std::size_t slot = 0;
-			for (std::size_t g = 0; g < groups.size() && slot < slotCount; ++g, ++slot) {
-				const bool isOverflow = slot == slotCount - 1 && groups.size() > slotCount;
+		for (const auto& bucket : buckets) {
+			RE::BGSListForm* homeMenu = nullptr;
+			if (home) {
+				const auto it = a_scan.homeOfPlugin.find(Util::ToLower(bucket.plugin));
+				homeMenu = it != a_scan.homeOfPlugin.end() ? it->second : nullptr;
+			}
 
-				// The overflow folder collects every remaining group.
-				std::vector<const Group*> members;
-				if (isOverflow) {
-					for (auto rest = g; rest < groups.size(); ++rest) {
-						members.push_back(&groups[rest]);
-					}
-					g = groups.size();
+			TabItem item{ &bucket, {}, {} };
+
+			for (const auto& [key, leaf] : bucket.leaves) {
+				auto* target = home && leaf.titleTarget ? leaf.titleTarget : homeMenu;
+				if (target) {
+					const auto path = PathOf(a_scan, target);
+					plan.Inject(target, plan.BuildCategory(leaf.name, leaf.recipes, path), std::format("{} > {} ({} recipes from {})", path, leaf.name, leaf.recipes.size(), bucket.plugin));
 				} else {
-					members.push_back(&groups[g]);
+					item.leaves.push_back(&leaf);
 				}
+			}
 
-				auto* folderKeyword = a_forms.slotKeywords[slot];
-				auto* uncategorizedKeyword = a_forms.slotUncategorizedKeywords[slot];
-				const auto folderName = isOverflow ? std::string(OVERFLOW_FOLDER_NAME) : MakeFolderName(members.front()->pluginFile);
-
-				std::vector<RE::TESForm*> contents{ folderKeyword };
-				bool hasRecipes = false;
-				for (const auto* member : members) {
-					contents.insert(contents.end(), member->forms.begin(), member->forms.end());
-					for (auto* recipe : member->recipes) {
-						wantedTags[recipe] = uncategorizedKeyword;
-						hasRecipes = true;
-					}
+			for (const auto& [key, menu] : bucket.menus) {
+				if (homeMenu) {
+					const auto path = PathOf(a_scan, homeMenu);
+					plan.Inject(homeMenu, plan.BuildMenu(menu, path, menu.name), std::format("{} > {} (menu from {})", path, menu.name, bucket.plugin));
+				} else {
+					item.menus.emplace_back(menu.name, &menu);
 				}
-				if (hasRecipes) {
-					contents.push_back(uncategorizedKeyword);
-				}
-
-				if (!SetKeywordName(folderKeyword, folderName)) {
-					REX::LogWarning("MenuBuilder: could not rename folder {} to '{}'", slot + 1, folderName);
-				}
-
-				result.changed |= SetListContents(a_forms.slotMenus[slot], contents);
-				rootContents.push_back(a_forms.slotMenus[slot]);
-				++result.folderCount;
 			}
 
-			// Reset folders that are not used any more.
-			for (; slot < slotCount; ++slot) {
-				result.changed |= SetListContents(a_forms.slotMenus[slot], { a_forms.slotKeywords[slot] });
-			}
-		} else {
-			for (const auto& entry : a_scan.entries) {
-				rootContents.push_back(entry.form);
-			}
-			for (auto* recipe : a_scan.uncategorized) {
-				wantedTags[recipe] = a_forms.uncategorizedKeyword;
-			}
-			if (!a_scan.uncategorized.empty()) {
-				rootContents.push_back(a_forms.uncategorizedKeyword);
-			}
-			for (std::size_t slot = 0; slot < a_forms.slotMenus.size(); ++slot) {
-				result.changed |= SetListContents(a_forms.slotMenus[slot], { a_forms.slotKeywords[slot] });
+			if (!item.leaves.empty() || !item.menus.empty()) {
+				tab.push_back(std::move(item));
 			}
 		}
 
-		UpdateTags(wantedTags);
+		// The tab.
+		std::vector<RE::TESForm*> rootContents{ a_forms.rootKeyword };
+		const auto rootName = std::string(Forms::RootName);
+		std::uint32_t folderCount = 0;
 
-		result.changed |= SetListContents(a_forms.rootMenu, rootContents);
+		for (const auto& item : tab) {
+			const auto stem = Util::StripExtension(item.bucket->plugin.empty() ? "Unknown"s : item.bucket->plugin);
+			const auto count = item.leaves.size() + item.menus.size();
+			const bool byMod = a_settings.sortMode == SortMode::kByMod;
 
-		// Show our tab only when there is something in it.
-		auto* mainMenu = a_forms.workshopMenuMain;
-		const bool wantTab = rootContents.size() > 1;
-		const bool hasTab = mainMenu->ContainsEditorForm(a_forms.rootMenu);
-		if (wantTab && !hasTab) {
-			mainMenu->arrayOfForms.push_back(a_forms.rootMenu);
-			result.changed = true;
-		} else if (!wantTab && hasTab) {
-			mainMenu->RemoveEditorForm(a_forms.rootMenu);
-			result.changed = true;
+			RE::BGSListForm* folder = nullptr;
+			std::string path = rootName;
+			std::string prefix;
+			if (byMod && count > 1) {
+				folder = plan.AllocMenu(stem);
+				path = rootName + " > " + stem;
+				if (folder) {
+					rootContents.push_back(folder);
+					++folderCount;
+				}
+			} else if (byMod) {
+				prefix = stem + " - ";  // a single entry: no folder level, the name tells the origin
+			}
+
+			const auto place = [&](RE::TESForm* a_node) {
+				if (!a_node) {
+					return;
+				}
+				if (folder) {
+					plan.Add(folder, a_node);
+				} else {
+					rootContents.push_back(a_node);
+				}
+			};
+
+			for (const auto* leaf : item.leaves) {
+				place(plan.BuildCategory(prefix + leaf->name, leaf->recipes, path));
+			}
+			for (const auto& [name, menu] : item.menus) {
+				place(plan.BuildMenu(*menu, path, prefix + name));
+			}
 		}
 
-		result.tabVisible = wantTab;
-		result.entryCount = static_cast<std::uint32_t>(a_scan.entries.size());
+		// Recipes that did not fit into the pool.
+		RE::BGSKeyword* overflowLeaf = nullptr;
+		if (!plan.overflow.empty()) {
+			overflowLeaf = a_forms.leaves.back();
+			plan.names.emplace_back(overflowLeaf, std::string(OVERFLOW_NAME));
+			for (auto* recipe : plan.overflow) {
+				plan.tags[recipe] = overflowLeaf;
+				plan.placement[recipe] = rootName + " > " + std::string(OVERFLOW_NAME);
+			}
+			rootContents.push_back(overflowLeaf);
+			REX::LogWarning("MenuBuilder: {} recipes did not fit into the menu pool and were put into '{}'", plan.overflow.size(), OVERFLOW_NAME);
+		}
+
+		std::size_t signature = plan.Signature();
+		for (const auto* form : rootContents) {
+			signature = Mix(signature, form->GetFormID());
+		}
+
+		ApplyResult result;
+		result.tabVisible = rootContents.size() > 1;
+		result.folderCount = folderCount;
+		result.entryCount = static_cast<std::uint32_t>(plan.MenusUsed() + plan.LeavesUsed());
 		result.recipeCount = static_cast<std::uint32_t>(a_scan.lostRecipes.size());
+		result.overflow = static_cast<std::uint32_t>(plan.overflow.size());
+		result.placement = plan.placement;
+		result.injections = plan.injectionLog;
+		for (const auto& [recipe, path] : plan.placement) {
+			if (path.starts_with(rootName)) {
+				++result.placedTab;
+			} else {
+				++result.placedHome;
+			}
+		}
+
+		// Another mod may have reset one of the menus we added to (Papyrus Revert()).
+		const bool intact = std::ranges::all_of(plan.injections, [](const auto& a_injection) {
+			return a_injection.first->ContainsEditorForm(a_injection.second);
+		}) && (!result.tabVisible || a_forms.workshopMenuMain->ContainsEditorForm(a_forms.rootMenu));
+
+		if (signature == _lastSignature && _lastSignature != 0 && intact) {
+			_lastResult.changed = false;
+			return _lastResult;  // nothing to do, the menus are already like this
+		}
+
+		// --- 2. Apply -------------------------------------------------------------
+		RemoveInjections(a_forms);
+
+		SetListContents(a_forms.rootMenu, { a_forms.rootKeyword });
+		for (std::size_t i = 0; i < a_forms.menus.size(); ++i) {
+			SetListContents(a_forms.menus[i], { a_forms.menuTitles[i] });
+		}
+
+		for (const auto& [form, name] : plan.names) {
+			if (!NameMap::SetName(form, name)) {
+				REX::LogWarning("MenuBuilder: could not name {} '{}'", Util::FormIDToString(form->GetFormID()), name);
+			}
+		}
+
+		for (const auto& [menu, children] : plan.contents) {
+			SetListContents(menu, children);
+		}
+		SetListContents(a_forms.rootMenu, rootContents);
+
+		for (const auto& [target, node] : plan.injections) {
+			if (!target->ContainsEditorForm(node)) {
+				target->arrayOfForms.push_back(node);
+			}
+			_injectedInto.insert(target);
+		}
+
+		if (result.tabVisible) {
+			a_forms.workshopMenuMain->arrayOfForms.push_back(a_forms.rootMenu);
+		}
+
+		UpdateTags(plan.tags);
+
+		result.changed = true;
+		_lastSignature = signature;
+		_lastResult = result;
 		return result;
 	}
 }

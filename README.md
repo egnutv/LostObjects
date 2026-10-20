@@ -83,6 +83,14 @@ Details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 On the first load you will see a message that the mod was made with AI. It is shown once
 per version.
 
+## Where recovered items go
+
+By default Lost Objects puts recovered items **back where they belong**: into the sub
+menu that carries their category's name, or into the mod's own top menu. Only what has
+no home ends up in the "Lost Objects" tab. Large categories are split into groups
+automatically, based on what the items have in common (tags in names, words, model
+folders) - no fixed lists. `sPlacement=Tab` puts everything into the tab instead.
+
 ## Settings
 
 `Data/F4SE/Plugins/LostObjects.ini` - for example `sSortMode=Flat` to drop the

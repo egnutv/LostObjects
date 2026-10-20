@@ -39,8 +39,17 @@ namespace LO
 		std::uint32_t skippedWithoutCategory{ 0 };  // recipes removed by bSkipWithoutCategory=1
 		std::vector<std::string> workbenchKeywords;  // for the log
 
-		// Category keyword -> the tab entry (menu or category form) that shows it.
+		// Category keyword -> the lost menu or category it was found in.
 		std::unordered_map<const RE::BGSKeyword*, const RE::TESForm*> entryOfCategory;
+
+		// Where things belong in the normal menu:
+		//   homeOfPlugin: lower-case plugin file -> the plugin's own top menu, if
+		//                 it has exactly one (e.g. "Snappy HouseKit").
+		//   menuOfTitle:  keyword -> reachable sub menu that uses it as its title
+		//                 (a lost "Decorations" category belongs to "Decorations").
+		std::unordered_map<std::string, RE::BGSListForm*> homeOfPlugin;
+		std::unordered_map<const RE::BGSKeyword*, RE::BGSListForm*> menuOfTitle;
+		std::unordered_map<const RE::BGSListForm*, std::string> menuPath;  // reachable sub menu -> path for logs
 
 		[[nodiscard]] bool Empty() const noexcept { return entries.empty() && uncategorized.empty(); }
 	};

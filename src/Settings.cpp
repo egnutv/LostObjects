@@ -74,6 +74,23 @@ namespace LO
 			return a_default;
 		}
 
+		std::uint32_t GetUInt(const IniData& a_data, std::string_view a_key, std::uint32_t a_default, std::uint32_t a_min, std::uint32_t a_max)
+		{
+			const auto it = a_data.find(std::string(a_key));
+			if (it == a_data.end()) {
+				return a_default;
+			}
+			std::uint32_t value = 0;
+			const auto* begin = it->second.data();
+			const auto* end = begin + it->second.size();
+			const auto [ptr, ec] = std::from_chars(begin, end, value);
+			if (ec != std::errc() || ptr != end) {
+				REX::LogWarning("Settings: invalid number '{}' for '{}', using default", it->second, a_key);
+				return a_default;
+			}
+			return std::clamp(value, a_min, a_max);
+		}
+
 		std::string GetString(const IniData& a_data, std::string_view a_key, std::string_view a_default)
 		{
 			const auto it = a_data.find(std::string(a_key));
@@ -136,11 +153,29 @@ namespace LO
 
 		skipUntouchedBaseGame = GetBool(data, "filters.bskipuntouchedbasegame", false);
 		skipWithoutCategory = GetBool(data, "filters.bskipwithoutcategory", false);
+		const auto placementText = Util::ToLower(GetString(data, "general.splacement", "Home"));
+		if (placementText == "tab") {
+			placement = Placement::kTab;
+		} else {
+			if (placementText != "home") {
+				REX::LogWarning("Settings: unknown sPlacement '{}', using Home", placementText);
+			}
+			placement = Placement::kHome;
+		}
+
+		splitThreshold = GetUInt(data, "grouping.isplitthreshold", 40, 5, 10000);
+		maxGroups = GetUInt(data, "grouping.imaxgroups", 40, 2, 100);
+		minGroupSize = GetUInt(data, "grouping.imingroupsize", 3, 2, 1000);
+
 		ignoredPlugins = SplitList(GetString(data, "filters.signoreplugins", ""));
 
 		REX::LogInformation(
-			"Settings: enabled={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
+			"Settings: enabled={} placement={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
 			enabled,
+			placement == Placement::kTab ? "Tab" : "Home",
+			splitThreshold,
+			maxGroups,
+			minGroupSize,
 			sortMode == SortMode::kFlat ? "Flat" : "ByMod",
 			skipUntouchedBaseGame,
 			skipWithoutCategory,

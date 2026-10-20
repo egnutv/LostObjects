@@ -13,6 +13,7 @@ namespace LO::MenuDump
 		{
 			std::string path;  // "Structures > Wood > Floors"
 			const RE::BGSKeyword* category{ nullptr };
+			bool viaLostObjects{ false };  // reached through a menu or category of Lost Objects
 		};
 
 		std::string Clean(std::string a_text)
@@ -47,12 +48,6 @@ namespace LO::MenuDump
 			}
 			return std::format("{} {} \"{}\" from {}", a_form->GetFormTypeString(), Util::FormIDToString(a_form->GetFormID()), Label(a_form), Util::GetFileName(a_form, 0));
 		}
-
-		bool IsInLostTab(std::string_view a_path)
-		{
-			// The tab's title is "Lost Objects"; without the name table its editor ID is used.
-			return a_path.starts_with("Lost Objects") || a_path.starts_with("LO_RootKeyword");
-		}
 	}
 
 	void Write(const OwnedForms& a_forms, std::string_view a_reason)
@@ -84,10 +79,11 @@ namespace LO::MenuDump
 			const RE::BGSListForm* list;
 			std::string path;
 			std::vector<const RE::BGSListForm*> ancestors;
+			bool viaLostObjects{ false };
 		};
 
 		std::vector<Frame> stack;
-		stack.push_back({ a_forms.workshopMenuMain, std::string(), {} });
+		stack.push_back({ a_forms.workshopMenuMain, std::string(), {}, false });
 
 		while (!stack.empty()) {
 			auto frame = std::move(stack.back());
@@ -108,7 +104,7 @@ namespace LO::MenuDump
 				if (const auto* keyword = form->As<RE::BGSKeyword>()) {
 					if (isMainMenu || i != 0) {
 						const auto path = frame.path.empty() ? Label(keyword) : frame.path + " > " + Label(keyword);
-						categories.push_back({ path, keyword });
+						categories.push_back({ path, keyword, frame.viaLostObjects || a_forms.IsOwned(keyword) });
 					}
 				} else if (const auto* subList = form->As<RE::BGSListForm>()) {
 					if (std::ranges::find(frame.ancestors, subList) != frame.ancestors.end() || frame.ancestors.size() >= MAX_DEPTH) {
@@ -120,7 +116,7 @@ namespace LO::MenuDump
 
 					auto ancestors = frame.ancestors;
 					ancestors.push_back(frame.list);
-					children.push_back({ subList, path, std::move(ancestors) });
+					children.push_back({ subList, path, std::move(ancestors), frame.viaLostObjects || a_forms.IsOwned(subList) });
 				}
 			}
 
@@ -140,6 +136,7 @@ namespace LO::MenuDump
 		menu << "Menu path\tCategory ID\tCategory plugin\tRecipe ID\tRecipe plugin\tItem ID\tItem type\tItem name\tItem plugin\tConditions\r\n";
 
 		std::unordered_map<const RE::BGSConstructibleObject*, std::vector<std::string>> recipePaths;
+		std::unordered_map<const RE::BGSConstructibleObject*, std::pair<bool, bool>> recipeVia;  // (via Lost Objects, via normal menu)
 		std::unordered_map<const RE::TESForm*, std::set<const RE::BGSConstructibleObject*>> recipesByItem;
 		std::unordered_map<const RE::BGSKeyword*, std::vector<std::string>> categoryPaths;
 		std::map<std::string, std::uint32_t> pathCount;
@@ -157,7 +154,9 @@ namespace LO::MenuDump
 
 			for (const auto* recipe : it->second) {
 				const auto* item = recipe->createdItem;
-				recipePaths[recipe].push_back(occurrence.path);
+				recipePaths[recipe].push_back(occurrence.viaLostObjects ? occurrence.path + "  [Lost Objects]" : occurrence.path);
+				auto& via = recipeVia[recipe];
+				(occurrence.viaLostObjects ? via.first : via.second) = true;
 				recipesByItem[item].insert(recipe);
 
 				menu << Clean(occurrence.path) << '\t'
@@ -187,9 +186,8 @@ namespace LO::MenuDump
 		for (const auto& [recipe, paths] : recipePaths) {
 			if (paths.size() > 1) {
 				++recipesMulti;
-				const bool inTab = std::ranges::any_of(paths, IsInLostTab);
-				const bool inMenu = std::ranges::any_of(paths, [](const std::string& p) { return !IsInLostTab(p); });
-				if (inTab && inMenu) {
+				const auto& via = recipeVia[recipe];
+				if (via.first && via.second) {
 					++recipesTabAndMenu;
 				}
 			}
@@ -216,7 +214,7 @@ namespace LO::MenuDump
 		dup << "Recipe placements       : " << rowCount << "\n";
 		dup << "Different recipes       : " << recipePaths.size() << "\n\n";
 		dup << "Recipes in more than one place            : " << recipesMulti << "\n";
-		dup << "  of these in Lost Objects AND normal menu: " << recipesTabAndMenu << "  (should be 0)\n";
+		dup << "  of these via Lost Objects AND normally  : " << recipesTabAndMenu << "  (should be 0)\n";
 		dup << "Items buildable through several recipes   : " << itemsMulti << "\n";
 		dup << "Categories reachable through several paths: " << categoriesMulti << "\n";
 		dup << "Sub menus reachable through several paths : " << listsMulti << "\n";
@@ -228,12 +226,11 @@ namespace LO::MenuDump
 			dup << "\n" << a_title << "\n" << std::string(a_title.size(), '-') << "\n";
 		};
 
-		section("Recipes in Lost Objects that are ALSO in the normal menu");
+		section("Recipes shown by Lost Objects that are ALSO reachable normally");
 		std::size_t listed = 0;
 		for (const auto& [recipe, paths] : recipePaths) {
-			const bool inTab = std::ranges::any_of(paths, IsInLostTab);
-			const bool inMenu = std::ranges::any_of(paths, [](const std::string& p) { return !IsInLostTab(p); });
-			if (!inTab || !inMenu || listed++ >= MAX_LISTED) {
+			const auto& via = recipeVia[recipe];
+			if (!via.first || !via.second || listed++ >= MAX_LISTED) {
 				continue;
 			}
 			dup << Describe(recipe) << " -> " << Describe(recipe->createdItem) << "\n";
@@ -300,7 +297,7 @@ namespace LO::MenuDump
 			dup << std::format("{:>4}x  {}\n", count, path);
 		}
 
-		REX::LogInformation("MenuDump: {} menu paths, {} recipe placements; duplicates: {} recipes ({} tab+menu), {} items, {} categories, {} sub menus",
+		REX::LogInformation("MenuDump: {} menu paths, {} recipe placements; duplicates: {} recipes ({} Lost Objects + normal), {} items, {} categories, {} sub menus",
 			categories.size(), rowCount, recipesMulti, recipesTabAndMenu, itemsMulti, categoriesMulti, listsMulti);
 	}
 }

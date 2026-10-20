@@ -2,6 +2,12 @@
 
 namespace LO
 {
+	enum class Placement
+	{
+		kHome,  // put recovered things into the menu they belong to, if it can be found
+		kTab    // everything into the "Lost Objects" tab
+	};
+
 	enum class SortMode
 	{
 		kByMod,  // "Lost Objects" -> one folder per plugin file (mod, DLC, base game) -> recovered menus
@@ -18,7 +24,11 @@ namespace LO
 		void Load();
 
 		bool enabled{ true };
+		Placement placement{ Placement::kHome };
 		SortMode sortMode{ SortMode::kByMod };
+		std::uint32_t splitThreshold{ 40 };  // categories with more recipes are split into groups
+		std::uint32_t maxGroups{ 40 };
+		std::uint32_t minGroupSize{ 3 };
 		bool skipUntouchedBaseGame{ false };  // filter, off = show everything
 		bool skipWithoutCategory{ false };    // filter, off = show everything
 		bool showSummaryMessage{ true };

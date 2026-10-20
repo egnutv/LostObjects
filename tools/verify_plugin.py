@@ -174,13 +174,12 @@ def main() -> int:
             fail(f"{what} ({local:03X}) is a {records[rid][0]}, expected {rtype}")
 
     expect(constant("RootKeyword"), "KYWD", "RootKeyword")
-    expect(constant("UncategorizedKeyword"), "KYWD", "UncategorizedKeyword")
     expect(constant("RootMenu"), "FLST", "RootMenu")
-    slots = constant("SlotCount")
-    for i in range(max(slots, 0)):
-        expect(constant("FirstSlotKeyword") + i, "KYWD", f"SlotKeyword {i + 1}")
-        expect(constant("FirstSlotMenu") + i, "FLST", f"SlotMenu {i + 1}")
-        expect(constant("FirstSlotUncategorizedKeyword") + i, "KYWD", f"SlotUncategorizedKeyword {i + 1}")
+    for i in range(max(constant("MenuCount"), 0)):
+        expect(constant("FirstMenuTitle") + i, "KYWD", f"MenuTitle {i + 1}")
+        expect(constant("FirstMenu") + i, "FLST", f"Menu {i + 1}")
+    for i in range(max(constant("LeafCount"), 0)):
+        expect(constant("FirstLeaf") + i, "KYWD", f"Leaf {i + 1}")
 
     print(f"{path.name}: {len(records)} records in {group_count} groups, masters {masters}, light={bool(flags & 0x200)}")
     return report()
