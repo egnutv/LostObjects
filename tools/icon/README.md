@@ -19,16 +19,25 @@ the ratio of the two icons' bounds, so the logo gets the same size as that icon.
 
 ## Rebuilding
 
-Textures (Python 3 with Pillow):
+The generated files are in the repository, so nobody has to rebuild them to build or
+use the mod. The CI checks on every push that they can be reproduced byte for byte.
 
+Textures (Python 3.10+ with the pinned Pillow version):
+
+    pip install -r tools/icon/requirements.txt
     python tools/icon/make_icon_textures.py
 
-Mesh (needs [nifly](https://github.com/ousnius/nifly), GPL-3.0, used only as a
-build tool - it is not part of the mod and not shipped):
+Mesh (CMake 3.21+ and any C++17 compiler - Visual Studio, GCC or Clang; CMake
+downloads [nifly](https://github.com/ousnius/nifly) (GPL-3.0) at a pinned commit, used
+only by this build tool, not part of the mod):
 
-    git clone https://github.com/ousnius/nifly
-    cmake -S nifly -B nifly/build -DBUILD_TESTING=OFF && cmake --build nifly/build
-    g++ -std=c++17 -Inifly/include -Inifly/external tools/icon/make_icon_nif.cpp nifly/build/src/libnifly.a -o make_icon_nif
-    ./make_icon_nif data/Meshes/LostObjects/MenuIcon.nif
+    cmake -S tools/icon -B build/icon
+    cmake --build build/icon --config Release
+    build/icon/make_icon_nif data/Meshes/LostObjects/MenuIcon.nif                 (Linux, macOS)
+    build\icon\Release\make_icon_nif.exe data\Meshes\LostObjects\MenuIcon.nif   (Windows)
 
 `make_icon_nif --check <file.nif>` loads a mesh and prints what is in it.
+
+Nexus header image (optional, `nexus/header.png`):
+
+    python tools/icon/make_nexus_header.py

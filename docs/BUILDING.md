@@ -30,7 +30,7 @@ libraries; that takes a while. Later builds take a few minutes. Options:
 | CMake | 4.3 or newer (Visual Studio's bundled CMake works if new enough) |
 | vcpkg | any recent version; set the environment variable `VCPKG_ROOT` to its folder |
 | Git | for CMake to download CommonLibF4 |
-| Python 3.10+ | only for the tools in `tools/` |
+| Python 3.10+ | for the tools in `tools/` (standard library only; the icon tools also need Pillow, see `tools/icon/requirements.txt`) |
 
 Dependencies are resolved automatically:
 
@@ -82,19 +82,45 @@ version independent through the Address Library, so new game patches usually onl
 a new Address Library file - not a new DLL. If a patch changes a structure the mod uses,
 CommonLibF4 has to be updated: change `GIT_TAG` in `CMakeLists.txt` to a newer commit.
 
+## Everything is reproducible
+
+Every file in the mod archive can be rebuilt from this repository, and the CI checks it
+on every push:
+
+| File in the archive | Built from | Check |
+|---|---|---|
+| `F4SE/Plugins/LostObjects.dll` | `src/`, CommonLibF4 AV at a pinned commit, vcpkg at a pinned baseline | built by the CI |
+| `LostObjects.esp` | `tools/build_plugin.py` | `build_plugin.py --check`, `verify_plugin.py` |
+| `Meshes/LostObjects/MenuIcon.nif` | `tools/icon/make_icon_nif.cpp` | rebuilt and compared byte for byte |
+| `Textures/LostObjects/MenuIcon_d.dds` | `tools/icon/make_icon_textures.py` from `Logo/Logo.png` | rebuilt and compared byte for byte |
+| INI, readme, license files | `data/`, `docs/`, root | copied by `tools/package.py` |
+
+No Creation Kit, xEdit, NifSkope or other closed tool is needed. Details for the icon:
+[tools/icon/README.md](../tools/icon/README.md).
+
+## Building in your own fork
+
+Fork the repository on GitHub and push - the **Build** workflow runs in your fork as well
+and stores the archive in `releases/` of your fork. Nothing in the workflow depends on
+the original repository.
+
 ## Project layout
 
 ```
 .github/        CI workflow and issue templates
-data/           files that go into the game's Data folder
+Logo/           the logo (PNG, plus the Affinity and Paint.NET source files)
+data/           files that go into the game's Data folder (esp, ini, mesh, texture)
 docs/           documentation
+nexus/          the Nexus Mods page kit
+releases/       the latest mod archive, stored by the CI
 src/            C++ source of the F4SE plugin
-tools/          plugin generator, plugin checker, packager
+tools/          plugin generator and checker, packager, local build script
+tools/icon/     generators for the menu icon mesh, its texture and the Nexus header
 CMakeLists.txt  build definition
 vcpkg.json      library dependencies
 ```
 
-Code overview: [HOW_IT_WORKS.md](HOW_IT_WORKS.md#7-files-of-the-project).
+Code overview: [HOW_IT_WORKS.md](HOW_IT_WORKS.md#8-files-of-the-project).
 
 ## Publishing the repository for the first time
 
@@ -105,7 +131,7 @@ Code overview: [HOW_IT_WORKS.md](HOW_IT_WORKS.md#7-files-of-the-project).
    ```bat
    git init -b main
    git add .
-   git commit -m "Lost Objects 0.1.0"
+   git commit -m "Lost Objects"
    git remote add origin https://github.com/<your-name>/LostObjects.git
    git push -u origin main
    ```

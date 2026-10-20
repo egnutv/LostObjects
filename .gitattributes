@@ -16,6 +16,10 @@
 *.png  binary
 *.jpg  binary
 *.zip  binary
+*.nif  binary
+*.dds  binary
+*.af   binary
+*.pdn  binary
 
 # GitHub language statistics
 *.h    linguist-language=C++

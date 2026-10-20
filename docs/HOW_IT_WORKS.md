@@ -215,7 +215,10 @@ check fails, names are not read or written.
 | `src/Recovery.*` | when to scan, events, icon, summary message |
 | `src/Scanner.*` | the read-only analysis described above |
 | `src/MenuBuilder.*` | decides where recovered recipes go and builds the menus |
+| `src/Matcher.*` | finds the existing category a lost item belongs to |
 | `src/Grouping.*` | splits large categories into groups by common features |
+| `src/ModelCheck.*` | finds ghost objects (model file missing) |
+| `src/Util.h` | small helpers (names, files, variants of a form list) |
 | `src/Inventory.*`, `src/MenuDump.*` | the inventory, pattern, menu and duplicate logs |
 | `src/NameMap.*` | verified access to the game's name table |
 | `src/Report.*` | log output and `LostObjects_Report.txt` |
@@ -226,6 +229,10 @@ check fails, names are not read or written.
 | `tools/build_plugin.py` | generates `data/LostObjects.esp` and `src/PluginForms.h` |
 | `tools/verify_plugin.py` | independent check of the plugin file |
 | `tools/package.py` | builds the release archive |
+| `tools/build_local.py`, `build.cmd` | one-click build on Windows |
+| `tools/icon/` | generators for the menu icon mesh and texture, and the Nexus header |
+| `data/` | esp, ini, icon mesh and texture as they go into the game's Data folder |
+| `nexus/` | the Nexus Mods page kit |
 
 ## 9. Known limits
 

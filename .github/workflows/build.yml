@@ -37,9 +37,32 @@ jobs:
       - name: Plugin file is well formed
         run: python tools/verify_plugin.py
 
+  icon-files:
+    name: Check icon files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Textures are reproducible from Logo/Logo.png
+        run: |
+          pip install -r tools/icon/requirements.txt
+          python tools/icon/make_icon_textures.py
+          git diff --exit-code -- data/Textures
+
+      - name: Mesh is reproducible from tools/icon/make_icon_nif.cpp
+        run: |
+          cmake -S tools/icon -B build/icon
+          cmake --build build/icon
+          build/icon/make_icon_nif data/Meshes/LostObjects/MenuIcon.nif
+          git diff --exit-code -- data/Meshes
+
   build:
     name: Build DLL (Windows, Visual Studio 2026)
-    needs: plugin-file
+    needs: [plugin-file, icon-files]
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v6
