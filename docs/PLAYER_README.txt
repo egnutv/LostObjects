@@ -1,5 +1,5 @@
-LOST MOD OBJECTS
-================
+LOST OBJECTS
+============
 
 Finds every craftable workshop item that cannot be reached in the build menu -
 from mods, DLCs or the base game - and collects it in a new workshop tab called

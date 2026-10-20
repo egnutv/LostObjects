@@ -4,6 +4,15 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-20
+
+### Fixed
+- The in-game notice still had the old title "LOST MOD OBJECTS".
+- Single lost categories were filed under the plugin that defined the category keyword,
+  not the plugin the recipes come from. Example: scrap recipes added by Scrap Everything
+  use the vanilla "Scrap" keyword and ended up in the folder "Fallout4". A category now
+  goes into the folder of the plugin that contributes most of its lost recipes.
+
 ## [0.1.1] - 2026-10-20
 
 ### Fixed

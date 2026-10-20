@@ -203,6 +203,16 @@ namespace LO
 		// 4) Lost recipes and the categories they use.
 		std::unordered_map<RE::BGSKeyword*, std::uint32_t> lostCategories;  // category -> recipe count
 
+		// Which plugins the lost recipes of a category come from. A single
+		// category keyword is often vanilla (e.g. "Scrap") while its lost
+		// recipes come from a mod, so the folder follows the recipes.
+		struct Origin
+		{
+			std::uint32_t count{ 0 };
+			std::uint32_t loadOrderKey{ 0 };
+		};
+		std::unordered_map<RE::BGSKeyword*, std::map<std::string, Origin>> categoryOrigins;
+
 		for (auto& candidate : unreachable) {
 			auto* recipe = candidate.recipe;
 			if (!workshopBenches.contains(recipe->benchKeyword)) {
@@ -235,6 +245,9 @@ namespace LO
 			const bool hasUsableCategory = !usable.empty();
 			for (auto* keyword : usable) {
 				++lostCategories[keyword];
+				auto& origin = categoryOrigins[keyword][definedIn];
+				++origin.count;
+				origin.loadOrderKey = Util::GetLoadOrderKey(recipe);
 			}
 
 			if (!hasUsableCategory) {
@@ -341,12 +354,26 @@ namespace LO
 				displayName = Util::GetEditorID(keyword);
 			}
 
+			// Folder: the plugin that contributes most of the lost recipes.
+			std::string pluginFile = Util::GetFileName(keyword, 0);
+			std::uint32_t loadOrderKey = Util::GetLoadOrderKey(keyword);
+			if (const auto origins = categoryOrigins.find(keyword); origins != categoryOrigins.end()) {
+				std::uint32_t best = 0;
+				for (const auto& [file, origin] : origins->second) {
+					if (origin.count > best && !file.empty()) {
+						best = origin.count;
+						pluginFile = file;
+						loadOrderKey = origin.loadOrderKey;
+					}
+				}
+			}
+
 			result.entries.push_back(MenuEntry{
 				.form = keyword,
 				.isMenu = false,
 				.displayName = std::move(displayName),
-				.pluginFile = Util::GetFileName(keyword, 0),
-				.loadOrderKey = Util::GetLoadOrderKey(keyword),
+				.pluginFile = std::move(pluginFile),
+				.loadOrderKey = loadOrderKey,
 				.recipeCount = count });
 		}
 

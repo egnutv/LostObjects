@@ -7,7 +7,7 @@ namespace LO::Notice
 	namespace
 	{
 		constexpr auto NOTICE_TEXT =
-			"LOST MOD OBJECTS\n\n"
+			"LOST OBJECTS\n\n"
 			"This mod was vibecoded by AI (written by Claude, Anthropic) and tested by a human.\n"
 			"AI-generated code can contain mistakes. Please keep a backup save.\n\n"
 			"New in the workshop menu: the tab \"Lost Objects\". It collects every "
