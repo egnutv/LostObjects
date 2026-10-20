@@ -25,6 +25,19 @@ All files mentioned here are in `Documents\My Games\Fallout4\F4SE\`.
    message asks you to restart the game. After the restart everything is there at once,
    because Lost Objects remembers its result (`LostObjects_Snapshot.txt`).
 
+## A menu of another mod is missing after loading a save
+
+Lost Objects **0.10.0 and older** had a bug: a save made while it was running could lose
+the first menu that a script (for example Settlement Menu Manager) had added - in our
+test "Snappy Builds" and "Real Estate" of Snap'n Build. Version 0.10.1 fixes this and
+repairs the menu list when such a save is loaded, but it cannot know which menu is
+missing. To get it back:
+
+1. Best: load a save from **before** you played with Lost Objects 0.10.0 (or older).
+2. Or let Settlement Menu Manager add its menus again: on its holotape choose
+   **Enter Safe Mode**, then save and load the game (or open and close the workshop
+   menu) - Settlement Menu Manager then adds all of its menus again. Then save.
+
 ## The menus look different after I changed my mods
 
 That is expected: the snapshot is only used when the mods and the settings are exactly

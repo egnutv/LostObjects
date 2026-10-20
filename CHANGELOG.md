@@ -4,6 +4,23 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] - 2026-10-21 - public beta
+
+### Fixed
+- **Menus of other mods could disappear from a save.** Fallout 4 keeps the entries that
+  scripts add to a menu list (for example everything Settlement Menu Manager adds) at
+  the end of the list, and the save game stores exactly the last ones of them. Lost
+  Objects 0.10.0 and older appended its tab and folders behind them, so a save made
+  while Lost Objects was running stored the Lost Objects entry instead of the first
+  script-added menu (in the test: "Snappy Builds" and Snap'n Build's "Real Estate").
+  After loading such a save those menus were gone, even with Lost Objects switched off.
+  Lost Objects now always puts its entries in front of the script-added ones, and when
+  it finds its own entries among them (in a save from an older version), it takes them
+  out and corrects the count, so the next save is right again. A menu that is already
+  missing in such a save comes back when its mod adds it again - see TROUBLESHOOTING.
+- The snapshot was written but never used: reading it back failed for every entry
+  ("unknown name entry"). Fixed.
+
 ## [0.10.0] - 2026-10-20 - public beta
 
 ### Fixed

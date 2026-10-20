@@ -1,4 +1,4 @@
-# Nexus Mods - page fields for Lost Objects 0.10.0
+# Nexus Mods - page fields for Lost Objects 0.10.1
 
 Fill in the upload form on nexusmods.com (Fallout 4 > Upload a mod) like this.
 
@@ -7,7 +7,7 @@ Fill in the upload form on nexusmods.com (Fallout 4 > Upload a mod) like this.
 | Field | Value |
 |---|---|
 | Mod name | `Lost Objects` |
-| Version | `0.10.0` |
+| Version | `0.10.1` |
 | Category | **Player Settlement** (second choice: Utilities) |
 | Language | English |
 | Author | egnutv |
@@ -71,9 +71,9 @@ Donation Points: your choice.
 
 | Field | Value |
 |---|---|
-| File | `LostObjects-0.10.0.zip` (from `releases/` on GitHub) |
+| File | `LostObjects-0.10.1.zip` (from `releases/` on GitHub) |
 | File name | `Lost Objects` |
-| Version | `0.10.0` |
+| Version | `0.10.1` |
 | Category | Main Files |
 | Description | `Public beta. Fallout 4 1.11.240, F4SE 0.7.9. Install with your mod manager and enable LostObjects.esp.` |
 | Mod manager download | yes |
@@ -86,7 +86,7 @@ See `screenshots.md`. Primary image: `header.png` or your best in-game screensho
 
 ## Changelog
 
-Version `0.10.0`: `First public release (public beta).`
+Version `0.10.1`: `First public release (public beta).`
 
 ## Before you publish
 

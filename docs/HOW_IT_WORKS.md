@@ -169,9 +169,14 @@ Lost Objects keeps two files of its own in `Documents\My Games\Fallout4\F4SE\`:
 |---|---|---|
 | Recovered recipes | one category is added (an existing one that fits, or one from the pool) | the recipe is reachable again, or on restart |
 | Pool menus and categories of `LostObjects.esp` | named and filled | every rebuild |
-| Top menus of other mods | a "Lost Objects" folder (pool menu) is appended | every rebuild (removed and added again), or on restart |
-| `WorkshopMenuMain` | the "Lost Objects" tab is appended if needed | every rebuild |
+| Top menus of other mods | a "Lost Objects" folder (pool menu) is added in front of the entries that scripts added | every rebuild (removed and added again), or on restart |
+| `WorkshopMenuMain` | the "Lost Objects" tab is added if needed, in front of the entries that scripts added | every rebuild |
 | The menu icon | the tab's and the pool menus' title keywords are added to `LO_MenuIcon` (our logo) or, as fallback, to the vanilla "Decorations" icon | restart (`bBorrowMenuIcon=0` to disable, `bCustomMenuIcon=0` for the vanilla icon) |
+
+Why "in front of the entries that scripts added": Fallout 4 keeps what scripts add to
+a menu list (`FormList.AddForm`, used by Settlement Menu Manager) at the end of the
+list, and the save game stores exactly those last entries. Anything behind them would
+push a real entry out of the save.
 
 The menus are only rebuilt when the result of a scan changes, and never while the
 workshop menu is open. If another mod resets one of the menus (Papyrus `Revert()`),

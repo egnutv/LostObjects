@@ -60,7 +60,7 @@ namespace LO::Snapshot
 				return nullptr;
 			}
 			auto* dataHandler = RE::TESDataHandler::GetSingleton();
-			return dataHandler ? dataHandler->FindForm<RE::TESForm>(local, file) : nullptr;
+			return dataHandler ? dataHandler->FindForm(local, file) : nullptr;  // not FindForm<TESForm>: that one only accepts the type "TESForm" itself
 		}
 
 		std::vector<std::string_view> SplitTabs(std::string_view a_line)

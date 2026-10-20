@@ -234,7 +234,19 @@ namespace LO
 			std::size_t _leafIndex{ 0 };
 		};
 
-		// Replaces the editor entries of a form list. Returns true if anything changed.
+		// Fallout 4 keeps the forms that scripts added to a list (Papyrus
+		// FormList.AddForm, used by Settlement Menu Manager and many mods) at the
+		// END of arrayOfForms; scriptAddedFormCount says how many. The save game
+		// stores exactly that tail - the last scriptAddedFormCount entries. So
+		// Lost Objects must never put anything behind them: the save would then
+		// store our entry instead of the first script-added one, and that menu
+		// would be gone after loading. Our entries always go in front of the tail.
+		std::uint32_t ScriptTail(const RE::BGSListForm* a_list)
+		{
+			return std::min(a_list->scriptAddedFormCount, a_list->arrayOfForms.size());
+		}
+
+		// Replaces the entries of a form list. Returns true if anything changed.
 		bool SetListContents(RE::BGSListForm* a_list, const std::vector<RE::TESForm*>& a_forms)
 		{
 			auto& array = a_list->arrayOfForms;
@@ -253,6 +265,47 @@ namespace LO
 				array.push_back(form);
 			}
 			return true;
+		}
+
+		// Removes our forms from the script-added tail of a list and corrects
+		// the count, so the next save stores the right forms. Returns true if
+		// anything was removed.
+		bool StripFromScriptTail(const OwnedForms& a_forms, RE::BGSListForm* a_list)
+		{
+			if (!a_list) {
+				return false;
+			}
+			auto& array = a_list->arrayOfForms;
+			const auto tailStart = array.size() - ScriptTail(a_list);
+			std::vector<RE::TESForm*> kept;
+			kept.reserve(array.size());
+			std::uint32_t removed = 0;
+			for (std::uint32_t i = 0; i < array.size(); ++i) {
+				if (i >= tailStart && a_forms.IsOwned(array[i])) {
+					++removed;
+				} else {
+					kept.push_back(array[i]);
+				}
+			}
+			if (removed == 0) {
+				return false;
+			}
+			SetListContents(a_list, kept);
+			a_list->scriptAddedFormCount -= removed;
+			a_list->AddChange(RE::BGSListForm::ChangeFlags::kAddedForm);
+			REX::LogWarning("MenuBuilder: repaired {} - {} entry/entries of Lost Objects were stored among the script-added forms by an older version ({} script-added forms left)",
+				Util::FormIDToString(a_list->GetFormID()), removed, a_list->scriptAddedFormCount);
+			return true;
+		}
+
+		// Adds a_form to a list of another mod (or the base game), in front of
+		// the forms that scripts added (see ScriptTail).
+		void InsertBeforeScriptForms(RE::BGSListForm* a_list, RE::TESForm* a_form)
+		{
+			std::vector<RE::TESForm*> forms(a_list->arrayOfForms.begin(), a_list->arrayOfForms.end());
+			const auto at = forms.size() - ScriptTail(a_list);
+			forms.insert(forms.begin() + static_cast<std::ptrdiff_t>(at), a_form);
+			SetListContents(a_list, forms);  // scriptAddedFormCount stays: the tail is still the same forms
 		}
 
 		std::vector<Bucket> CollectBuckets(const ScanResult& a_scan, const std::unordered_set<const RE::BGSConstructibleObject*>& a_sorted)
@@ -451,6 +504,8 @@ namespace LO
 	void MenuBuilder::RemoveInjections(const OwnedForms& a_forms)
 	{
 		const auto strip = [&a_forms](RE::BGSListForm* a_list) {
+			StripFromScriptTail(a_forms, a_list);  // entries an older version left among the script-added forms
+
 			auto& array = a_list->arrayOfForms;
 			std::vector<RE::TESForm*> kept;
 			kept.reserve(array.size());
@@ -463,7 +518,7 @@ namespace LO
 				}
 			}
 			if (removed) {
-				SetListContents(a_list, kept);
+				SetListContents(a_list, kept);  // only entries in front of the tail are left to remove
 			}
 		};
 
@@ -704,7 +759,17 @@ namespace LO
 		}
 
 		// Another mod may have reset one of the menus we added to (Papyrus Revert()).
-		const bool intact = std::ranges::all_of(plan.injections, [](const auto& a_injection) {
+		// A save written by Lost Objects 0.10.0 or older can bring our entries
+		// back as script-added forms (see ScriptTail). Take them out first.
+		bool repaired = StripFromScriptTail(a_forms, a_forms.workshopMenuMain);
+		for (const auto& [target, node] : plan.injections) {
+			repaired = StripFromScriptTail(a_forms, target) || repaired;
+		}
+		for (auto* list : _injectedInto) {
+			repaired = StripFromScriptTail(a_forms, list) || repaired;
+		}
+
+		const bool intact = !repaired && std::ranges::all_of(plan.injections, [](const auto& a_injection) {
 			return a_injection.first->ContainsEditorForm(a_injection.second);
 		}) && (!result.tabVisible || a_forms.workshopMenuMain->ContainsEditorForm(a_forms.rootMenu));
 
@@ -758,13 +823,13 @@ namespace LO
 
 		for (const auto& [target, node] : a_state.injections) {
 			if (!target->ContainsEditorForm(node)) {
-				target->arrayOfForms.push_back(node);
+				InsertBeforeScriptForms(target, node);
 			}
 			_injectedInto.insert(target);
 		}
 
 		if (a_state.tabVisible) {
-			a_forms.workshopMenuMain->arrayOfForms.push_back(a_forms.rootMenu);
+			InsertBeforeScriptForms(a_forms.workshopMenuMain, a_forms.rootMenu);
 		}
 
 		TagMap tags;
