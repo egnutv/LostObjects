@@ -71,6 +71,7 @@ namespace LO::Report
 		file << "Skipped, model file missing: " << a_scan.missingModel.size() << " recipes (ghost objects)\n";
 		file << "Model check                : " << ModelCheck::Status() << "\n";
 		file << "Did not fit (pool full)    : " << a_apply.overflow << " recipes\n";
+		file << "Thumbnails added           : " << a_apply.previewsAdded << " items (had no preview transform)\n";
 		file << "Menus/categories created   : " << a_apply.entryCount << "\n";
 		file << "Folders in the tab         : " << a_apply.folderCount << "\n";
 		file << "Tab visible                : " << (a_apply.tabVisible ? "yes" : "no") << "\n\n";

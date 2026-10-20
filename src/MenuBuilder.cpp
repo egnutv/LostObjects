@@ -326,6 +326,7 @@ namespace LO
 		_originalKeywords.clear();
 		_currentTags.clear();
 		_injectedInto.clear();
+		_previewGiven.clear();
 		_lastSignature = 0;
 		_lastResult = {};
 	}
@@ -370,6 +371,61 @@ namespace LO
 			_originalKeywords.emplace(recipe, std::move(original));
 			_currentTags.emplace(recipe, tag);
 		}
+	}
+
+	// Items that were never meant for the build menu (scrap definitions of
+	// clutter, containers, ...) often have no preview transform. The menu then
+	// shows the 3D preview, but the thumbnail in the bar stays empty. They get
+	// the transform that visible items of the same form type use most often.
+	// Only items without any transform are touched; in memory only.
+	std::uint32_t MenuBuilder::AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result)
+	{
+		std::unordered_map<RE::FormType, std::unordered_map<RE::BGSTransform*, std::uint32_t>> byType;
+		std::unordered_map<RE::BGSTransform*, std::uint32_t> overall;
+		for (const auto& visible : a_scan.visible) {
+			auto* item = RE::DynamicCast<RE::TESBoundObject*>(visible.recipe->createdItem);
+			auto* transform = item ? item->previewTransform.transform : nullptr;
+			if (transform) {
+				++byType[item->GetFormType()][transform];
+				++overall[transform];
+			}
+		}
+		const auto mostCommon = [](const std::unordered_map<RE::BGSTransform*, std::uint32_t>& a_counts) -> RE::BGSTransform* {
+			RE::BGSTransform* best = nullptr;
+			std::uint32_t bestCount = 0;
+			for (const auto& [transform, count] : a_counts) {
+				if (count > bestCount || (count == bestCount && best && transform->GetFormID() < best->GetFormID())) {
+					best = transform;
+					bestCount = count;
+				}
+			}
+			return best;
+		};
+		auto* fallback = mostCommon(overall);
+		if (!fallback) {
+			return 0;
+		}
+
+		std::uint32_t added = 0;
+		for (const auto& [recipe, placed] : a_result.placement) {
+			std::vector<const RE::TESForm*> variants;
+			Util::CollectVariants(recipe->createdItem, variants);
+			for (const auto* variant : variants) {
+				auto* item = RE::DynamicCast<RE::TESBoundObject*>(const_cast<RE::TESForm*>(variant));
+				if (!item || item->previewTransform.transform || _previewGiven.contains(item)) {
+					continue;
+				}
+				const auto type = byType.find(item->GetFormType());
+				auto* transform = type != byType.end() ? mostCommon(type->second) : nullptr;
+				item->previewTransform.transform = transform ? transform : fallback;
+				_previewGiven.insert(item);
+				++added;
+			}
+		}
+		if (added > 0) {
+			REX::LogInformation("MenuBuilder: {} recovered items had no preview transform (empty thumbnail) and got one", added);
+		}
+		return added;
 	}
 
 	void MenuBuilder::RemoveInjections(const OwnedForms& a_forms)
@@ -659,6 +715,7 @@ namespace LO
 		}
 
 		UpdateTags(plan.tags);
+		result.previewsAdded = AddPreviewTransforms(a_scan, result);
 
 		result.changed = true;
 		_lastSignature = signature;

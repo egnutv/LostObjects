@@ -12,6 +12,8 @@ written to the log.
 | Setting | Default | Meaning |
 |---|---|---|
 | `bEnabled` | `1` | Master switch. `0` = the mod does nothing at all. |
+| `bLiveUpdate` | `0` | `0`: the menus are built once per loaded save, as soon as the workshop menu has settled, and then kept; changes of other mods are picked up on the next load. `1`: update whenever a scan finds something new. |
+| `iSettleSeconds` | `10` | Earliest moment (seconds after loading) to build the menus. Two scans in a row must also agree. |
 | `sPlacement` | `Home` | `Home`: sort recovered items into an existing category that fits; what does not fit goes into a "Lost Objects" folder inside the mod's own menu; only what has no home goes into the tab. `Tab`: everything into the "Lost Objects" tab, nothing is added to other menus. |
 | `bSortIntoCategories` | `1` | `0`: do not sort into existing categories, use the "Lost Objects" folder of the mod (or the tab) for everything. Only with `sPlacement=Home`. |
 | `iMinConfidence` | `30` | How sure (in percent) the match into an existing category must be. Higher = fewer items sorted in, but fewer mistakes. The inventory shows the confidence of every item. |

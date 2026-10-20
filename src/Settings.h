@@ -24,6 +24,8 @@ namespace LO
 		void Load();
 
 		bool enabled{ true };
+		bool liveUpdate{ false };            // false: build once per loaded save, then keep
+		std::uint32_t settleSeconds{ 10 };   // earliest build after loading (two equal scans needed)
 		Placement placement{ Placement::kHome };
 		SortMode sortMode{ SortMode::kByMod };
 		std::uint32_t splitThreshold{ 40 };  // categories with more recipes are split into groups

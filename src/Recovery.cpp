@@ -19,7 +19,7 @@ namespace LO
 		// Mods that inject their menus with Papyrus (for example through
 		// Settlement Menu Manager) do so a few seconds after a save is loaded.
 		// A few follow-up scans make sure those menus are seen as reachable.
-		constexpr std::array FOLLOW_UP_DELAYS{ 3s, 10s, 30s, 90s };
+		constexpr std::array FOLLOW_UP_DELAYS{ 3s, 10s, 20s, 30s, 60s, 90s, 180s };
 
 		class WorkshopModeSink final : public RE::BSTEventSink<RE::Workshop::WorkshopModeEvent>
 		{
@@ -100,11 +100,20 @@ namespace LO
 		RegisterEvents();  // in case the UI was not available at data load
 
 		_summaryShown = false;
+		_built = false;
+		_provisional = false;
+		_seenByPlayer = false;
+		_deferredLogged = false;
+		_builtSignature = 0;
+		_previousSignature = 0;
+		_appliedScan = {};
+		_loadTime = std::chrono::steady_clock::now();
+
 		RequestScan(a_reason);
 		ScheduleFollowUpScans();
 	}
 
-	void Recovery::RequestScan(std::string_view a_reason)
+	void Recovery::RequestScan(std::string_view a_reason, bool a_force)
 	{
 		const auto& settings = Settings::Get();
 		if (!_ready || !settings.enabled) {
@@ -113,21 +122,24 @@ namespace LO
 
 		if (IsWorkshopMenuOpen()) {
 			_scanPending = true;  // never change the menu while it is on screen
+			_pendingForce = _pendingForce || a_force;
 			return;
 		}
+		a_force = a_force || _pendingForce;
 		_scanPending = false;
+		_pendingForce = false;
 
-		if (!ScanGuarded(*this, a_reason)) {
+		if (!ScanGuarded(*this, a_reason, a_force)) {
 			OnScanFailed(a_reason);
 		}
 	}
 
 	// Safety net: if anything inside the scan crashes, Lost Objects switches
 	// itself off for this session instead of taking the game down with it.
-	bool Recovery::ScanGuarded(Recovery& a_self, std::string_view a_reason)
+	bool Recovery::ScanGuarded(Recovery& a_self, std::string_view a_reason, bool a_force)
 	{
 		__try {
-			a_self.ScanNow(a_reason);
+			a_self.ScanNow(a_reason, a_force);
 			return true;
 		} __except (SEH_EXECUTE_HANDLER) {
 			return false;
@@ -142,7 +154,27 @@ namespace LO
 		RE::SendHUDMessage::ShowHUDMessage("Lost Objects stopped after an error. Please send LostObjects.log.");
 	}
 
-	void Recovery::ScanNow(std::string_view a_reason)
+	namespace
+	{
+		// What decides whether the menus have to be different: which recipes are
+		// lost and how big the reachable menu is.
+		std::size_t StableSignature(const ScanResult& a_scan)
+		{
+			std::vector<std::uint32_t> ids;
+			ids.reserve(a_scan.lostRecipes.size());
+			for (const auto& lost : a_scan.lostRecipes) {
+				ids.push_back(lost.recipe->GetFormID());
+			}
+			std::ranges::sort(ids);
+			std::size_t seed = a_scan.reachableRecipeCount * 1315423911u + a_scan.reachableCategoryCount;
+			for (const auto id : ids) {
+				seed ^= id + 0x9E3779B97F4A7C15ull + (seed << 6) + (seed >> 2);
+			}
+			return seed;
+		}
+	}
+
+	void Recovery::ScanNow(std::string_view a_reason, bool a_force)
 	{
 		const auto& settings = Settings::Get();
 		const bool traceSteps = ++_scanCount <= 5;  // detailed progress for the first scans only
@@ -158,29 +190,69 @@ namespace LO
 			return;
 		}
 
-		if (traceSteps) {
-			REX::LogInformation("Scan ({}): analysis done, updating the menu", a_reason);
+		// --- Build once, keep it ---------------------------------------------
+		const auto signature = StableSignature(scan);
+		const auto sinceLoad = std::chrono::duration_cast<std::chrono::seconds>(start - _loadTime);
+		const bool settled = sinceLoad >= std::chrono::seconds(settings.settleSeconds);
+		const bool sameAsBefore = signature == _previousSignature;
+		_previousSignature = signature;
+
+		const ScanResult* use = &scan;
+		std::string_view decision;
+		if (settings.liveUpdate) {
+			decision = "live update";
+		} else if (!_built) {
+			if (!(sameAsBefore && settled) && !a_force) {
+				if (traceSteps) {
+					REX::LogInformation("Scan ({}): waiting until the menu has settled ({} s after loading, {})", a_reason, sinceLoad.count(), sameAsBefore ? "same as before" : "changed since the last scan");
+				}
+				return;
+			}
+			decision = a_force && !(sameAsBefore && settled) ? "built early, the workshop was opened" : "built";
+			_provisional = a_force && !(sameAsBefore && settled);
+		} else if (signature == _builtSignature) {
+			decision = "kept";  // only re-adds entries another mod removed
+		} else if (sameAsBefore && (!_seenByPlayer || _provisional)) {
+			decision = "rebuilt, other mods finished adding their menus";
+			_provisional = false;
+		} else {
+			use = &_appliedScan;  // keep what the player has seen
+			decision = "kept, changes are applied the next time a save is loaded";
+			if (!_deferredLogged) {
+				_deferredLogged = true;
+				REX::LogInformation("Scan ({}): the workshop menu changed after Lost Objects built its menus. They stay as they are for this session; the next load picks up the change (bLiveUpdate=1 updates at once).", a_reason);
+			}
 		}
 
-		const auto apply = _builder.Apply(_forms, scan, settings);
+		if (traceSteps) {
+			REX::LogInformation("Scan ({}): {}", a_reason, decision);
+		}
 
+		const auto apply = _builder.Apply(_forms, *use, settings);
+		if (use == &scan && signature != _builtSignature) {
+			_appliedScan = scan;
+			_builtSignature = signature;
+		}
+		_built = true;
+
+		const auto& shown = *use;
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
 		// Log and write the report whenever the result differs from the last one.
-		std::size_t signature = scan.lostRecipes.size() * 31 + scan.uncategorized.size();
-		for (const auto& entry : scan.entries) {
-			signature = signature * 131 + entry.form->GetFormID() + entry.recipeCount;
+		std::size_t logSignature = shown.lostRecipes.size() * 31 + shown.uncategorized.size();
+		for (const auto& entry : shown.entries) {
+			logSignature = logSignature * 131 + entry.form->GetFormID() + entry.recipeCount;
 		}
 
-		if (apply.changed || !_hasLoggedOnce || signature != _lastSignature) {
+		if (apply.changed || !_hasLoggedOnce || logSignature != _lastSignature) {
 			_hasLoggedOnce = true;
-			_lastSignature = signature;
-			Report::Log(scan, apply, a_reason, settings.verboseLog);
+			_lastSignature = logSignature;
+			Report::Log(shown, apply, a_reason, settings.verboseLog);
 			if (settings.writeReport) {
-				Report::Write(scan, apply, a_reason);
+				Report::Write(shown, apply, a_reason);
 			}
 			if (settings.writeInventory) {
-				Inventory::Write(scan, apply, a_reason);
+				Inventory::Write(shown, apply, a_reason);
 				MenuDump::Write(_forms, a_reason);
 			}
 		}
@@ -195,7 +267,8 @@ namespace LO
 			return;
 		}
 
-		RequestScan("entering workshop mode"sv);
+		RequestScan("entering workshop mode"sv, true);
+		_seenByPlayer = _built;
 
 		if (!_summaryShown && _lastApply.recipeCount > 0) {
 			ShowSummary(_lastApply);

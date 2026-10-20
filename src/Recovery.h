@@ -2,6 +2,7 @@
 
 #include "Forms.h"
 #include "MenuBuilder.h"
+#include "Scanner.h"
 
 namespace LO
 {
@@ -19,8 +20,10 @@ namespace LO
 		// F4SE: a save was loaded or a new game was started.
 		void OnGameLoaded(std::string_view a_reason);
 
-		// Scans and updates the tab. Must run on the main thread.
-		void RequestScan(std::string_view a_reason);
+		// Scans and - if the result is ready - builds or keeps the menus. Must run
+		// on the main thread. a_force: build now even if the menu has not settled
+		// yet (the player is about to see it).
+		void RequestScan(std::string_view a_reason, bool a_force = false);
 
 		// Event hooks (called by the event sinks).
 		void OnWorkshopModeChanged(bool a_entering);
@@ -29,9 +32,9 @@ namespace LO
 	private:
 		Recovery() = default;
 
-		void ScanNow(std::string_view a_reason);
+		void ScanNow(std::string_view a_reason, bool a_force);
 		void OnScanFailed(std::string_view a_reason);
-		static bool ScanGuarded(Recovery& a_self, std::string_view a_reason);
+		static bool ScanGuarded(Recovery& a_self, std::string_view a_reason, bool a_force);
 
 		void RegisterEvents();
 		void BorrowMenuIcon();
@@ -47,6 +50,19 @@ namespace LO
 		bool _eventsRegistered{ false };
 		bool _iconBorrowed{ false };
 		bool _scanPending{ false };
+		bool _pendingForce{ false };
+
+		// Build once per loaded save: the menus are built when two scans in a row
+		// agree (other mods inject their menus a few seconds after loading), then
+		// kept. Later changes are applied on the next load (bLiveUpdate=0).
+		ScanResult _appliedScan;
+		std::size_t _builtSignature{ 0 };
+		std::size_t _previousSignature{ 0 };
+		bool _built{ false };
+		bool _provisional{ false };  // built early because the player opened the workshop
+		bool _seenByPlayer{ false };
+		bool _deferredLogged{ false };
+		std::chrono::steady_clock::time_point _loadTime{};
 		bool _summaryShown{ false };
 		bool _hasLoggedOnce{ false };
 		std::size_t _lastSignature{ 0 };

@@ -171,17 +171,32 @@ The menus are only rebuilt when the result of a scan changes, and never while th
 workshop menu is open. If another mod resets one of the menus (Papyrus `Revert()`),
 the next scan adds the entries again.
 
-## 6. When the scan runs
+## 6. When the menus are built
 
-| Moment | Why |
+| Moment | What happens |
 |---|---|
-| Game data loaded | find the forms of `LostObjects.esp` |
+| Game data loaded | find the forms of `LostObjects.esp`, set up the icon |
 | Save loaded / new game | first scan |
-| 3, 10, 30 and 90 seconds later | menus added by scripts appear a few seconds after loading |
-| Entering workshop mode | catch everything else |
-| Workshop menu closed | if a scan was skipped because the menu was open |
+| 3, 10, 20, 30, 60, 90 and 180 seconds later | scans again: menus added by scripts (for example through Settlement Menu Manager) appear a few seconds after loading |
+| Entering workshop mode | scans again |
+
+**The menus are built once per loaded save.** Lost Objects waits until the workshop
+menu has settled: at least `iSettleSeconds` (default 10) after loading, and two scans
+in a row must find exactly the same lost recipes. Then it builds its menus and keeps
+them. Later scans only re-add entries that another mod removed. If the workshop menu
+changes after the player has seen it (a mod injects its menu very late), Lost Objects
+keeps what is there and picks up the change the next time a save is loaded - the menu
+never changes under your hands. `bLiveUpdate=1` switches back to updating at once.
+
+If you open the workshop before the menu has settled, Lost Objects builds right away
+so nothing is missing, and allows one correction once the other mods are done.
 
 The menu is never changed while it is on screen.
+
+Items that were never meant for the build menu (scrap definitions of clutter,
+containers, ...) often have no preview transform, so their thumbnail in the bar
+stays empty. Recovered items without one get the transform that visible items of the
+same form type use most often (in memory only).
 
 ## 7. Names
 

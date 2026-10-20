@@ -29,6 +29,7 @@ namespace LO
 		std::uint32_t inModFolder{ 0 };  // recipes in a "Lost Objects" folder of their mod
 		std::uint32_t inTab{ 0 };  // recipes in the "Lost Objects" tab
 		std::uint32_t overflow{ 0 };  // recipes that did not fit into the pool
+		std::uint32_t previewsAdded{ 0 };  // items that got a preview transform (menu thumbnail)
 
 		std::unordered_map<const RE::BGSConstructibleObject*, Placed> placement;
 		// Where things were added to existing menus (for the report).
@@ -64,9 +65,11 @@ namespace LO
 		using TagMap = std::unordered_map<RE::BGSConstructibleObject*, RE::BGSKeyword*>;
 
 		void UpdateTags(const TagMap& a_wanted);
+		std::uint32_t AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result);
 		void RemoveInjections(const OwnedForms& a_forms);
 
 		KeywordMap _originalKeywords;  // recipe -> categories before we tagged it
+		std::unordered_set<const RE::TESForm*> _previewGiven;  // items we gave a preview transform
 		TagMap _currentTags;  // recipe -> the keyword we added
 		std::unordered_set<RE::BGSListForm*> _injectedInto;  // foreign menus we added entries to
 		std::size_t _lastSignature{ 0 };

@@ -135,6 +135,8 @@ namespace LO
 		}
 
 		enabled = GetBool(data, "general.benabled", true);
+		liveUpdate = GetBool(data, "general.bliveupdate", false);
+		settleSeconds = GetUInt(data, "general.isettleseconds", 10, 0, 600);
 		showSummaryMessage = GetBool(data, "general.bshowsummarymessage", true);
 		borrowMenuIcon = GetBool(data, "general.bborrowmenuicon", true);
 		customMenuIcon = GetBool(data, "general.bcustommenuicon", true);
@@ -175,8 +177,10 @@ namespace LO
 		ignoredPlugins = SplitList(GetString(data, "filters.signoreplugins", ""));
 
 		REX::LogInformation(
-			"Settings: enabled={} placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
+			"Settings: enabled={} liveUpdate={} settle={}s placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} verbose={} ignoredPlugins={}",
 			enabled,
+			liveUpdate,
+			settleSeconds,
 			placement == Placement::kTab ? "Tab" : "Home",
 			sortIntoCategories,
 			minConfidence,
