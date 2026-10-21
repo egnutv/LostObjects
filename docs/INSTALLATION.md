@@ -9,6 +9,11 @@
 3. **Address Library for F4SE Plugins** for your game version
    ([Nexus](https://www.nexusmods.com/fallout4/mods/47327)).
 
+## Download
+
+[Lost Objects on Nexus Mods](https://www.nexusmods.com/fallout4/mods/110356). The same archive is also in `releases/` of the
+[GitHub repository](https://github.com/egnutv/LostObjects).
+
 ## With a mod manager (recommended)
 
 Vortex, the Nexus app or Mod Organizer 2:

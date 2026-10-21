@@ -38,6 +38,9 @@ It writes small files to Documents\My Games\Fallout4\F4SE\
 does NOT remove them: to remove every trace, delete every file there whose
 name starts with "LostObjects". Full list: docs/FILES_AND_PRIVACY.md on GitHub.
 
+DOWNLOAD AND UPDATES
+https://www.nexusmods.com/fallout4/mods/110356
+
 SOURCE CODE AND DOCUMENTATION
 https://github.com/egnutv/LostObjects
 
