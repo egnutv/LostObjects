@@ -14,6 +14,9 @@
 ![F4SE](https://img.shields.io/badge/F4SE-0.7.9-blue)
 ![Status](https://img.shields.io/badge/status-public%20beta-orange)
 ![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-lightgrey)
+[![Nexus Mods](https://img.shields.io/badge/Nexus%20Mods-Lost%20Objects-orange)](https://www.nexusmods.com/fallout4/mods/110356)
+
+**Download:** [Lost Objects on Nexus Mods](https://www.nexusmods.com/fallout4/mods/110356) (or the archive in [`releases/`](releases/) of this repository).
 
 ---
 
@@ -85,6 +88,8 @@ Workshop Rearranged, Homemaker, SOE, Snap'n Build, Snappy HouseKit, The Master P
 more): see [docs/TESTED_WITH.md](docs/TESTED_WITH.md).
 
 ## Installation
+
+Download it from [Nexus Mods](https://www.nexusmods.com/fallout4/mods/110356) - with Vortex or the Nexus app simply "Mod Manager Download".
 
 Install the archive with Vortex, the Nexus app or Mod Organizer 2 and enable
 `LostObjects.esp` (it is a light plugin and does not use a regular plugin slot).

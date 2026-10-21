@@ -1,5 +1,7 @@
 # Nexus Mods - page fields for Lost Objects 0.10.1
 
+Published: https://www.nexusmods.com/fallout4/mods/110356 (mod ID 110356, published 21 October 2026).
+
 Fill in the upload form on nexusmods.com (Fallout 4 > Upload a mod) like this.
 
 ## Mod details
