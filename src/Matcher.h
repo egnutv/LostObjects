@@ -25,6 +25,10 @@
 // Candidates are the categories in which the recipe's own plugin already has
 // visible items. If the plugin has none, all categories are candidates, but
 // then at least 60 % confidence is required.
+//
+// Recipes that Lost Objects puts back where their plugin had them (see
+// PluginHistory) count like visible recipes: they show where the mod keeps
+// its items, even if that menu was not reachable before.
 
 namespace LO::Matcher
 {
@@ -43,7 +47,12 @@ namespace LO::Matcher
 
 		[[nodiscard]] Match Find(const LostRecipe& a_lost, std::uint32_t a_minConfidence) const;
 
+		// Recipes the index learned from (visible + put back), categories it knows.
+		[[nodiscard]] std::size_t ReferenceCount() const noexcept { return _referenceCount; }
+		[[nodiscard]] std::size_t CategoryCount() const noexcept { return _allCategories.size(); }
+
 	private:
+		std::size_t _referenceCount{ 0 };
 		using Counts = std::unordered_map<const RE::BGSKeyword*, std::uint32_t>;
 		using CategorySet = std::unordered_set<const RE::BGSKeyword*>;
 

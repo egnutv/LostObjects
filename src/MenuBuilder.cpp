@@ -603,6 +603,8 @@ namespace LO
 		std::unordered_map<const RE::BGSConstructibleObject*, std::string> notSortedWhy;
 		if (home && a_settings.sortIntoCategories && !a_scan.lostRecipes.empty()) {
 			const Matcher::Index index(a_scan);
+			REX::LogInformation("Matcher: learned from {} recipes ({} visible, {} put back where their mod had them) in {} categories",
+				index.ReferenceCount(), a_scan.visible.size(), a_scan.restoredVisible.size(), index.CategoryCount());
 			for (const auto& lost : a_scan.lostRecipes) {
 				auto match = index.Find(lost, a_settings.minConfidence);
 				const auto pathOf = [&a_scan](const RE::BGSKeyword* a_category) {

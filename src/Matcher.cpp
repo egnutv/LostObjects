@@ -142,22 +142,31 @@ namespace LO::Matcher
 
 	Index::Index(const ScanResult& a_scan)
 	{
-		for (const auto& visible : a_scan.visible) {
-			if (visible.categories.empty()) {
-				continue;
+		// Visible recipes and the recipes that are put back where their plugin had
+		// them: both show where a mod keeps its items.
+		const auto learn = [this](const VisibleRecipe& a_reference) {
+			if (a_reference.categories.empty()) {
+				return;
 			}
 
 			FeatureList list;
-			AddItemFeatures(visible.recipe, list);
+			AddItemFeatures(a_reference.recipe, list);
 
-			auto& pluginCategories = _pluginCategories[Util::ToLower(Util::GetFileName(visible.recipe, 0))];
-			for (const auto* category : visible.categories) {
+			auto& pluginCategories = _pluginCategories[Util::ToLower(Util::GetFileName(a_reference.recipe, 0))];
+			for (const auto* category : a_reference.categories) {
 				pluginCategories.insert(category);
 				_allCategories.insert(category);
 				for (const auto& feature : list.features) {
 					++_features[feature.key][category];
 				}
 			}
+			++_referenceCount;
+		};
+		for (const auto& visible : a_scan.visible) {
+			learn(visible);
+		}
+		for (const auto& restored : a_scan.restoredVisible) {
+			learn(restored);
 		}
 
 		// The name of every category that shows something.

@@ -35,6 +35,32 @@ namespace LO::Report
 				a_entry.pluginFile,
 				a_entry.recipeCount);
 		}
+
+		std::string ItemName(const RE::BGSConstructibleObject* a_recipe)
+		{
+			auto name = Util::GetFormName(a_recipe->createdItem);
+			return name.empty() ? "<no name>"s : name;
+		}
+
+		// Lost recipes that did not go into an existing category: where they went
+		// and why the matcher did not sort them in (best guess included).
+		std::vector<std::string> NotSortedLines(const ApplyResult& a_apply)
+		{
+			std::vector<std::string> lines;
+			for (const auto& [recipe, placed] : a_apply.placement) {
+				if (placed.where != PlacedIn::kModFolder && placed.where != PlacedIn::kTab) {
+					continue;
+				}
+				lines.push_back(std::format("{} (recipe {} from {}) -> {} - {}",
+					ItemName(recipe),
+					Util::FormIDToString(recipe->GetFormID()),
+					Util::GetFileName(recipe, 0),
+					placed.path,
+					placed.evidence.empty() ? "not checked (sorting into categories is off)"s : placed.evidence));
+			}
+			std::ranges::sort(lines);
+			return lines;
+		}
 	}
 
 	void Write(const ScanResult& a_scan, const ApplyResult& a_apply, std::string_view a_reason)
@@ -116,6 +142,16 @@ namespace LO::Report
 		}
 		file << "\n";
 
+		file << "Not sorted into an existing category (and why)\n----------------------------------------------\n";
+		const auto notSorted = NotSortedLines(a_apply);
+		if (notSorted.empty()) {
+			file << "  (none)\n";
+		}
+		for (const auto& line : notSorted) {
+			file << "  " << line << "\n";
+		}
+		file << "\n";
+
 		file << "Ghost objects (not shown, model file missing)\n---------------------------------------------\n";
 		if (a_scan.missingModel.empty()) {
 			file << "  (none)\n";
@@ -183,6 +219,9 @@ namespace LO::Report
 		}
 		for (const auto& injection : a_apply.injections) {
 			REX::LogInformation("  added to: {}", injection);
+		}
+		for (const auto& line : NotSortedLines(a_apply)) {
+			REX::LogInformation("  not sorted in: {}", line);
 		}
 
 		if (a_verbose) {

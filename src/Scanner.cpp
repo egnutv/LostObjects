@@ -694,7 +694,10 @@ namespace LO
 			if (a_settings.restoreOriginalPlaces && a_settings.placement == Placement::kHome) {
 				const auto home = std::ranges::find_if(usable, [&attacher](RE::BGSKeyword* a_keyword) { return attacher.Attach(a_keyword); });
 				if (home != usable.end()) {
-					result.restored.push_back({ recipe, attacher.PathOf(*home) });
+					auto path = attacher.PathOf(*home);
+					result.categoryPath.try_emplace(*home, path);
+					result.restoredVisible.push_back({ recipe, { *home } });
+					result.restored.push_back({ recipe, std::move(path) });
 					continue;
 				}
 			}

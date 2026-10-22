@@ -81,6 +81,12 @@ namespace LO
 		std::vector<SkippedRecipe> alreadyBuildable;  // skipped by bSkipAlreadyBuildable=1
 		std::vector<SkippedRecipe> missingModel;      // ghost objects, skipped by bSkipMissingModels=1
 		std::vector<VisibleRecipe> visible;  // reachable workshop recipes
+
+		// Recipes that are put back where their plugin had them, with the category
+		// they are shown in again. They are not reachable before Lost Objects acts,
+		// but they show where the mod keeps its items - the matcher learns from
+		// them like from visible recipes.
+		std::vector<VisibleRecipe> restoredVisible;
 		std::vector<std::string> workbenchKeywords;  // for the log
 
 		// Category keyword -> the lost menu or category it was found in.

@@ -4,6 +4,23 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.11.1] - 2026-10-22 - public beta
+
+### Fixed
+- **Items were not sorted into the categories of their own mod when those categories
+  were just put back.** The matcher only learned from items that were visible before
+  Lost Objects acted. When a mod's menu had been changed by another mod (for example
+  Snap'n Build with PAN_SnB.esp), the categories that came back were unknown to it, so
+  the rest of that mod's lost items went into a "Lost Objects" folder instead (for
+  example 28 Snap'n Build stairs next to the stairs category). Now the recipes that are
+  put back count like visible ones. Nothing is fixed for a single mod.
+
+### Added
+- Report section "Not sorted into an existing category (and why)": every item that went
+  into a "Lost Objects" folder or the tab, with the reason and the best guess. The same
+  lines are in `LostObjects.log` ("not sorted in"), plus a line saying how many recipes
+  and categories the matcher learned from.
+
 ## [0.11.0] - 2026-10-22 - public beta
 
 ### Changed

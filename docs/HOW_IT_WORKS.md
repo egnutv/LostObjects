@@ -98,7 +98,11 @@ not have it ("removed by"). What Lost Objects put back does not count as reachab
 next scan, so the result never flips back and forth.
 
 Only recipes whose categories never were in any menu of any plugin (for example menus
-that a script was supposed to add) go the way described next.
+that a script was supposed to add) go the way described next. For them, the recipes that
+were put back count like visible recipes: they show where the mod keeps its items, so the
+matcher can sort the rest of the mod into those categories too (for example lost stairs
+into the stairs category that was just put back). Nothing of this is fixed for a mod; it
+comes from the data of the load order.
 
 Every one of these recipes gets exactly one extra category, so it is shown exactly once.
 With `sPlacement=Home` (the default) the order is:
