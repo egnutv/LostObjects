@@ -4,6 +4,17 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.12.1] - 2026-10-22 - public beta
+
+### Fixed
+- **Merging menus with the same name went into neighbouring branches.** 0.12.0 also
+  merged a menu into a same-named menu in another branch of the mod, for example the
+  supports of "Concrete > Rusty" into "Wood > Supports" (Workshop Rearranged) or the
+  wallpapers of the Log Building Set into the Steel Building Set (Yufarley). Now the
+  upper menu must lie directly in one of the menus above the deeper one, on its own
+  path up (like "Snap'n Build > Greenhouse" for "Snap'n Build > Real Estate > Yard >
+  Greenhouse").
+
 ## [0.12.0] - 2026-10-22 - public beta
 
 ### Added

@@ -363,8 +363,9 @@ namespace LO
 		// Greenhouse"). Everything of the deeper one goes into the upper menu, the
 		// deeper entry is taken out of its folder, and sub menus with the same name
 		// inside are merged the same way. Nothing is fixed for a mod:
-		//   * same mod: the two have a common parent menu that is neither the main
-		//     menu nor a menu of the base game or a DLC ("Structures" holds many mods),
+		//   * on its own path: the upper menu lies directly in one of the menus above
+		//     the deeper entry, and that menu is neither the main menu nor a menu of
+		//     the base game or a DLC ("Structures" holds many mods),
 		//   * similar items: at least one model file or one model folder in common,
 		//   * the upper one is a sub menu, the deeper one lies further down,
 		//   * entries that scripts added are never moved (the save game stores them).
@@ -440,13 +441,13 @@ namespace LO
 						return a_lhs.parent->GetFormID() < a_rhs.parent->GetFormID();
 					});
 					// Each entry goes into the shallowest sub menu of the same name that
-					// belongs to the same mod (several mods can use the same name).
+					// lies directly in a menu on its own path up.
 					for (const auto& node : nodes) {
 						for (const auto& target : nodes) {
 							if (target.depth >= node.depth) {
 								break;
 							}
-							if (!target.form->As<RE::BGSListForm>() || _mergedSources.contains(target.form) || !SameMod(target, node)) {
+							if (!target.form->As<RE::BGSListForm>() || _mergedSources.contains(target.form) || !OnOwnPath(target, node)) {
 								continue;
 							}
 							TryMerge(target, node);
@@ -591,18 +592,19 @@ namespace LO
 				}
 			}
 
-			// The same mod: the nearest common menu is neither the main menu nor a
-			// menu of the base game or a DLC ("Structures" holds many mods).
-			bool SameMod(const Node& a_target, const Node& a_node) const
+			// The target lies directly in one of the menus above the entry (on its
+			// own path up), and that menu belongs to the mod: it is neither the main
+			// menu nor a menu of the base game or a DLC ("Structures" holds many
+			// mods). A menu with the same name in a neighbouring branch ("Concrete >
+			// Supports" and "Wood > Supports") is never a target.
+			bool OnOwnPath(const Node& a_target, const Node& a_node) const
 			{
-				const auto* targetList = a_target.form->As<RE::BGSListForm>();
-				const auto targetChain = Ancestors(targetList);
-				for (const auto* list : Ancestors(a_node.parent)) {
-					if (std::ranges::find(targetChain, list) != targetChain.end()) {
-						return list != _forms.workshopMenuMain && !IsOfficialFile(Util::GetFileName(list, 0));
-					}
+				const auto* holder = a_target.parent;
+				if (!holder || holder == _forms.workshopMenuMain || IsOfficialFile(Util::GetFileName(holder, 0))) {
+					return false;
 				}
-				return false;
+				const auto chain = Ancestors(a_node.parent);
+				return std::ranges::find(chain, holder) != chain.end();
 			}
 
 			void TryMerge(const Node& a_target, const Node& a_node)
