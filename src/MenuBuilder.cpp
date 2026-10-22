@@ -412,6 +412,7 @@ namespace LO
 		};
 		return tabVisible == a_other.tabVisible &&
 		       restores == a_other.restores &&
+		       merges == a_other.merges &&
 		       sorted(names) == sorted(a_other.names) &&
 		       sorted(contents) == sorted(a_other.contents) &&
 		       sortedPairs(injections) == sortedPairs(a_other.injections) &&
@@ -450,12 +451,77 @@ namespace LO
 		_insertedRestores.clear();
 	}
 
+	// Merges menus of another mod: puts entries into a list and takes entries
+	// out of a list - always only in front of the forms that scripts added, so
+	// the save game never stores anything of this (see ScriptTail).
+	void MenuBuilder::ApplyMerges(const std::vector<MergeOp>& a_merges)
+	{
+		for (const auto& op : a_merges) {
+			auto& array = op.list->arrayOfForms;
+			const auto tailStart = static_cast<std::size_t>(array.size() - ScriptTail(op.list));
+			if (op.kind == MergeOp::Kind::kInsert) {
+				if (!ListHas(op.list, op.node)) {
+					InsertBeforeScriptForms(op.list, op.node);
+					_appliedMerges.push_back({ op, 0 });
+				}
+				continue;
+			}
+			std::vector<RE::TESForm*> forms(array.begin(), array.end());
+			for (std::size_t i = 0; i < tailStart; ++i) {
+				if (forms[i] == op.node) {
+					forms.erase(forms.begin() + static_cast<std::ptrdiff_t>(i));
+					SetListContents(op.list, forms);  // scriptAddedFormCount stays: the tail is still the same forms
+					_appliedMerges.push_back({ op, i });
+					break;
+				}
+			}
+		}
+	}
+
+	// Undoes what ApplyMerges changed, in reverse order.
+	void MenuBuilder::RemoveMerges()
+	{
+		for (auto it = _appliedMerges.rbegin(); it != _appliedMerges.rend(); ++it) {
+			const auto& op = it->op;
+			auto& array = op.list->arrayOfForms;
+			std::vector<RE::TESForm*> forms(array.begin(), array.end());
+			const auto tailStart = forms.size() - static_cast<std::size_t>(ScriptTail(op.list));
+			if (op.kind == MergeOp::Kind::kInsert) {
+				for (std::size_t i = tailStart; i-- > 0;) {
+					if (forms[i] == op.node) {
+						forms.erase(forms.begin() + static_cast<std::ptrdiff_t>(i));
+						SetListContents(op.list, forms);
+						break;
+					}
+				}
+			} else if (std::ranges::find(forms, op.node) == forms.end()) {
+				const auto at = std::min(it->index, tailStart);
+				forms.insert(forms.begin() + static_cast<std::ptrdiff_t>(at), op.node);
+				SetListContents(op.list, forms);
+			}
+		}
+		_appliedMerges.clear();
+	}
+
+	void MenuBuilder::SuspendMerges()
+	{
+		RemoveMerges();
+	}
+
+	void MenuBuilder::ResumeMerges()
+	{
+		if (_appliedMerges.empty()) {
+			ApplyMerges(_state.merges);
+		}
+	}
+
 	void MenuBuilder::Reset()
 	{
 		_originalKeywords.clear();
 		_currentTags.clear();
 		_injectedInto.clear();
 		_insertedRestores.clear();
+		_appliedMerges.clear();
 		_previewGiven.clear();
 		_state = {};
 		_lastSignature = 0;
@@ -797,6 +863,11 @@ namespace LO
 			signature = Mix(signature, restore.node->GetFormID());
 			signature = Mix(signature, restore.after ? restore.after->GetFormID() : 0);
 		}
+		for (const auto& merge : a_scan.mergeOps) {
+			signature = Mix(signature, merge.kind == MergeOp::Kind::kInsert ? 1u : 2u);
+			signature = Mix(signature, merge.list->GetFormID());
+			signature = Mix(signature, merge.node->GetFormID());
+		}
 
 		ApplyResult result;
 		result.tabVisible = rootContents.size() > 1;
@@ -847,6 +918,8 @@ namespace LO
 			return a_injection.first->ContainsEditorForm(a_injection.second);
 		}) && std::ranges::all_of(_insertedRestores, [](const MenuState::Restored& a_restored) {
 			return ListHas(a_restored.list, a_restored.node);
+		}) && std::ranges::all_of(_appliedMerges, [](const AppliedMerge& a_merge) {
+			return ListHas(a_merge.op.list, a_merge.op.node) == (a_merge.op.kind == MergeOp::Kind::kInsert);
 		}) && (!result.tabVisible || a_forms.workshopMenuMain->ContainsEditorForm(a_forms.rootMenu));
 
 		MenuState state;
@@ -859,6 +932,7 @@ namespace LO
 		for (const auto& restore : a_scan.restores) {
 			state.restores.push_back({ restore.list, restore.node, restore.after });
 		}
+		state.merges = a_scan.mergeOps;
 		for (const auto& [recipe, tag] : plan.tags) {
 			state.tags.emplace_back(recipe, tag);
 		}
@@ -883,6 +957,7 @@ namespace LO
 
 	void MenuBuilder::Execute(const OwnedForms& a_forms, const MenuState& a_state)
 	{
+		RemoveMerges();  // applied last, so taken out first
 		RemoveRestores();
 		RemoveInjections(a_forms);
 
@@ -919,6 +994,9 @@ namespace LO
 				_insertedRestores.push_back(restored);
 			}
 		}
+
+		// Menus of another mod with the same name and similar items, merged.
+		ApplyMerges(a_state.merges);
 
 		TagMap tags;
 		for (const auto& [recipe, tag] : a_state.tags) {

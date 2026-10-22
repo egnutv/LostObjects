@@ -327,6 +327,351 @@ namespace LO
 		};
 	}
 
+	namespace
+	{
+		// "Green House", "greenhouse" and "GreenHouse:" are the same name.
+		std::string NormalizedName(std::string_view a_name)
+		{
+			std::string result;
+			for (const unsigned char c : a_name) {
+				if (c >= 0x80) {
+					result += static_cast<char>(c);
+				} else if (std::isalnum(c) != 0) {
+					result += static_cast<char>(std::tolower(c));
+				}
+			}
+			return result;
+		}
+
+		// The name of a category, or of a sub menu (its entry 0).
+		std::string TitleOf(const RE::TESForm* a_node)
+		{
+			const RE::TESForm* title = a_node;
+			if (const auto* list = a_node ? a_node->As<RE::BGSListForm>() : nullptr) {
+				title = list->GetNthForm(0);
+			}
+			if (!title) {
+				return {};
+			}
+			auto name = Util::GetFormName(title);
+			return name.empty() ? Util::GetEditorID(title) : name;
+		}
+
+		// Merges menus and categories of the same mod that have the same name and
+		// similar items, where one is in a sub folder of the other (for example
+		// "Snap'n Build > Greenhouse" and "Snap'n Build > Real Estate > Yard >
+		// Greenhouse"). Everything of the deeper one goes into the upper menu, the
+		// deeper entry is taken out of its folder, and sub menus with the same name
+		// inside are merged the same way. Nothing is fixed for a mod:
+		//   * same mod: the two have a common parent menu that is neither the main
+		//     menu nor a menu of the base game or a DLC ("Structures" holds many mods),
+		//   * similar items: at least one model file or one model folder in common,
+		//   * the upper one is a sub menu, the deeper one lies further down,
+		//   * entries that scripts added are never moved (the save game stores them).
+		class MergePlanner
+		{
+		public:
+			MergePlanner(const OwnedForms& a_forms, const RestoreSet& a_ours, ScanResult& a_result,
+				const std::unordered_map<const RE::BGSListForm*, const RE::BGSListForm*>& a_parentOf,
+				const std::unordered_map<const RE::BGSListForm*, std::uint32_t>& a_depthOf,
+				const std::unordered_map<const RE::BGSKeyword*, std::vector<const RE::BGSListForm*>>& a_menusOfCategory) :
+				_forms(a_forms),
+				_ours(a_ours),
+				_result(a_result),
+				_parentOf(a_parentOf),
+				_depthOf(a_depthOf),
+				_menusOfCategory(a_menusOfCategory)
+			{
+				const auto learn = [this](const VisibleRecipe& a_recipe) {
+					for (const auto* category : a_recipe.categories) {
+						_recipesOfCategory[category].push_back(a_recipe.recipe);
+					}
+				};
+				for (const auto& visible : _result.visible) {
+					learn(visible);
+				}
+				for (const auto& restored : _result.restoredVisible) {
+					learn(restored);
+				}
+			}
+
+			void Run()
+			{
+				// Every reachable sub menu and category, grouped by name.
+				std::map<std::string, std::vector<Node>> byName;
+				for (const auto& [list, path] : _result.menuPath) {
+					const auto parent = _parentOf.find(list);
+					const auto depth = _depthOf.find(list);
+					if (parent == _parentOf.end() || depth == _depthOf.end()) {
+						continue;
+					}
+					auto key = NormalizedName(TitleOf(list));
+					if (!key.empty()) {
+						byName[std::move(key)].push_back({ const_cast<RE::BGSListForm*>(list), const_cast<RE::BGSListForm*>(parent->second), depth->second, path });
+					}
+				}
+				for (const auto& [keyword, lists] : _menusOfCategory) {
+					auto key = NormalizedName(TitleOf(keyword));
+					if (key.empty()) {
+						continue;
+					}
+					for (const auto* list : lists) {
+						const auto depth = _depthOf.find(list);
+						const auto path = _result.menuPath.find(list);
+						if (depth == _depthOf.end() || path == _result.menuPath.end()) {
+							continue;
+						}
+						byName[key].push_back({ const_cast<RE::BGSKeyword*>(keyword), const_cast<RE::BGSListForm*>(list), depth->second + 1, path->second + " > " + TitleOf(keyword) });
+					}
+				}
+
+				for (auto& entry : byName) {
+					auto& nodes = entry.second;
+					if (nodes.size() < 2) {
+						continue;
+					}
+					std::ranges::sort(nodes, [](const Node& a_lhs, const Node& a_rhs) {
+						if (a_lhs.depth != a_rhs.depth) {
+							return a_lhs.depth < a_rhs.depth;
+						}
+						if (a_lhs.form->GetFormID() != a_rhs.form->GetFormID()) {
+							return a_lhs.form->GetFormID() < a_rhs.form->GetFormID();
+						}
+						return a_lhs.parent->GetFormID() < a_rhs.parent->GetFormID();
+					});
+					// Each entry goes into the shallowest sub menu of the same name that
+					// belongs to the same mod (several mods can use the same name).
+					for (const auto& node : nodes) {
+						for (const auto& target : nodes) {
+							if (target.depth >= node.depth) {
+								break;
+							}
+							if (!target.form->As<RE::BGSListForm>() || _mergedSources.contains(target.form) || !SameMod(target, node)) {
+								continue;
+							}
+							TryMerge(target, node);
+							break;
+						}
+					}
+				}
+			}
+
+		private:
+			struct Node
+			{
+				RE::TESForm* form{ nullptr };       // sub menu or category
+				RE::BGSListForm* parent{ nullptr };  // the menu it is listed in
+				std::uint32_t depth{ 0 };
+				std::string path;
+			};
+
+			struct Features
+			{
+				std::set<std::string> files;    // model file names ("greenhsfloor01foundation")
+				std::set<std::string> folders;  // model folders ("snb\\greenh\\pipes")
+			};
+
+			static constexpr std::uint32_t MAX_DEPTH = 8;
+
+			// The menu and all menus above it, up to the main menu.
+			std::vector<const RE::BGSListForm*> Ancestors(const RE::BGSListForm* a_list) const
+			{
+				std::vector<const RE::BGSListForm*> chain;
+				for (const auto* list = a_list; list && chain.size() < 64;) {
+					chain.push_back(list);
+					const auto it = _parentOf.find(list);
+					list = it != _parentOf.end() ? it->second : nullptr;
+				}
+				return chain;
+			}
+
+			void AddFeatures(const RE::BGSKeyword* a_category, Features& a_features) const
+			{
+				const auto it = _recipesOfCategory.find(a_category);
+				if (it == _recipesOfCategory.end()) {
+					return;
+				}
+				for (const auto* recipe : it->second) {
+					auto model = Util::ToLower(Grouping::ItemModel(recipe));
+					std::ranges::replace(model, '/', '\\');
+					if (model.starts_with("meshes\\")) {
+						model.erase(0, 7);
+					}
+					if (model.empty()) {
+						continue;
+					}
+					const auto slash = model.rfind('\\');
+					auto file = slash == std::string::npos ? model : model.substr(slash + 1);
+					if (file.ends_with(".nif")) {
+						file.resize(file.size() - 4);
+					}
+					a_features.files.insert(std::move(file));
+					if (slash != std::string::npos) {
+						a_features.folders.insert(model.substr(0, slash));
+					}
+				}
+			}
+
+			Features FeaturesOf(const RE::TESForm* a_node) const
+			{
+				Features features;
+				if (const auto* keyword = a_node->As<RE::BGSKeyword>()) {
+					AddFeatures(keyword, features);
+				} else if (const auto* list = a_node->As<RE::BGSListForm>()) {
+					const auto tree = CollectMenuTree(list, _forms, _ours);
+					for (const auto* leaf : tree.leaves) {
+						AddFeatures(leaf, features);
+					}
+				}
+				return features;
+			}
+
+			// Why the items are similar (empty: they are not).
+			static std::string Similarity(const Features& a_lhs, const Features& a_rhs)
+			{
+				for (const auto& file : a_lhs.files) {
+					if (a_rhs.files.contains(file)) {
+						return std::format("same model file '{}'", file);
+					}
+				}
+				for (const auto& folder : a_lhs.folders) {
+					if (a_rhs.folders.contains(folder)) {
+						return std::format("same model folder '{}'", folder);
+					}
+				}
+				return {};
+			}
+
+			bool Contains(const RE::BGSListForm* a_list, const RE::TESForm* a_node) const
+			{
+				if (const auto it = _inserted.find(a_list); it != _inserted.end() && it->second.contains(a_node)) {
+					return true;
+				}
+				return std::ranges::find(a_list->arrayOfForms, a_node) != a_list->arrayOfForms.end();
+			}
+
+			void Insert(RE::BGSListForm* a_list, RE::TESForm* a_node)
+			{
+				if (!Contains(a_list, a_node)) {
+					_result.mergeOps.push_back({ MergeOp::Kind::kInsert, a_list, a_node });
+					_inserted[a_list].insert(a_node);
+				}
+			}
+
+			// Everything of menu a_from goes into menu a_into; sub menus with the
+			// same name are merged in turn.
+			void MergeInto(RE::BGSListForm* a_into, const RE::BGSListForm* a_from, std::uint32_t a_depth)
+			{
+				if (a_depth > MAX_DEPTH || a_into == a_from) {
+					return;
+				}
+				const auto forms = a_from->GetAllForms();
+				const auto into = a_into->GetAllForms();
+				for (std::size_t i = 1; i < forms.size(); ++i) {
+					auto* form = forms[i];
+					if (!form || _forms.IsOwned(form)) {
+						continue;
+					}
+					if (auto* subList = form->As<RE::BGSListForm>()) {
+						const auto name = NormalizedName(TitleOf(subList));
+						RE::BGSListForm* same = nullptr;
+						for (std::size_t j = 1; j < into.size() && !name.empty(); ++j) {
+							auto* candidate = into[j] ? into[j]->As<RE::BGSListForm>() : nullptr;
+							if (candidate && candidate != subList && !_forms.IsOwned(candidate) && NormalizedName(TitleOf(candidate)) == name) {
+								same = candidate;
+								break;
+							}
+						}
+						if (same) {
+							MergeInto(same, subList, a_depth + 1);
+							continue;
+						}
+					}
+					Insert(a_into, form);
+				}
+			}
+
+			// The same mod: the nearest common menu is neither the main menu nor a
+			// menu of the base game or a DLC ("Structures" holds many mods).
+			bool SameMod(const Node& a_target, const Node& a_node) const
+			{
+				const auto* targetList = a_target.form->As<RE::BGSListForm>();
+				const auto targetChain = Ancestors(targetList);
+				for (const auto* list : Ancestors(a_node.parent)) {
+					if (std::ranges::find(targetChain, list) != targetChain.end()) {
+						return list != _forms.workshopMenuMain && !IsOfficialFile(Util::GetFileName(list, 0));
+					}
+				}
+				return false;
+			}
+
+			void TryMerge(const Node& a_target, const Node& a_node)
+			{
+				auto* targetList = a_target.form->As<RE::BGSListForm>();
+				if (!targetList || a_node.form == a_target.form || _forms.IsOwned(a_node.parent)) {
+					return;
+				}
+
+				// Already inside the upper menu, or the upper menu lies inside it.
+				const auto nodeChain = Ancestors(a_node.parent);
+				if (std::ranges::find(nodeChain, targetList) != nodeChain.end()) {
+					return;
+				}
+				const auto targetChain = Ancestors(targetList);
+				if (std::ranges::any_of(targetChain, [&a_node](const RE::BGSListForm* a_list) { return static_cast<const RE::TESForm*>(a_list) == a_node.form; })) {
+					return;
+				}
+				// Inside something that is merged already: it moves along with it.
+				for (const auto* list : nodeChain) {
+					if (_mergedSources.contains(list)) {
+						return;
+					}
+				}
+
+				const auto similarity = Similarity(FeaturesOf(a_target.form), FeaturesOf(a_node.form));
+				if (similarity.empty()) {
+					_result.mergesSkipped.push_back(std::format("{} -> {}: the items are not similar (no model file or model folder in common)", a_node.path, a_target.path));
+					return;
+				}
+
+				// Entries that scripts added stay where they are (the save stores them).
+				const auto& array = a_node.parent->arrayOfForms;
+				const auto tailStart = static_cast<std::size_t>(array.size() - std::min(a_node.parent->scriptAddedFormCount, array.size()));
+				bool movable = false;
+				for (std::size_t i = 0; i < tailStart; ++i) {
+					if (array[static_cast<std::uint32_t>(i)] == a_node.form) {
+						movable = true;
+						break;
+					}
+				}
+				if (!movable) {
+					_result.mergesSkipped.push_back(std::format("{} -> {}: a script added it to its menu, it is left where it is", a_node.path, a_target.path));
+					return;
+				}
+
+				_result.mergeOps.push_back({ MergeOp::Kind::kRemove, a_node.parent, a_node.form });
+				if (auto* list = a_node.form->As<RE::BGSListForm>()) {
+					MergeInto(targetList, list, 0);
+				} else {
+					Insert(targetList, a_node.form);
+				}
+				_mergedSources.insert(a_node.form);
+				_result.merges.push_back(std::format("{} -> {} ({})", a_node.path, a_target.path, similarity));
+			}
+
+			const OwnedForms& _forms;
+			const RestoreSet& _ours;
+			ScanResult& _result;
+			const std::unordered_map<const RE::BGSListForm*, const RE::BGSListForm*>& _parentOf;
+			const std::unordered_map<const RE::BGSListForm*, std::uint32_t>& _depthOf;
+			const std::unordered_map<const RE::BGSKeyword*, std::vector<const RE::BGSListForm*>>& _menusOfCategory;
+
+			std::unordered_map<const RE::BGSKeyword*, std::vector<const RE::BGSConstructibleObject*>> _recipesOfCategory;
+			std::unordered_map<const RE::BGSListForm*, std::unordered_set<const RE::TESForm*>> _inserted;
+			std::unordered_set<const RE::TESForm*> _mergedSources;
+		};
+	}
+
 	ScanResult Scanner::Run(const OwnedForms& a_forms, const Settings& a_settings, const KeywordMap& a_originalKeywords, const RestoreSet& a_ourRestores)
 	{
 		ScanResult result;
@@ -859,6 +1204,11 @@ namespace LO
 			}
 			return a_lhs.form->GetFormID() < a_rhs.form->GetFormID();
 		});
+
+		// 7) Menus of a mod with the same name and similar items: merged.
+		if (a_settings.mergeSimilarMenus) {
+			MergePlanner(a_forms, a_ourRestores, result, parentOf, depthOf, menusOfCategory).Run();
+		}
 
 		result.valid = true;
 		return result;

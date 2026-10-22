@@ -42,6 +42,7 @@ namespace LO
 		bool skipAlreadyBuildable{ true };    // the item itself can already be built through another recipe
 		bool skipMissingModels{ true };       // ghost objects: no model file the game can load
 		bool restoreOriginalPlaces{ true };   // put lost categories back where their plugin files had them
+		bool mergeSimilarMenus{ true };       // merge menus of a mod with the same name and similar items
 		bool sortIntoCategories{ true };      // put lost items into matching existing categories
 		std::uint32_t minConfidence{ 30 };    // percent a match needs
 		bool showSummaryMessage{ true };

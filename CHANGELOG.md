@@ -4,6 +4,20 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] - 2026-10-22 - public beta
+
+### Added
+- **Menus of a mod with the same name and similar items are merged.** When a mod (or a
+  patch for it) has the same set twice, one in a sub folder of the other - for example
+  "Snap'n Build > Greenhouse" and "Snap'n Build > Real Estate > Yard > Greenhouse" -
+  everything goes into the upper menu and the deeper entry disappears. Sub menus with
+  the same name inside are merged too. Nothing is fixed for a mod: the two must belong
+  to the same mod (a common parent menu that is not the base game's), and their items
+  must be similar (at least one model file or model folder in common). Entries that
+  scripts added are never moved. New INI option `bMergeSimilarMenus` (on). The report
+  has a new section "Merged menus" with every merge and the reason, and the entries
+  with the same name that were not merged and why; `LostObjects.log` has the same lines.
+
 ## [0.11.1] - 2026-10-22 - public beta
 
 ### Fixed

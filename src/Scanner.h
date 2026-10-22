@@ -56,6 +56,22 @@ namespace LO
 	// The places Lost Objects put something back at - the scan does not count them.
 	using RestoreSet = std::set<std::pair<const RE::BGSListForm*, const RE::TESForm*>>;
 
+	// One step of merging menus with the same name and similar items (see
+	// PlanMerges in Scanner.cpp): put `node` into `list`, or take it out of `list`.
+	struct MergeOp
+	{
+		enum class Kind : std::uint8_t
+		{
+			kInsert,  // node goes into list (in front of the entries scripts added)
+			kRemove   // node is taken out of list (only in front of the entries scripts added)
+		};
+
+		Kind kind{ Kind::kInsert };
+		RE::BGSListForm* list{ nullptr };
+		RE::TESForm* node{ nullptr };
+		bool operator==(const MergeOp&) const = default;
+	};
+
 	struct RestoredRecipe
 	{
 		RE::BGSConstructibleObject* recipe{ nullptr };
@@ -88,6 +104,13 @@ namespace LO
 		// them like from visible recipes.
 		std::vector<VisibleRecipe> restoredVisible;
 		std::vector<std::string> workbenchKeywords;  // for the log
+
+		// Menus and categories of the same mod with the same name and similar
+		// items, one in a sub folder of the other: the deeper one is merged into
+		// the upper one (bMergeSimilarMenus).
+		std::vector<MergeOp> mergeOps;
+		std::vector<std::string> merges;         // "from -> into (why)", for the log and the report
+		std::vector<std::string> mergesSkipped;  // same name, but not merged, and why
 
 		// Category keyword -> the lost menu or category it was found in.
 		std::unordered_map<const RE::BGSKeyword*, const RE::TESForm*> entryOfCategory;

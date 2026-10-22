@@ -81,6 +81,29 @@ The scan is read-only. It runs on the main thread and takes a few milliseconds.
    folder of the file that defined the recipe (in `Flat` mode: one
    "Uncategorized" entry in the tab).
 
+## 3b. Merging menus with the same name
+
+Some mods (or patches for them) have the same set twice: for example "Snap'n Build >
+Greenhouse" and "Snap'n Build > Real Estate > Yard > Greenhouse". With
+`bMergeSimilarMenus=1` Lost Objects merges them, without any list of mods:
+
+1. Every reachable sub menu and category is grouped by its name (case, spaces and
+   punctuation do not count).
+2. In a group, the shallowest sub menu is the target. Every deeper entry of the group
+   is a candidate if the two have a common parent menu that is neither the main menu
+   nor a menu of the base game or a DLC - so they belong to the same mod. Entries that
+   already lie inside the target are left alone.
+3. The items must be similar: at least one model file or one model folder in common
+   (read from the recipes shown in both).
+4. The deeper entry is taken out of its folder and everything in it goes into the
+   target. Sub menus with the same name inside are merged the same way.
+5. Entries that scripts added to a menu are never moved (the save game stores them).
+
+The scan always sees the menus as the mods made them: the merges are taken out before
+every scan and put in again after it. The report has a section "Merged menus" with
+every merge and the reason, and a list of entries with the same name that were not
+merged and why. `LostObjects.log` has the same lines ("merged", "not merged").
+
 ## 4. Where recovered recipes go
 
 **First: back where its mod had it** (`bRestoreOriginalPlaces=1`, only with

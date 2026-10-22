@@ -206,6 +206,9 @@ namespace LO
 			for (const auto& restore : a_scan.restores) {
 				ids.push_back(restore.list->GetFormID() * 31u + restore.node->GetFormID());
 			}
+			for (const auto& merge : a_scan.mergeOps) {
+				ids.push_back(merge.list->GetFormID() * 37u + merge.node->GetFormID() + (merge.kind == MergeOp::Kind::kInsert ? 1u : 2u));
+			}
 			std::ranges::sort(ids);
 			std::size_t seed = a_scan.reachableRecipeCount * 1315423911u + a_scan.reachableCategoryCount;
 			for (const auto id : ids) {
@@ -226,7 +229,10 @@ namespace LO
 
 		const auto start = std::chrono::steady_clock::now();
 
+		// The scan sees the menus of other mods without our merges.
+		_builder.SuspendMerges();
 		const auto scan = Scanner::Run(_forms, settings, _builder.OriginalKeywords(), _builder.RestoredPairs());
+		_builder.ResumeMerges();
 		if (!scan.valid) {
 			return;
 		}
@@ -276,7 +282,7 @@ namespace LO
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
 		// Log and write the report whenever the result differs from the last one.
-		std::size_t logSignature = (shown.lostRecipes.size() + shown.restored.size() * 1009 + shown.restores.size() * 7919) * 31 + shown.uncategorized.size();
+		std::size_t logSignature = (shown.lostRecipes.size() + shown.restored.size() * 1009 + shown.restores.size() * 7919 + shown.mergeOps.size() * 104729) * 31 + shown.uncategorized.size();
 		for (const auto& entry : shown.entries) {
 			logSignature = logSignature * 131 + entry.form->GetFormID() + entry.recipeCount;
 		}

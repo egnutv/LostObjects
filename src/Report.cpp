@@ -88,6 +88,7 @@ namespace LO::Report
 		file << "Reachable menus            : " << a_scan.reachableMenuCount << "\n";
 		file << "Lost recipes recovered     : " << a_apply.recipeCount << "\n";
 		file << "Back where their mod had it: " << a_apply.restoredInPlace << " recipes (read from the plugin files)\n";
+		file << "Merged menus               : " << a_scan.merges.size() << " (same name, similar items)\n";
 		file << "Recovered menus/categories : " << a_scan.entries.size() << "\n";
 		file << "Uncategorized recipes      : " << a_scan.uncategorized.size() << "\n";
 		file << "Skipped (no category)      : " << a_scan.skippedWithoutCategory << " (filter bSkipWithoutCategory)\n";
@@ -109,6 +110,21 @@ namespace LO::Report
 		}
 		for (const auto& restore : a_apply.restores) {
 			file << "  " << restore << "\n";
+		}
+		file << "\n";
+
+		file << "Merged menus (same name, similar items, one in a sub folder of the other)\n-------------------------------------------------------------------------\n";
+		if (a_scan.merges.empty()) {
+			file << "  (none)\n";
+		}
+		for (const auto& merge : a_scan.merges) {
+			file << "  " << merge << "\n";
+		}
+		if (!a_scan.mergesSkipped.empty()) {
+			file << "  Same name, but not merged:\n";
+			for (const auto& skipped : a_scan.mergesSkipped) {
+				file << "    " << skipped << "\n";
+			}
 		}
 		file << "\n";
 
@@ -219,6 +235,12 @@ namespace LO::Report
 		}
 		for (const auto& injection : a_apply.injections) {
 			REX::LogInformation("  added to: {}", injection);
+		}
+		for (const auto& merge : a_scan.merges) {
+			REX::LogInformation("  merged: {}", merge);
+		}
+		for (const auto& skipped : a_scan.mergesSkipped) {
+			REX::LogInformation("  not merged: {}", skipped);
 		}
 		for (const auto& line : NotSortedLines(a_apply)) {
 			REX::LogInformation("  not sorted in: {}", line);

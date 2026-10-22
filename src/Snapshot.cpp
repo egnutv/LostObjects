@@ -7,7 +7,7 @@ namespace LO::Snapshot
 	namespace
 	{
 		constexpr auto FILE_NAME = "LostObjects_Snapshot.txt"sv;
-		constexpr auto FORMAT_VERSION = "2"sv;
+		constexpr auto FORMAT_VERSION = "3"sv;
 
 		std::filesystem::path GetPath()
 		{
@@ -124,6 +124,7 @@ namespace LO::Snapshot
 
 		// The settings that decide what the menus look like.
 		hash.Add(a_settings.restoreOriginalPlaces ? "restore" : "no-restore");
+		hash.Add(a_settings.mergeSimilarMenus ? "merge" : "no-merge");
 		hash.Add(std::format("{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
 			a_settings.placement == Placement::kTab ? "tab" : "home",
 			a_settings.sortMode == SortMode::kFlat ? "flat" : "bymod",
@@ -233,6 +234,15 @@ namespace LO::Snapshot
 					return broken("unknown restored entry");
 				}
 				data.state.restores.push_back({ list, node, after });
+			} else if (key == "merge" && parts.size() == 4) {
+				// A step of merging menus of another mod with the same name.
+				auto* listForm = Resolve(parts[2]);
+				auto* list = listForm ? listForm->As<RE::BGSListForm>() : nullptr;
+				auto* node = Resolve(parts[3]);
+				if (!list || !node || a_forms.IsOwned(list) || a_forms.IsOwned(node) || (parts[1] != "insert" && parts[1] != "remove")) {
+					return broken("unknown merged entry");
+				}
+				data.state.merges.push_back({ parts[1] == "insert" ? MergeOp::Kind::kInsert : MergeOp::Kind::kRemove, list, node });
 			} else if (key == "tag" && parts.size() == 3) {
 				auto* recipeForm = Resolve(parts[1]);
 				auto* keywordForm = Resolve(parts[2]);
@@ -258,7 +268,7 @@ namespace LO::Snapshot
 			return broken("incomplete file");
 		}
 
-		REX::LogInformation("Snapshot: loaded ({} menus, {} folders in other menus, {} put back where their mod had them, {} recipes)", data.state.contents.size(), data.state.injections.size(), data.state.restores.size(), data.state.tags.size());
+		REX::LogInformation("Snapshot: loaded ({} menus, {} folders in other menus, {} put back where their mod had them, {} merge steps, {} recipes)", data.state.contents.size(), data.state.injections.size(), data.state.restores.size(), data.state.merges.size(), data.state.tags.size());
 		return data;
 	}
 
@@ -300,6 +310,9 @@ namespace LO::Snapshot
 			}
 			for (const auto& restored : state.restores) {
 				file << "restore\t" << Ref(restored.list) << "\t" << Ref(restored.node) << "\t" << (restored.after ? Ref(restored.after) : "-") << "\n";
+			}
+			for (const auto& merge : state.merges) {
+				file << "merge\t" << (merge.kind == MergeOp::Kind::kInsert ? "insert" : "remove") << "\t" << Ref(merge.list) << "\t" << Ref(merge.node) << "\n";
 			}
 			for (const auto& [recipe, keyword] : state.tags) {
 				file << "tag\t" << Ref(recipe) << "\t" << Ref(keyword) << "\n";

@@ -176,6 +176,7 @@ namespace LO
 		skipAlreadyBuildable = GetBool(data, "filters.bskipalreadybuildable", true);
 		skipMissingModels = GetBool(data, "filters.bskipmissingmodels", true);
 		restoreOriginalPlaces = GetBool(data, "general.brestoreoriginalplaces", true);
+		mergeSimilarMenus = GetBool(data, "general.bmergesimilarmenus", true);
 		sortIntoCategories = GetBool(data, "general.bsortintocategories", true);
 		minConfidence = GetUInt(data, "general.iminconfidence", 30, 1, 100);
 		const auto placementText = Util::ToLower(GetString(data, "general.splacement", "Home"));
@@ -195,11 +196,13 @@ namespace LO
 		ignoredPlugins = SplitList(GetString(data, "filters.signoreplugins", ""));
 
 		REX::LogInformation(
-			"Settings: enabled={} liveUpdate={} settle={}s placement={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} developmentMode={} verbose={} ignoredPlugins={}",
+			"Settings: enabled={} liveUpdate={} settle={}s placement={} restoreOriginalPlaces={} mergeSimilarMenus={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} developmentMode={} verbose={} ignoredPlugins={}",
 			enabled,
 			liveUpdate,
 			settleSeconds,
 			placement == Placement::kTab ? "Tab" : "Home",
+			restoreOriginalPlaces,
+			mergeSimilarMenus,
 			sortIntoCategories,
 			minConfidence,
 			skipAlreadyBuildable,

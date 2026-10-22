@@ -70,6 +70,7 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T27 | Chemistry station | "Lost Objects Settings" can be crafted there, free of charge. |
 | T28 | A mod whose menu another mod changed (for example Snap'n Build with PAN_SnB.esp) | The removed categories and sub menus are back in their old place, with their own names - no "Lost Objects" folder for them. `LostObjects_Report.txt`, section "Put back where their mod had them", names the place and the mod that removed it. |
 | T29 | The same mod, its "Lost Objects" folder | Items that fit a category that was put back (for example stairs next to the stairs that came back) are in that category, not in the folder. `LostObjects_Report.txt`, section "Not sorted into an existing category (and why)", lists every item still in a folder or the tab with the reason and the best guess; `LostObjects.log` has the same lines ("not sorted in") and the line "Matcher: learned from ...". |
+| T30 | A mod with the same set in two places (for example Snap'n Build > Greenhouse and Snap'n Build > Real Estate > Yard > Greenhouse) | Everything is in the upper menu (Snap'n Build > Greenhouse), the entry in Yard is gone. `LostObjects_Report.txt`, section "Merged menus", names both paths and the reason (same model file or folder). Menus of different mods with the same name are not merged. |
 | T29 | `LostObjects.log` | A line "PluginHistory: ... plugin files read in ... ms" and, after the scan, "... back where their mod had them". |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 

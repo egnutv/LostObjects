@@ -56,6 +56,7 @@ namespace LO
 			bool operator==(const Restored&) const = default;
 		};
 		std::vector<Restored> restores;
+		std::vector<MergeOp> merges;  // menus of another mod with the same name and similar items, merged (in this order)
 		std::vector<std::pair<RE::BGSConstructibleObject*, RE::BGSKeyword*>> tags;  // recipe -> category we add
 		bool tabVisible{ false };  // the tab is added to WorkshopMenuMain
 
@@ -102,6 +103,11 @@ namespace LO
 		// What we put back where its plugin had it (the scan does not count it).
 		[[nodiscard]] RestoreSet RestoredPairs() const;
 
+		// The scan must see the menus of other mods as their plugins and scripts
+		// made them: the merges are taken out before it and put in again after it.
+		void SuspendMerges();
+		void ResumeMerges();
+
 		// Forget all state (used when the game data is reloaded).
 		void Reset();
 
@@ -112,6 +118,8 @@ namespace LO
 		std::uint32_t AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result);
 		void RemoveInjections(const OwnedForms& a_forms);
 		void RemoveRestores();
+		void ApplyMerges(const std::vector<MergeOp>& a_merges);
+		void RemoveMerges();
 		void Execute(const OwnedForms& a_forms, const MenuState& a_state);
 
 		KeywordMap _originalKeywords;  // recipe -> categories before we tagged it
@@ -120,6 +128,13 @@ namespace LO
 		TagMap _currentTags;  // recipe -> the keyword we added
 		std::unordered_set<RE::BGSListForm*> _injectedInto;  // foreign menus we added entries to
 		std::vector<MenuState::Restored> _insertedRestores;  // what we really put back (not there before)
+
+		struct AppliedMerge
+		{
+			MergeOp op;
+			std::size_t index{ 0 };  // kRemove: where the node was in the list
+		};
+		std::vector<AppliedMerge> _appliedMerges;  // what the merges really changed, in order
 		std::size_t _lastSignature{ 0 };
 		ApplyResult _lastResult;
 	};
