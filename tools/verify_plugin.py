@@ -7,7 +7,7 @@ is a well formed Fallout 4 light plugin that matches what the DLL expects:
 
   * TES4 header: light (ESL) flag, HEDR version 1.0, master Fallout4.esm,
     record + group count matches the file
-  * only KYWD, FLST, ARTO, TRNS, GLOB, NOTE and TERM records, all new form
+  * only KYWD, FLST, ARTO, TRNS, GLOB, NOTE, TERM and COBJ records, all new form
     IDs inside 0x800-0xFFF
   * the settings holotape: NOTE (type terminal) -> TERM with the script and
     menu items whose conditions point to globals of this plugin
@@ -226,6 +226,12 @@ def main() -> int:
                 param1, = struct.unpack_from("<I", ctda, 12)
                 if function != 74 or param1 not in records or records[param1][0] != "GLOB":
                     fail(f"terminal {edid}: condition must be GetGlobalValue of a global of this plugin")
+        elif rtype == "COBJ":
+            cnam = fields.get("CNAM", [b""])[0]
+            if len(cnam) != 4 or struct.unpack("<I", cnam)[0] not in records or records[struct.unpack("<I", cnam)[0]][0] != "NOTE":
+                fail(f"recipe {edid} must create the holotape (CNAM -> NOTE of this plugin)")
+            if "FVPA" in fields:
+                fail(f"recipe {edid} must be free (no components)")
         else:
             fail(f"unexpected record type {rtype}")
 
@@ -258,6 +264,7 @@ def main() -> int:
     expect(constant("HolotapeTerminal"), "TERM", "HolotapeTerminal")
     for i in range(max(constant("OptionCount"), 0)):
         expect(constant("FirstOptionGlobal") + i, "GLOB", f"Option {i + 1}")
+    expect(constant("HolotapeRecipe"), "COBJ", "HolotapeRecipe")
 
     print(f"{path.name}: {len(records)} records in {group_count} groups, masters {masters}, light={bool(flags & 0x200)}")
     return report()

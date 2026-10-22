@@ -4,6 +4,13 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.10.2] - 2026-10-22 - public beta
+
+### Added
+- The settings holotape can be crafted at the chemistry station, free of charge. The
+  workbench and its category are found from the game data (the station that makes chems
+  and explosives), no fixed form IDs.
+
 ## [0.10.1] - 2026-10-21 - public beta
 
 ### Fixed

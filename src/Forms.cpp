@@ -38,6 +38,7 @@ namespace LO
 		menuIconTransform = Find<RE::BGSTransform>(dataHandler, Forms::MenuIconTransform, Forms::PluginFile);  // optional
 		holotape = Find<RE::BGSNote>(dataHandler, Forms::Holotape, Forms::PluginFile);  // optional
 		holotapeTerminal = Find<RE::BGSTerminal>(dataHandler, Forms::HolotapeTerminal, Forms::PluginFile);  // optional
+		holotapeRecipe = Find<RE::BGSConstructibleObject>(dataHandler, Forms::HolotapeRecipe, Forms::PluginFile);  // optional
 		for (std::uint32_t i = 0; i < Forms::OptionCount; ++i) {
 			optionGlobals.push_back(Find<RE::TESGlobal>(dataHandler, Forms::FirstOptionGlobal + i, Forms::PluginFile));
 		}

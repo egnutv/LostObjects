@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 4.3.0)
 
 project(
 	LostObjects
-	VERSION 0.10.1.0
+	VERSION 0.10.2.0
 	DESCRIPTION "Adds a workshop menu tab that collects every craftable workshop item which is not reachable in the build menu."
 	LANGUAGES CXX
 )
@@ -63,6 +63,7 @@ generate_xse_plugin_info("${commonlibf4_SOURCE_DIR}")
 # --- Plugin -----------------------------------------------------------------
 
 set(SOURCES
+	src/Crafting.cpp
 	src/Forms.cpp
 	src/Grouping.cpp
 	src/Holotape.cpp
@@ -82,6 +83,7 @@ set(SOURCES
 )
 
 set(HEADERS
+	src/Crafting.h
 	src/Forms.h
 	src/Grouping.h
 	src/Holotape.h

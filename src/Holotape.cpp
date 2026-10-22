@@ -1,5 +1,6 @@
 #include "Holotape.h"
 
+#include "Crafting.h"
 #include "Recovery.h"
 #include "Util.h"
 
@@ -115,6 +116,15 @@ namespace LO::Holotape
 		}
 
 		SyncGlobals(a_forms);
+
+		// Craftable again at the chemistry station, free of charge.
+		const auto spot = Crafting::FindChemistryStation();
+		if (Crafting::MakeCraftable(a_forms.holotapeRecipe, spot)) {
+			REX::LogInformation("Holotape: can be crafted at workbench {} in category {}", Util::FormIDToString(spot.bench->GetFormID()),
+				spot.category ? Util::FormIDToString(spot.category->GetFormID()) : "(none)");
+		} else {
+			REX::LogWarning("Holotape: no chemistry station found in the game data - the holotape cannot be crafted (it is still given when missing)");
+		}
 	}
 
 	void GiveIfMissing(const OwnedForms& a_forms)

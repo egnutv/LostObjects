@@ -3,7 +3,8 @@
 ## The settings holotape
 
 "Lost Objects Settings" is put into your inventory when you load a save (if you lose or
-sell it, it comes back the next time you load). Play it in the Pip-Boy:
+sell it, it comes back the next time you load). You can also craft it at any chemistry
+station, free of charge. Play it in the Pip-Boy:
 
 | Menu item | What it does |
 |---|---|

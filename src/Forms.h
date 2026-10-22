@@ -27,6 +27,7 @@ namespace LO
 		RE::BGSNote* holotape{ nullptr };  // optional: the settings holotape
 		RE::BGSTerminal* holotapeTerminal{ nullptr };  // its terminal (menu items, script)
 		std::vector<RE::TESGlobal*> optionGlobals;  // one per holotape option (1 = on), see Holotape.h
+		RE::BGSConstructibleObject* holotapeRecipe{ nullptr };  // optional: crafts the holotape (chemistry station)
 
 		// Looks everything up. Returns false (and logs why) if something is missing.
 		bool Resolve();

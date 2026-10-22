@@ -35,6 +35,7 @@ namespace LO::Forms
 	inline constexpr std::int32_t HolotapeItemRebuild = 1;
 	inline constexpr std::int32_t HolotapeFirstOptionItem = 10;  // option i: items 10 + 2i and 11 + 2i
 	inline constexpr std::string_view HolotapeScript = "LostObjects_Holotape";
+	inline constexpr std::uint32_t HolotapeRecipe = 0xC8B;  // COBJ, free, put at the chemistry station by the DLL
 
 	// Vanilla forms (Fallout4.esm).
 	inline constexpr std::string_view BaseGameFile = "Fallout4.esm";

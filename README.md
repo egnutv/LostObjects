@@ -101,7 +101,7 @@ per version.
 ## Settings
 
 The **settings holotape** ("Lost Objects Settings", it is put into your inventory
-automatically) has the everyday options: rebuild the menus now, sort into existing
+automatically and can be crafted for free at the chemistry station) has the everyday options: rebuild the menus now, sort into existing
 categories, hide ghost objects, hide items that can already be built, the summary
 message and the development mode. Your choices are saved by Lost Objects itself.
 

@@ -22,7 +22,8 @@ loading a save before you enter workshop mode. If you are faster, a message
 asks you to restart the game once. After that the menus are complete at once.
 
 SETTINGS
-The holotape "Lost Objects Settings" in your inventory (added automatically):
+The holotape "Lost Objects Settings" in your inventory (added automatically,
+or craft it for free at the chemistry station):
 rebuild the menus now and switch the main options on or off.
 All options: Data\F4SE\Plugins\LostObjects.ini
 

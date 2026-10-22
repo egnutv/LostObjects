@@ -213,6 +213,7 @@ def build_layout() -> tuple[list[Keyword], list[FormList], dict[str, int]]:
     take("HolotapeTerminal")
     for suffix, _ in HOLOTAPE_OPTIONS:
         take(f"Option{suffix}")
+    take("HolotapeRecipe")
 
     ids["NextObjectID"] = next_id
     return keywords, formlists, ids
@@ -266,9 +267,19 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
 
     holotape_globals, holotape_note, holotape_terminal = build_holotape(ids)
 
+    # The holotape can be crafted again: free (no components). The DLL puts it
+    # at the chemistry station at runtime (workbench and category from the data).
+    holotape_recipe = record(
+        "COBJ",
+        full_id(ids["HolotapeRecipe"]),
+        subrecord("EDID", zstring("LO_HolotapeRecipe"))
+        + subrecord("CNAM", struct.pack("<I", full_id(ids["Holotape"])))
+        + subrecord("INTV", struct.pack("<HH", 1, 0)),  # created count, priority
+    )
+
     # HEDR "number of records" counts records *and* groups (as the Creation Kit does).
-    group_count = 7
-    record_count = len(keywords) + len(formlists) + 2 + len(HOLOTAPE_OPTIONS) + 2 + group_count
+    group_count = 8
+    record_count = len(keywords) + len(formlists) + 2 + len(HOLOTAPE_OPTIONS) + 2 + 1 + group_count
 
     header_data = subrecord("HEDR", struct.pack("<fII", HEDR_VERSION, record_count, next_object_id))
     header_data += subrecord("CNAM", zstring(AUTHOR))
@@ -289,6 +300,7 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
         + group("TERM", holotape_terminal)
         + group("FLST", formlist_records)
         + group("ARTO", art_records)
+        + group("COBJ", holotape_recipe)
     )
 
 
@@ -418,6 +430,7 @@ def build_header(ids: dict[str, int]) -> str:
         f"\tinline constexpr std::int32_t HolotapeItemRebuild = {HOLOTAPE_ITEM_REBUILD};",
         f"\tinline constexpr std::int32_t HolotapeFirstOptionItem = {HOLOTAPE_FIRST_OPTION_ITEM};  // option i: items {HOLOTAPE_FIRST_OPTION_ITEM} + 2i and {HOLOTAPE_FIRST_OPTION_ITEM + 1} + 2i",
         f'\tinline constexpr std::string_view HolotapeScript = "{HOLOTAPE_SCRIPT}";',
+        f"\tinline constexpr std::uint32_t HolotapeRecipe = 0x{ids['HolotapeRecipe']:03X};  // COBJ, free, put at the chemistry station by the DLL",
         "",
         "\t// Vanilla forms (Fallout4.esm).",
         '\tinline constexpr std::string_view BaseGameFile = "Fallout4.esm";',
@@ -452,7 +465,7 @@ def main() -> int:
     PLUGIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLUGIN_PATH.write_bytes(plugin_bytes)
     HEADER_PATH.write_text(header_text, encoding="utf-8", newline="\n")
-    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 4 + len(HOLOTAPE_OPTIONS)} records)")
+    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 5 + len(HOLOTAPE_OPTIONS)} records)")
     print(f"Wrote {HEADER_PATH.relative_to(REPO_ROOT)}")
     return 0
 

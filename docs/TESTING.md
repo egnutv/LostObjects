@@ -67,6 +67,7 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T24 | Holotape: switch "Sort lost items into existing categories" off, go back | The mark changes to `[ ]`, a message confirms it; `LostObjects_Settings.ini` contains `bSortIntoCategories=0`. After a restart the items are in the "Lost Objects" folders instead of the categories. Switch it on again. |
 | T25 | Holotape: "Rebuild the workshop menus now" | Message "already up to date" (or "rebuilt"). |
 | T26 | Drop or sell the holotape, save, load | It is back in the inventory. |
+| T27 | Chemistry station | "Lost Objects Settings" can be crafted there, free of charge. |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 
 ## 3. What to send back
