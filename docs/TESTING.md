@@ -68,6 +68,8 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T25 | Holotape: "Rebuild the workshop menus now" | Message "already up to date" (or "rebuilt"). |
 | T26 | Drop or sell the holotape, save, load | It is back in the inventory. |
 | T27 | Chemistry station | "Lost Objects Settings" can be crafted there, free of charge. |
+| T28 | A mod whose menu another mod changed (for example Snap'n Build with PAN_SnB.esp) | The removed categories and sub menus are back in their old place, with their own names - no "Lost Objects" folder for them. `LostObjects_Report.txt`, section "Put back where their mod had them", names the place and the mod that removed it. |
+| T29 | `LostObjects.log` | A line "PluginHistory: ... plugin files read in ... ms" and, after the scan, "... back where their mod had them". |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 
 ## 3. What to send back

@@ -2,6 +2,8 @@
 
 #include "Grouping.h"
 #include "ModelCheck.h"
+#include "NameMap.h"
+#include "PluginHistory.h"
 #include "Util.h"
 
 // -----------------------------------------------------------------------------
@@ -57,7 +59,7 @@ namespace LO
 
 		// Walks the menu tree from WorkshopMenuMain and collects every category
 		// (leaf keyword) and every sub menu that the player can actually open.
-		void CollectReachable(const RE::BGSListForm* a_main, const OwnedForms& a_forms, KeywordSet& a_leaves, ListSet& a_lists)
+		void CollectReachable(const RE::BGSListForm* a_main, const OwnedForms& a_forms, const RestoreSet& a_ours, KeywordSet& a_leaves, ListSet& a_lists)
 		{
 			std::vector<std::pair<const RE::BGSListForm*, bool>> stack;
 			stack.emplace_back(a_main, true);
@@ -73,8 +75,8 @@ namespace LO
 				const auto forms = list->GetAllForms();
 				for (std::size_t i = 0; i < forms.size(); ++i) {
 					auto* form = forms[i];
-					if (!form || a_forms.IsOwned(form)) {
-						continue;  // our own tab must never count as "reachable"
+					if (!form || a_forms.IsOwned(form) || a_ours.contains({ list, form })) {
+						continue;  // our own tab and what we put back must never count as "reachable"
 					}
 
 					if (auto* keyword = form->As<RE::BGSKeyword>()) {
@@ -93,7 +95,7 @@ namespace LO
 			std::vector<const RE::BGSKeyword*> leaves;  // unique category keywords below this menu
 		};
 
-		MenuTreeInfo CollectMenuTree(const RE::BGSListForm* a_root, const OwnedForms& a_forms)
+		MenuTreeInfo CollectMenuTree(const RE::BGSListForm* a_root, const OwnedForms& a_forms, const RestoreSet& a_ours)
 		{
 			MenuTreeInfo info;
 			KeywordSet seenLeaves;
@@ -111,7 +113,7 @@ namespace LO
 				const auto forms = list->GetAllForms();
 				for (std::size_t i = 0; i < forms.size(); ++i) {
 					auto* form = forms[i];
-					if (!form || a_forms.IsOwned(form)) {
+					if (!form || a_forms.IsOwned(form) || a_ours.contains({ list, form })) {
 						continue;
 					}
 
@@ -129,7 +131,203 @@ namespace LO
 		}
 	}
 
-	ScanResult Scanner::Run(const OwnedForms& a_forms, const Settings& a_settings, const KeywordMap& a_originalKeywords)
+	namespace
+	{
+		std::string NameOf(const RE::TESForm* a_form)
+		{
+			auto name = Util::GetFormName(a_form);
+			if (name.empty()) {
+				name = Util::GetEditorID(a_form);
+			}
+			return name.empty() && a_form ? Util::FormIDToString(a_form->GetFormID()) : name;
+		}
+
+		// Puts lost categories and sub menus back where the plugin files had
+		// them (PluginHistory): into the newest version of a menu that listed
+		// them, behind the entry that stood in front of them there. If that menu
+		// cannot be reached either, it is put back the same way first.
+		class Attacher
+		{
+		public:
+			Attacher(const OwnedForms& a_forms, const KeywordSet& a_recipeFilters, const KeywordSet& a_leaves, const ListSet& a_lists,
+				const std::unordered_map<const RE::BGSListForm*, std::string>& a_menuPath, const RestoreSet& a_ours, std::vector<Restore>& a_out) :
+				_forms(a_forms),
+				_recipeFilters(a_recipeFilters),
+				_leaves(a_leaves),
+				_lists(a_lists),
+				_menuPath(a_menuPath),
+				_ours(a_ours),
+				_out(a_out),
+				_history(PluginHistory::Get())
+			{}
+
+			// True if a_node can be reached (already, or through what was put back).
+			bool Attach(RE::TESForm* a_node, std::uint32_t a_depth = 0)
+			{
+				if (!a_node || IsReachable(a_node)) {
+					return a_node != nullptr;
+				}
+				if (a_depth > MAX_DEPTH || !_inProgress.insert(a_node).second) {
+					return false;
+				}
+				bool attached = false;
+				for (const auto& place : _history.PlacesOf(a_node->GetFormID())) {
+					auto* listForm = RE::TESForm::FindFormByID(place.list);
+					auto* list = listForm ? listForm->As<RE::BGSListForm>() : nullptr;
+					if (!list || _forms.IsOwned(list)) {
+						continue;
+					}
+					const bool isMain = list == _forms.workshopMenuMain;
+					if (!isMain && (place.index == 0 || !IsMenuVersion(*place.version))) {
+						continue;  // entry 0 is the name of a sub menu, not a category; or not a menu at all
+					}
+					if (!Attach(list, a_depth + 1)) {
+						continue;
+					}
+					if (!Contains(list, a_node)) {
+						_out.push_back({ list, a_node, InFrontOf(list, *place.version, place.index), PathOf(list, a_node), RemovedBy(list, a_node), 0 });
+						_added[list].insert(a_node);
+					}
+					MarkReachable(list, a_node);
+					attached = true;
+					break;
+				}
+				_inProgress.erase(a_node);
+				return attached;
+			}
+
+			[[nodiscard]] std::string PathOf(const RE::TESForm* a_node) const
+			{
+				const auto it = _nodePath.find(a_node);
+				return it != _nodePath.end() ? it->second : NameOf(a_node);
+			}
+
+		private:
+			static constexpr std::uint32_t MAX_DEPTH = 12;
+
+			bool IsReachable(const RE::TESForm* a_node) const
+			{
+				if (const auto* keyword = a_node->As<RE::BGSKeyword>()) {
+					return _leaves.contains(keyword) || _newLeaves.contains(keyword);
+				}
+				if (const auto* list = a_node->As<RE::BGSListForm>()) {
+					return _lists.contains(list) || _newLists.contains(list);
+				}
+				return false;
+			}
+
+			// A version of a sub menu: entry 0 is a category keyword (its name).
+			bool IsMenuVersion(const PluginHistory::Version& a_version) const
+			{
+				if (a_version.entries.empty()) {
+					return false;
+				}
+				const auto* first = RE::TESForm::FindFormByID(a_version.entries.front());
+				const auto* keyword = first ? first->As<RE::BGSKeyword>() : nullptr;
+				return keyword && _recipeFilters.contains(keyword);
+			}
+
+			bool Contains(const RE::BGSListForm* a_list, const RE::TESForm* a_node) const
+			{
+				if (const auto it = _added.find(a_list); it != _added.end() && it->second.contains(a_node)) {
+					return true;
+				}
+				for (const auto* form : a_list->arrayOfForms) {
+					if (form == a_node && !_ours.contains({ a_list, a_node })) {
+						return true;
+					}
+				}
+				return false;
+			}
+
+			// The nearest entry in front of it in the plugin's version that is in the list now.
+			RE::TESForm* InFrontOf(const RE::BGSListForm* a_list, const PluginHistory::Version& a_version, std::size_t a_index) const
+			{
+				for (std::size_t i = a_index; i-- > 0;) {
+					auto* candidate = RE::TESForm::FindFormByID(a_version.entries[i]);
+					if (candidate && Contains(a_list, candidate)) {
+						return candidate;
+					}
+				}
+				return nullptr;
+			}
+
+			std::string RemovedBy(const RE::BGSListForm* a_list, const RE::TESForm* a_node) const
+			{
+				const auto& versions = _history.VersionsOf(a_list->GetFormID());
+				if (versions.empty()) {
+					return "unknown";
+				}
+				const auto& last = versions.back();
+				if (std::ranges::find(last.entries, a_node->GetFormID()) == last.entries.end()) {
+					return last.file;
+				}
+				return "a script while the game was running";
+			}
+
+			std::string PathOf(const RE::BGSListForm* a_list, const RE::TESForm* a_node)
+			{
+				std::string parent;
+				if (a_list != _forms.workshopMenuMain) {
+					if (const auto it = _menuPath.find(a_list); it != _menuPath.end()) {
+						parent = it->second;
+					} else {
+						parent = PathOf(a_list);
+					}
+				}
+				const auto* title = a_node->As<RE::BGSListForm>() ? a_node->As<RE::BGSListForm>()->GetNthForm(0) : a_node;
+				auto path = parent.empty() ? NameOf(title) : parent + " > " + NameOf(title);
+				_nodePath[a_node] = path;
+				return path;
+			}
+
+			// The node and - for a sub menu - everything in it is reachable now.
+			void MarkReachable(const RE::BGSListForm* a_parent, RE::TESForm* a_node)
+			{
+				if (!_nodePath.contains(a_node)) {
+					PathOf(a_parent, a_node);
+				}
+				if (auto* keyword = a_node->As<RE::BGSKeyword>()) {
+					_newLeaves.insert(keyword);
+					return;
+				}
+				auto* list = a_node->As<RE::BGSListForm>();
+				if (!list || !_newLists.insert(list).second) {
+					return;
+				}
+				const auto forms = list->GetAllForms();
+				for (std::size_t i = 0; i < forms.size(); ++i) {
+					auto* form = forms[i];
+					if (!form || _forms.IsOwned(form) || _ours.contains({ list, form })) {
+						continue;
+					}
+					if (i != 0 && form->As<RE::BGSKeyword>()) {
+						_newLeaves.insert(form->As<RE::BGSKeyword>());
+						_nodePath.try_emplace(form, PathOf(list) + " > " + NameOf(form));
+					} else if (form->As<RE::BGSListForm>()) {
+						MarkReachable(list, form);
+					}
+				}
+			}
+
+			const OwnedForms& _forms;
+			const KeywordSet& _recipeFilters;
+			const KeywordSet& _leaves;
+			const ListSet& _lists;
+			const std::unordered_map<const RE::BGSListForm*, std::string>& _menuPath;
+			const RestoreSet& _ours;
+			std::vector<Restore>& _out;
+			const PluginHistory::History& _history;
+
+			KeywordSet _newLeaves;
+			ListSet _newLists;
+			std::unordered_set<const RE::TESForm*> _inProgress;
+			std::unordered_map<const RE::BGSListForm*, std::unordered_set<const RE::TESForm*>> _added;
+			std::unordered_map<const RE::TESForm*, std::string> _nodePath;
+		};
+	}
+
+	ScanResult Scanner::Run(const OwnedForms& a_forms, const Settings& a_settings, const KeywordMap& a_originalKeywords, const RestoreSet& a_ourRestores)
 	{
 		ScanResult result;
 
@@ -143,7 +341,7 @@ namespace LO
 		// 1) What can the player reach right now?
 		KeywordSet reachableLeaves;
 		ListSet reachableLists;
-		CollectReachable(a_forms.workshopMenuMain, a_forms, reachableLeaves, reachableLists);
+		CollectReachable(a_forms.workshopMenuMain, a_forms, a_ourRestores, reachableLeaves, reachableLists);
 
 		// 1b) Depth and parent of every reachable sub menu (breadth first), the
 		//     menus each category is shown in, and the plugins' own top menus.
@@ -168,7 +366,7 @@ namespace LO
 				const auto forms = node.list->GetAllForms();
 				for (std::size_t i = 0; i < forms.size(); ++i) {
 					auto* form = forms[i];
-					if (!form || a_forms.IsOwned(form)) {
+					if (!form || a_forms.IsOwned(form) || a_ourRestores.contains({ node.list, form })) {
 						continue;
 					}
 
@@ -422,6 +620,10 @@ namespace LO
 		};
 		std::unordered_map<RE::BGSKeyword*, std::map<std::string, Origin>> categoryOrigins;
 
+		// Lost categories go back where their plugins had them, if the plugin
+		// files say where that was.
+		Attacher attacher(a_forms, recipeFilters, reachableLeaves, reachableLists, result.menuPath, a_ourRestores, result.restores);
+
 		for (auto& candidate : unreachable) {
 			auto* recipe = candidate.recipe;
 			if (!workshopBenches.contains(recipe->benchKeyword)) {
@@ -489,6 +691,14 @@ namespace LO
 				}
 			}
 
+			if (a_settings.restoreOriginalPlaces && a_settings.placement == Placement::kHome) {
+				const auto home = std::ranges::find_if(usable, [&attacher](RE::BGSKeyword* a_keyword) { return attacher.Attach(a_keyword); });
+				if (home != usable.end()) {
+					result.restored.push_back({ recipe, attacher.PathOf(*home) });
+					continue;
+				}
+			}
+
 			const bool hasUsableCategory = !usable.empty();
 			for (auto* keyword : usable) {
 				++lostCategories[keyword];
@@ -508,6 +718,13 @@ namespace LO
 			}
 
 			result.lostRecipes.push_back({ recipe, !hasUsableCategory, usable });
+		}
+
+		for (auto& restore : result.restores) {
+			const auto prefix = restore.path;
+			restore.recipeCount = static_cast<std::uint32_t>(std::ranges::count_if(result.restored, [&prefix](const RestoredRecipe& a_restored) {
+				return a_restored.path == prefix || a_restored.path.starts_with(prefix + " > ");
+			}));
 		}
 
 		// 5) Lost whole menus: form lists that look like a workshop sub menu
@@ -551,7 +768,7 @@ namespace LO
 				continue;
 			}
 
-			const auto tree = CollectMenuTree(list, a_forms);
+			const auto tree = CollectMenuTree(list, a_forms, a_ourRestores);
 
 			std::uint32_t lostLeaves = 0;
 			std::uint32_t recipeCount = 0;

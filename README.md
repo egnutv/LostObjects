@@ -37,13 +37,16 @@ the whole workshop menu tree exactly the way the game does and finds **every wor
 recipe that cannot be reached** - no matter whether it comes from a mod, a DLC or the base
 game, and no matter what it builds. Then it puts each item back, in this order:
 
-1. **Into the existing category it belongs to**, right next to its siblings. The category
-   is found by comparing the item with what is already in the menu - model file, model
-   folder, name, first word, `[Tag]`, category name. No fixed lists.
-2. **Into a "Lost Objects" folder inside the mod's own menu** if no category fits clearly
-   (better there than in the wrong place). So you can see what the mod author made and
-   what Lost Objects added.
-3. **Into the "Lost Objects" tab** of the main workshop menu only if the item has no home
+1. **Exactly where its mod had it.** Lost Objects reads the menus of every plugin file in
+   your load order, so it knows where each category and sub menu was before another mod
+   changed that menu - and puts it back there, with its own name, at its old position.
+   The report says which mod removed it.
+2. **Into the existing category it belongs to** - for items whose mod never put them into
+   any menu. The category is found by comparing the item with what is already in the
+   menu - model file, model folder, name, first word, `[Tag]`, category name.
+3. **Into a "Lost Objects" folder inside the mod's own menu** if no category fits clearly
+   (better there than in the wrong place).
+4. **Into the "Lost Objects" tab** of the main workshop menu only if the item has no home
    at all (mostly base game and Creation Club pieces).
 
 ```

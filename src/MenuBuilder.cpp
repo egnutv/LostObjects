@@ -308,6 +308,30 @@ namespace LO
 			SetListContents(a_list, forms);  // scriptAddedFormCount stays: the tail is still the same forms
 		}
 
+		// Puts a_node into a_list right behind a_after (if it is there), else at
+		// the end - always in front of the forms that scripts added.
+		void InsertAfter(RE::BGSListForm* a_list, RE::TESForm* a_node, const RE::TESForm* a_after)
+		{
+			std::vector<RE::TESForm*> forms(a_list->arrayOfForms.begin(), a_list->arrayOfForms.end());
+			const auto tailStart = forms.size() - ScriptTail(a_list);
+			auto at = tailStart;
+			if (a_after) {
+				for (std::size_t i = 0; i < tailStart; ++i) {
+					if (forms[i] == a_after) {
+						at = i + 1;
+						break;
+					}
+				}
+			}
+			forms.insert(forms.begin() + static_cast<std::ptrdiff_t>(at), a_node);
+			SetListContents(a_list, forms);  // scriptAddedFormCount stays: the tail is still the same forms
+		}
+
+		bool ListHas(const RE::BGSListForm* a_list, const RE::TESForm* a_node)
+		{
+			return std::ranges::find(a_list->arrayOfForms, a_node) != a_list->arrayOfForms.end();
+		}
+
 		std::vector<Bucket> CollectBuckets(const ScanResult& a_scan, const std::unordered_set<const RE::BGSConstructibleObject*>& a_sorted)
 		{
 			std::unordered_map<const RE::TESForm*, const MenuEntry*> entryByForm;
@@ -387,10 +411,43 @@ namespace LO
 			return a_items;
 		};
 		return tabVisible == a_other.tabVisible &&
+		       restores == a_other.restores &&
 		       sorted(names) == sorted(a_other.names) &&
 		       sorted(contents) == sorted(a_other.contents) &&
 		       sortedPairs(injections) == sortedPairs(a_other.injections) &&
 		       sorted(tags) == sorted(a_other.tags);
+	}
+
+	RestoreSet MenuBuilder::RestoredPairs() const
+	{
+		RestoreSet pairs;
+		for (const auto& restored : _insertedRestores) {
+			pairs.emplace(restored.list, restored.node);
+		}
+		return pairs;
+	}
+
+	// Takes out again what we put back last time (only in front of the
+	// forms that scripts added - we never put anything behind them).
+	void MenuBuilder::RemoveRestores()
+	{
+		for (const auto& restored : _insertedRestores) {
+			auto& array = restored.list->arrayOfForms;
+			const auto tailStart = array.size() - ScriptTail(restored.list);
+			std::vector<RE::TESForm*> kept;
+			bool removed = false;
+			for (std::uint32_t i = 0; i < array.size(); ++i) {
+				if (!removed && i < tailStart && array[i] == restored.node) {
+					removed = true;
+				} else {
+					kept.push_back(array[i]);
+				}
+			}
+			if (removed) {
+				SetListContents(restored.list, kept);
+			}
+		}
+		_insertedRestores.clear();
 	}
 
 	void MenuBuilder::Reset()
@@ -398,6 +455,7 @@ namespace LO
 		_originalKeywords.clear();
 		_currentTags.clear();
 		_injectedInto.clear();
+		_insertedRestores.clear();
 		_previewGiven.clear();
 		_state = {};
 		_lastSignature = 0;
@@ -732,12 +790,23 @@ namespace LO
 		for (const auto* form : rootContents) {
 			signature = Mix(signature, form->GetFormID());
 		}
+		for (const auto& restore : a_scan.restores) {
+			signature = Mix(signature, restore.list->GetFormID());
+			signature = Mix(signature, restore.node->GetFormID());
+			signature = Mix(signature, restore.after ? restore.after->GetFormID() : 0);
+		}
 
 		ApplyResult result;
 		result.tabVisible = rootContents.size() > 1;
 		result.folderCount = folderCount;
 		result.entryCount = static_cast<std::uint32_t>(plan.MenusUsed() + plan.LeavesUsed());
-		result.recipeCount = static_cast<std::uint32_t>(a_scan.lostRecipes.size());
+		result.recipeCount = static_cast<std::uint32_t>(a_scan.lostRecipes.size() + a_scan.restored.size());
+		for (const auto& restored : a_scan.restored) {
+			plan.placement[restored.recipe] = { restored.path, PlacedIn::kOriginalPlace, {} };
+		}
+		for (const auto& restore : a_scan.restores) {
+			result.restores.push_back(std::format("{} - removed by {} ({} recipe(s))", restore.path, restore.removedBy, restore.recipeCount));
+		}
 		result.overflow = static_cast<std::uint32_t>(plan.overflow.size());
 		result.placement = plan.placement;
 		result.injections = plan.injectionLog;
@@ -746,6 +815,9 @@ namespace LO
 				placed.evidence = why->second;
 			}
 			switch (placed.where) {
+			case PlacedIn::kOriginalPlace:
+				++result.restoredInPlace;
+				break;
 			case PlacedIn::kExistingCategory:
 				++result.sortedIn;
 				break;
@@ -771,6 +843,8 @@ namespace LO
 
 		const bool intact = !repaired && std::ranges::all_of(plan.injections, [](const auto& a_injection) {
 			return a_injection.first->ContainsEditorForm(a_injection.second);
+		}) && std::ranges::all_of(_insertedRestores, [](const MenuState::Restored& a_restored) {
+			return ListHas(a_restored.list, a_restored.node);
 		}) && (!result.tabVisible || a_forms.workshopMenuMain->ContainsEditorForm(a_forms.rootMenu));
 
 		MenuState state;
@@ -780,6 +854,9 @@ namespace LO
 		}
 		state.contents.emplace_back(a_forms.rootMenu, rootContents);
 		state.injections = plan.injections;
+		for (const auto& restore : a_scan.restores) {
+			state.restores.push_back({ restore.list, restore.node, restore.after });
+		}
 		for (const auto& [recipe, tag] : plan.tags) {
 			state.tags.emplace_back(recipe, tag);
 		}
@@ -804,6 +881,7 @@ namespace LO
 
 	void MenuBuilder::Execute(const OwnedForms& a_forms, const MenuState& a_state)
 	{
+		RemoveRestores();
 		RemoveInjections(a_forms);
 
 		SetListContents(a_forms.rootMenu, { a_forms.rootKeyword });
@@ -830,6 +908,14 @@ namespace LO
 
 		if (a_state.tabVisible) {
 			InsertBeforeScriptForms(a_forms.workshopMenuMain, a_forms.rootMenu);
+		}
+
+		// Categories and menus of other mods, back where their plugins had them.
+		for (const auto& restored : a_state.restores) {
+			if (!ListHas(restored.list, restored.node)) {
+				InsertAfter(restored.list, restored.node, restored.after);
+				_insertedRestores.push_back(restored);
+			}
 		}
 
 		TagMap tags;

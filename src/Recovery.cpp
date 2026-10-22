@@ -200,6 +200,12 @@ namespace LO
 			for (const auto& lost : a_scan.lostRecipes) {
 				ids.push_back(lost.recipe->GetFormID());
 			}
+			for (const auto& restored : a_scan.restored) {
+				ids.push_back(restored.recipe->GetFormID() ^ 0x80000000u);
+			}
+			for (const auto& restore : a_scan.restores) {
+				ids.push_back(restore.list->GetFormID() * 31u + restore.node->GetFormID());
+			}
 			std::ranges::sort(ids);
 			std::size_t seed = a_scan.reachableRecipeCount * 1315423911u + a_scan.reachableCategoryCount;
 			for (const auto id : ids) {
@@ -220,7 +226,7 @@ namespace LO
 
 		const auto start = std::chrono::steady_clock::now();
 
-		const auto scan = Scanner::Run(_forms, settings, _builder.OriginalKeywords());
+		const auto scan = Scanner::Run(_forms, settings, _builder.OriginalKeywords(), _builder.RestoredPairs());
 		if (!scan.valid) {
 			return;
 		}
@@ -270,7 +276,7 @@ namespace LO
 		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
 		// Log and write the report whenever the result differs from the last one.
-		std::size_t logSignature = shown.lostRecipes.size() * 31 + shown.uncategorized.size();
+		std::size_t logSignature = (shown.lostRecipes.size() + shown.restored.size() * 1009 + shown.restores.size() * 7919) * 31 + shown.uncategorized.size();
 		for (const auto& entry : shown.entries) {
 			logSignature = logSignature * 131 + entry.form->GetFormID() + entry.recipeCount;
 		}
@@ -594,7 +600,9 @@ namespace LO
 
 		// Kept alive in static storage in case the HUD reads the text later.
 		static std::string message;
-		message = std::format("Lost Objects: {} workshop item(s) recovered, {} of them sorted into existing categories.", a_apply.recipeCount, a_apply.sortedIn);
+		message = a_apply.restoredInPlace > 0 ?
+		              std::format("Lost Objects: {} workshop item(s) recovered, {} of them back where their mod had them, {} sorted into existing categories.", a_apply.recipeCount, a_apply.restoredInPlace, a_apply.sortedIn) :
+		              std::format("Lost Objects: {} workshop item(s) recovered, {} of them sorted into existing categories.", a_apply.recipeCount, a_apply.sortedIn);
 		RE::SendHUDMessage::ShowHUDMessage(message.c_str());
 	}
 

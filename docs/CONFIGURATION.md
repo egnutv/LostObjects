@@ -40,6 +40,7 @@ written to the log.
 | `bLiveUpdate` | `0` | Lost Objects checks the menu again and again and updates whenever something new turns up. During the first minute after loading a change must be seen twice in a row (other mods are still adding their menus). `1`: do not wait for the second scan (only for testing). |
 | `iSettleSeconds` | `10` | Earliest moment (seconds after loading) to build the menus. Two scans in a row must also agree. |
 | `sPlacement` | `Home` | `Home`: sort recovered items into an existing category that fits; what does not fit goes into a "Lost Objects" folder inside the mod's own menu; only what has no home goes into the tab. `Tab`: everything into the "Lost Objects" tab, nothing is added to other menus. |
+| `bRestoreOriginalPlaces` | `1` | Put lost categories and menus back exactly where their mod had them, read from the plugin files of your load order. `0`: do not use the plugin files. Only with `sPlacement=Home`. |
 | `bSortIntoCategories` | `1` | `0`: do not sort into existing categories, use the "Lost Objects" folder of the mod (or the tab) for everything. Only with `sPlacement=Home`. |
 | `iMinConfidence` | `30` | How sure (in percent) the match into an existing category must be. Higher = fewer items sorted in, but fewer mistakes. The inventory shows the confidence of every item. |
 | `sSortMode` | `ByMod` | `ByMod`: one folder per plugin file (mod, DLC or base game) inside the tab. `Flat`: all recovered menus directly in the tab. |

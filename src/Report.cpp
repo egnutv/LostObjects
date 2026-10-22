@@ -60,7 +60,8 @@ namespace LO::Report
 		file << "Reachable workshop recipes : " << a_scan.reachableRecipeCount << "\n";
 		file << "Reachable categories       : " << a_scan.reachableCategoryCount << "\n";
 		file << "Reachable menus            : " << a_scan.reachableMenuCount << "\n";
-		file << "Lost recipes recovered     : " << a_scan.lostRecipes.size() << "\n";
+		file << "Lost recipes recovered     : " << a_apply.recipeCount << "\n";
+		file << "Back where their mod had it: " << a_apply.restoredInPlace << " recipes (read from the plugin files)\n";
 		file << "Recovered menus/categories : " << a_scan.entries.size() << "\n";
 		file << "Uncategorized recipes      : " << a_scan.uncategorized.size() << "\n";
 		file << "Skipped (no category)      : " << a_scan.skippedWithoutCategory << " (filter bSkipWithoutCategory)\n";
@@ -75,6 +76,15 @@ namespace LO::Report
 		file << "Menus/categories created   : " << a_apply.entryCount << "\n";
 		file << "Folders in the tab         : " << a_apply.folderCount << "\n";
 		file << "Tab visible                : " << (a_apply.tabVisible ? "yes" : "no") << "\n\n";
+
+		file << "Put back where their mod had them\n---------------------------------\n";
+		if (a_apply.restores.empty()) {
+			file << "  (none)\n";
+		}
+		for (const auto& restore : a_apply.restores) {
+			file << "  " << restore << "\n";
+		}
+		file << "\n";
 
 		file << "Added to existing menus\n-----------------------\n";
 		if (a_apply.injections.empty()) {
@@ -142,12 +152,14 @@ namespace LO::Report
 	void Log(const ScanResult& a_scan, const ApplyResult& a_apply, std::string_view a_reason, bool a_verbose)
 	{
 		REX::LogInformation(
-			"Scan ({}): {} reachable recipes in {} categories / {} menus; {} lost recipes -> {} entries, {} uncategorized ({} skipped by filter, {} already buildable, {} ghost objects), {} sorted into categories, {} in mod folders, {} in the tab, {} folders, tab {}",
+			"Scan ({}): {} reachable recipes in {} categories / {} menus; {} lost recipes, {} back where their mod had them ({} places), the rest -> {} entries, {} uncategorized ({} skipped by filter, {} already buildable, {} ghost objects), {} sorted into categories, {} in mod folders, {} in the tab, {} folders, tab {}",
 			a_reason,
 			a_scan.reachableRecipeCount,
 			a_scan.reachableCategoryCount,
 			a_scan.reachableMenuCount,
-			a_scan.lostRecipes.size(),
+			a_apply.recipeCount,
+			a_apply.restoredInPlace,
+			a_scan.restores.size(),
 			a_scan.entries.size(),
 			a_scan.uncategorized.size(),
 			a_scan.skippedWithoutCategory,
@@ -165,6 +177,9 @@ namespace LO::Report
 
 		for (const auto& entry : a_scan.entries) {
 			REX::LogInformation("  {}", DescribeEntry(entry));
+		}
+		for (const auto& restore : a_apply.restores) {
+			REX::LogInformation("  put back: {}", restore);
 		}
 		for (const auto& injection : a_apply.injections) {
 			REX::LogInformation("  added to: {}", injection);

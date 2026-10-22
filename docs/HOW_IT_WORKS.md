@@ -83,7 +83,24 @@ The scan is read-only. It runs on the main thread and takes a few milliseconds.
 
 ## 4. Where recovered recipes go
 
-Every recovered recipe gets exactly one extra category, so it is shown exactly once.
+**First: back where its mod had it** (`bRestoreOriginalPlaces=1`, only with
+`sPlacement=Home`). The game keeps only the final version of a form list - the one of
+the last plugin that changes it. Lost Objects reads the form lists (FLST) of every loaded
+plugin file itself, once per game start (`PluginHistory`), and so knows every place a
+category or sub menu was listed in, in every plugin. For a lost category it takes the
+newest version of a menu that listed it (entry 0 of a sub menu is its name, not a
+category). If that menu can be reached, the category goes back into it, right behind the
+entry that stood in front of it in that version - in front of the entries scripts added,
+like everything Lost Objects adds. If the menu cannot be reached either, the menu is put
+back the same way first. The recipe keeps its own category; nothing is renamed or
+re-tagged. The report lists every place with the plugin whose version of the menu does
+not have it ("removed by"). What Lost Objects put back does not count as reachable in the
+next scan, so the result never flips back and forth.
+
+Only recipes whose categories never were in any menu of any plugin (for example menus
+that a script was supposed to add) go the way described next.
+
+Every one of these recipes gets exactly one extra category, so it is shown exactly once.
 With `sPlacement=Home` (the default) the order is:
 
 1. **Into an existing category that fits** (`bSortIntoCategories=1`). Lost Objects

@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 4.3.0)
 
 project(
 	LostObjects
-	VERSION 0.10.2.0
+	VERSION 0.11.0.0
 	DESCRIPTION "Adds a workshop menu tab that collects every craftable workshop item which is not reachable in the build menu."
 	LANGUAGES CXX
 )
@@ -75,6 +75,7 @@ set(SOURCES
 	src/MenuDump.cpp
 	src/NameMap.cpp
 	src/Notice.cpp
+	src/PluginHistory.cpp
 	src/Recovery.cpp
 	src/Report.cpp
 	src/Scanner.cpp
@@ -94,6 +95,7 @@ set(HEADERS
 	src/Notice.h
 	src/PCH.h
 	src/PluginForms.h
+	src/PluginHistory.h
 	src/Recovery.h
 	src/Report.h
 	src/Scanner.h
@@ -124,10 +126,14 @@ target_precompile_headers(
 		"${CMAKE_CURRENT_SOURCE_DIR}/src/PCH.h"
 )
 
+# zlib: compressed records in plugin files (see PluginHistory).
+find_package(ZLIB REQUIRED)
+
 target_link_libraries(
 	"${PROJECT_NAME}"
 	PRIVATE
 		CommonLibF4::CommonLibF4
+		ZLIB::ZLIB
 )
 
 # CommonLibF4 turns every warning into an error for everything that links to

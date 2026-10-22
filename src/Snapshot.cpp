@@ -7,7 +7,7 @@ namespace LO::Snapshot
 	namespace
 	{
 		constexpr auto FILE_NAME = "LostObjects_Snapshot.txt"sv;
-		constexpr auto FORMAT_VERSION = "1"sv;
+		constexpr auto FORMAT_VERSION = "2"sv;
 
 		std::filesystem::path GetPath()
 		{
@@ -123,6 +123,7 @@ namespace LO::Snapshot
 		}
 
 		// The settings that decide what the menus look like.
+		hash.Add(a_settings.restoreOriginalPlaces ? "restore" : "no-restore");
 		hash.Add(std::format("{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
 			a_settings.placement == Placement::kTab ? "tab" : "home",
 			a_settings.sortMode == SortMode::kFlat ? "flat" : "bymod",
@@ -222,6 +223,16 @@ namespace LO::Snapshot
 					return broken("unknown folder");
 				}
 				data.state.injections.emplace_back(targetList, node);
+			} else if (key == "restore" && parts.size() == 4) {
+				// A category or menu of another mod, put back where its plugin had it.
+				auto* listForm = Resolve(parts[1]);
+				auto* list = listForm ? listForm->As<RE::BGSListForm>() : nullptr;
+				auto* node = Resolve(parts[2]);
+				auto* after = parts[3] == "-" ? nullptr : Resolve(parts[3]);
+				if (!list || !node || a_forms.IsOwned(list) || a_forms.IsOwned(node) || (parts[3] != "-" && !after)) {
+					return broken("unknown restored entry");
+				}
+				data.state.restores.push_back({ list, node, after });
 			} else if (key == "tag" && parts.size() == 3) {
 				auto* recipeForm = Resolve(parts[1]);
 				auto* keywordForm = Resolve(parts[2]);
@@ -247,7 +258,7 @@ namespace LO::Snapshot
 			return broken("incomplete file");
 		}
 
-		REX::LogInformation("Snapshot: loaded ({} menus, {} folders in other menus, {} recipes)", data.state.contents.size(), data.state.injections.size(), data.state.tags.size());
+		REX::LogInformation("Snapshot: loaded ({} menus, {} folders in other menus, {} put back where their mod had them, {} recipes)", data.state.contents.size(), data.state.injections.size(), data.state.restores.size(), data.state.tags.size());
 		return data;
 	}
 
@@ -286,6 +297,9 @@ namespace LO::Snapshot
 			}
 			for (const auto& [target, node] : state.injections) {
 				file << "inject\t" << Ref(target) << "\t" << Ref(node) << "\n";
+			}
+			for (const auto& restored : state.restores) {
+				file << "restore\t" << Ref(restored.list) << "\t" << Ref(restored.node) << "\t" << (restored.after ? Ref(restored.after) : "-") << "\n";
 			}
 			for (const auto& [recipe, keyword] : state.tags) {
 				file << "tag\t" << Ref(recipe) << "\t" << Ref(keyword) << "\n";

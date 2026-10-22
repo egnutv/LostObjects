@@ -4,6 +4,17 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] - 2026-10-22 - public beta
+
+### Changed
+- **Lost items go back exactly where their mod had them.** Lost Objects now reads the
+  menus (form lists) of every plugin file in the load order, so it knows where each
+  category and sub menu was before another mod changed that menu, and puts it back there:
+  same name, same position, no "Lost Objects" folder, no guessing. Only items whose mod
+  never put them into a menu are sorted into categories or folders as before. The report
+  has a new section "Put back where their mod had them" with the mod that removed each
+  entry. New INI option `bRestoreOriginalPlaces` (on).
+
 ## [0.10.2] - 2026-10-22 - public beta
 
 ### Added

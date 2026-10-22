@@ -6,6 +6,7 @@ namespace LO
 {
 	enum class PlacedIn : std::uint8_t
 	{
+		kOriginalPlace,  // its category is back where its plugin had it (PluginHistory)
 		kExistingCategory,  // sorted into a category the mod author made
 		kModFolder,         // "Lost Objects" folder inside the mod's own menu
 		kTab                // the "Lost Objects" tab in the main menu
@@ -25,6 +26,7 @@ namespace LO
 		std::uint32_t folderCount{ 0 };  // folders in the tab
 		std::uint32_t entryCount{ 0 };  // menus + categories created
 		std::uint32_t recipeCount{ 0 };  // recovered recipes
+		std::uint32_t restoredInPlace{ 0 };  // recipes whose category is back where its plugin had it
 		std::uint32_t sortedIn{ 0 };  // recipes sorted into existing categories
 		std::uint32_t inModFolder{ 0 };  // recipes in a "Lost Objects" folder of their mod
 		std::uint32_t inTab{ 0 };  // recipes in the "Lost Objects" tab
@@ -34,6 +36,8 @@ namespace LO
 		std::unordered_map<const RE::BGSConstructibleObject*, Placed> placement;
 		// Where things were added to existing menus (for the report).
 		std::vector<std::string> injections;
+		// What was put back where its plugin had it (for the report).
+		std::vector<std::string> restores;
 	};
 
 	// Everything Lost Objects changes in the game's menus. Built by Apply from
@@ -43,6 +47,15 @@ namespace LO
 		std::vector<std::pair<RE::TESForm*, std::string>> names;  // our pool forms -> display name
 		std::vector<std::pair<RE::BGSListForm*, std::vector<RE::TESForm*>>> contents;  // our menus (incl. the tab) -> entries
 		std::vector<std::pair<RE::BGSListForm*, RE::TESForm*>> injections;  // foreign menu -> our folder added to it
+
+		struct Restored
+		{
+			RE::BGSListForm* list{ nullptr };
+			RE::TESForm* node{ nullptr };  // a category or sub menu of another mod, put back into `list`
+			RE::TESForm* after{ nullptr };  // right behind this entry (nullptr: at the end)
+			bool operator==(const Restored&) const = default;
+		};
+		std::vector<Restored> restores;
 		std::vector<std::pair<RE::BGSConstructibleObject*, RE::BGSKeyword*>> tags;  // recipe -> category we add
 		bool tabVisible{ false };  // the tab is added to WorkshopMenuMain
 
@@ -86,6 +99,9 @@ namespace LO
 		// Recipes we tagged, with their original categories.
 		[[nodiscard]] const KeywordMap& OriginalKeywords() const noexcept { return _originalKeywords; }
 
+		// What we put back where its plugin had it (the scan does not count it).
+		[[nodiscard]] RestoreSet RestoredPairs() const;
+
 		// Forget all state (used when the game data is reloaded).
 		void Reset();
 
@@ -95,6 +111,7 @@ namespace LO
 		void UpdateTags(const TagMap& a_wanted);
 		std::uint32_t AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result);
 		void RemoveInjections(const OwnedForms& a_forms);
+		void RemoveRestores();
 		void Execute(const OwnedForms& a_forms, const MenuState& a_state);
 
 		KeywordMap _originalKeywords;  // recipe -> categories before we tagged it
@@ -102,6 +119,7 @@ namespace LO
 		MenuState _state;  // what Execute put into the menus last
 		TagMap _currentTags;  // recipe -> the keyword we added
 		std::unordered_set<RE::BGSListForm*> _injectedInto;  // foreign menus we added entries to
+		std::vector<MenuState::Restored> _insertedRestores;  // what we really put back (not there before)
 		std::size_t _lastSignature{ 0 };
 		ApplyResult _lastResult;
 	};

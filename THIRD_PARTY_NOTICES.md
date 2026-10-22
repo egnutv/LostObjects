@@ -9,6 +9,7 @@ They are **not** covered by the PolyForm Noncommercial license of this project.
 | [CommonLibF4 AV](https://github.com/LucaDotGit/CommonLibF4) (pinned to commit `e337150`) | Fallout 4 game structures, F4SE interface | MIT |
 | [{fmt}](https://github.com/fmtlib/fmt) | text formatting | MIT |
 | [spdlog](https://github.com/gabime/spdlog) | log file | MIT |
+| [zlib](https://zlib.net/) | reads compressed records of plugin files | zlib License |
 
 Build tools that are **not** part of the mod (downloaded at a pinned commit only while
 building): [Caprica](https://github.com/nikitalita/Caprica) (MIT, compiles the two
@@ -118,4 +119,28 @@ THE SOFTWARE.
 -- NOTE: Third party dependency used by this software --
 This software depends on the fmt lib (MIT License),
 and users must comply to its license: https://raw.githubusercontent.com/fmtlib/fmt/master/LICENSE
+```
+
+---
+
+## zlib
+
+```
+Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
+
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
 ```

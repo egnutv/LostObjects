@@ -175,6 +175,7 @@ namespace LO
 		skipWithoutCategory = GetBool(data, "filters.bskipwithoutcategory", false);
 		skipAlreadyBuildable = GetBool(data, "filters.bskipalreadybuildable", true);
 		skipMissingModels = GetBool(data, "filters.bskipmissingmodels", true);
+		restoreOriginalPlaces = GetBool(data, "general.brestoreoriginalplaces", true);
 		sortIntoCategories = GetBool(data, "general.bsortintocategories", true);
 		minConfidence = GetUInt(data, "general.iminconfidence", 30, 1, 100);
 		const auto placementText = Util::ToLower(GetString(data, "general.splacement", "Home"));
