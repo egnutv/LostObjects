@@ -106,7 +106,9 @@ per version.
 The **settings holotape** ("Lost Objects Settings", it is put into your inventory
 automatically and can be crafted for free at the chemistry station) has the everyday options: rebuild the menus now, sort into existing
 categories, hide ghost objects, hide items that can already be built, the summary
-message and the development mode. Your choices are saved by Lost Objects itself.
+message, the development mode and "Leave the menus of other mods untouched" (everything
+only into the Lost Objects tab, one folder per mod). Your choices are saved by Lost
+Objects itself.
 
 Everything else is in `Data/F4SE/Plugins/LostObjects.ini` - for example `sPlacement=Tab`
 to put everything into the tab, `iMinConfidence=` to make the sorting stricter or

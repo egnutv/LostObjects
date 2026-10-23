@@ -125,6 +125,7 @@ namespace LO::Snapshot
 		// The settings that decide what the menus look like.
 		hash.Add(a_settings.restoreOriginalPlaces ? "restore" : "no-restore");
 		hash.Add(a_settings.mergeSimilarMenus ? "merge" : "no-merge");
+		hash.Add(a_settings.onlyOwnTab ? "only-own-tab" : "other-menus");
 		hash.Add(std::format("{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
 			a_settings.placement == Placement::kTab ? "tab" : "home",
 			a_settings.sortMode == SortMode::kFlat ? "flat" : "bymod",

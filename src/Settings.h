@@ -45,6 +45,7 @@ namespace LO
 		bool mergeSimilarMenus{ true };       // merge menus of a mod with the same name and similar items
 		bool sortIntoCategories{ true };      // put lost items into matching existing categories
 		std::uint32_t minConfidence{ 30 };    // percent a match needs
+		bool onlyOwnTab{ false };             // leave the menus of other mods untouched: everything into the "Lost Objects" tab
 		bool showSummaryMessage{ true };
 		bool borrowMenuIcon{ true };   // give the tab and folders an icon
 		bool customMenuIcon{ true };   // the Lost Objects icon instead of the vanilla "Decorations" icon
@@ -54,6 +55,11 @@ namespace LO
 		std::vector<std::string> ignoredPlugins;  // lower case file names
 
 		[[nodiscard]] bool IsPluginIgnored(std::string_view a_fileName) const;
+
+		// Lost things may go into the menus of other mods (put back where their
+		// plugin had them, sorted into a category, a "Lost Objects" folder there).
+		// False with sPlacement=Tab or bOnlyOwnTab=1.
+		[[nodiscard]] bool UsesOtherMenus() const noexcept { return placement == Placement::kHome && !onlyOwnTab; }
 
 	private:
 		Settings() = default;

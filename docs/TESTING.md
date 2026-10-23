@@ -72,6 +72,7 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T29 | The same mod, its "Lost Objects" folder | Items that fit a category that was put back (for example stairs next to the stairs that came back) are in that category, not in the folder. `LostObjects_Report.txt`, section "Not sorted into an existing category (and why)", lists every item still in a folder or the tab with the reason and the best guess; `LostObjects.log` has the same lines ("not sorted in") and the line "Matcher: learned from ...". |
 | T30 | A mod with the same set in two places (for example Snap'n Build > Greenhouse and Snap'n Build > Real Estate > Yard > Greenhouse) | Everything is in the upper menu (Snap'n Build > Greenhouse), the entry in Yard is gone. `LostObjects_Report.txt`, section "Merged menus", names both paths and the reason (same model file or folder). Menus of different mods with the same name are not merged. |
 | T29 | `LostObjects.log` | A line "PluginHistory: ... plugin files read in ... ms" and, after the scan, "... back where their mod had them". |
+| T31 | Holotape: switch "Leave the menus of other mods untouched" on, go back, restart | Nothing of Lost Objects is in the menus of other mods any more (no categories put back, no "Lost Objects" folders, no merged menus). Everything is in the "Lost Objects" tab, one folder per mod. `LostObjects.log` shows `onlyOwnTab=true`. Switch it off again. |
 | T16 | General feel | Any stutter when entering workshop mode or opening big categories? Any crash? |
 
 ## 3. What to send back

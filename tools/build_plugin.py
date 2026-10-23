@@ -81,6 +81,7 @@ HOLOTAPE_OPTIONS = [
     ("HideAlreadyBuildable", "Hide items that can already be built"),
     ("SummaryMessage", "Show the summary message"),
     ("DevelopmentMode", "Development mode (analysis files)"),
+    ("OnlyOwnTab", "Leave the menus of other mods untouched"),
 ]
 HOLOTAPE_HEADER = "LOST OBJECTS"
 HOLOTAPE_WELCOME = "Lost Objects - settings"

@@ -22,15 +22,17 @@ namespace LO::Holotape
 {
 	// Order of the options = order of the globals and menu items in the plugin
 	// (tools/build_plugin.py, HOLOTAPE_OPTIONS).
-	inline constexpr std::array<std::string_view, 5> OPTION_NAMES{
+	inline constexpr std::array<std::string_view, 6> OPTION_NAMES{
 		"Sort lost items into existing categories",
 		"Hide ghost objects",
 		"Hide items that can already be built",
 		"Summary message",
 		"Development mode",
+		"Leave the menus of other mods untouched",
 	};
 	inline constexpr std::size_t OPTION_SUMMARY = 3;
 	inline constexpr std::size_t OPTION_DEVELOPMENT = 4;
+	inline constexpr std::size_t OPTION_ONLY_OWN_TAB = 5;
 	static_assert(OPTION_NAMES.size() == Forms::OptionCount, "options in Holotape.h and the plugin differ");
 
 	// F4SE plugin load: provide LostObjects.HolotapeItem to Papyrus.

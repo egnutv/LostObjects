@@ -661,7 +661,7 @@ namespace LO
 
 		// --- 1. Plan ------------------------------------------------------------
 		Planner plan(a_forms, a_settings);
-		const bool home = a_settings.placement == Placement::kHome;
+		const bool home = a_settings.UsesOtherMenus();
 		const auto rootName = std::string(Forms::RootName);
 
 		// 1a. Sort into existing categories where the data clearly says so.

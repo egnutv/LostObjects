@@ -14,6 +14,7 @@ station, free of charge. Play it in the Pip-Boy:
 | Hide items that can already be built | = `bSkipAlreadyBuildable` |
 | Show the summary message | = `bShowSummaryMessage` |
 | Development mode (analysis files) | = `bDevelopmentMode` |
+| Leave the menus of other mods untouched | = `bOnlyOwnTab` |
 
 `[X]` = on, `[ ]` = off. Select an item to switch it, then go back to see the new state.
 Lost Objects saves your choices in `Documents\My Games\Fallout4\F4SE\LostObjects_Settings.ini`;
@@ -40,6 +41,7 @@ written to the log.
 | `bLiveUpdate` | `0` | Lost Objects checks the menu again and again and updates whenever something new turns up. During the first minute after loading a change must be seen twice in a row (other mods are still adding their menus). `1`: do not wait for the second scan (only for testing). |
 | `iSettleSeconds` | `10` | Earliest moment (seconds after loading) to build the menus. Two scans in a row must also agree. |
 | `sPlacement` | `Home` | `Home`: sort recovered items into an existing category that fits; what does not fit goes into a "Lost Objects" folder inside the mod's own menu; only what has no home goes into the tab. `Tab`: everything into the "Lost Objects" tab, nothing is added to other menus. |
+| `bOnlyOwnTab` | `0` | `1`: leave the menus of other mods untouched. Nothing is put back where its mod had it, nothing is sorted into categories of other mods, no "Lost Objects" folders are added to their menus and no menus are merged. Everything Lost Objects thinks is lost goes into the "Lost Objects" tab of the main menu, one folder per mod (with `sSortMode=ByMod`). Wins over `sPlacement`, `bRestoreOriginalPlaces`, `bSortIntoCategories` and `bMergeSimilarMenus`. |
 | `bMergeSimilarMenus` | `1` | Merge menus and categories of a mod that have the same name and similar items (at least one model file or model folder in common), when the upper one lies directly in a menu on the path of the deeper one (for example "Snap'n Build > Greenhouse" and "Snap'n Build > Real Estate > Yard > Greenhouse"; never between neighbouring branches like "Concrete > Supports" and "Wood > Supports"). Everything goes into the upper menu, the deeper entry disappears, sub menus with the same name inside are merged too. Menus of different mods and entries that scripts added are never touched. `0`: leave the menus of other mods as they are. |
 | `bRestoreOriginalPlaces` | `1` | Put lost categories and menus back exactly where their mod had them, read from the plugin files of your load order. `0`: do not use the plugin files. Only with `sPlacement=Home`. |
 | `bSortIntoCategories` | `1` | `0`: do not sort into existing categories, use the "Lost Objects" folder of the mod (or the tab) for everything. Only with `sPlacement=Home`. |

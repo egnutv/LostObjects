@@ -4,6 +4,17 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] - 2026-10-23 - public beta
+
+### Added
+- **Switch "Leave the menus of other mods untouched"** (INI `bOnlyOwnTab`, off by
+  default, also on the settings holotape). When it is on, Lost Objects changes no menu of
+  another mod: nothing is put back where its mod had it, nothing is sorted into
+  categories of other mods, no "Lost Objects" folders are added to their menus and no
+  menus are merged. Everything it thinks is lost goes into the "Lost Objects" tab of the
+  main menu, one folder per mod. The plugin has one more global for it; the form ID of
+  the holotape recipe changed (0xC8B -> 0xC8C), save games are not affected.
+
 ## [0.12.2] - 2026-10-23 - public beta
 
 ### Changed

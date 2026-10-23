@@ -1041,7 +1041,7 @@ namespace LO
 				}
 			}
 
-			if (a_settings.restoreOriginalPlaces && a_settings.placement == Placement::kHome) {
+			if (a_settings.restoreOriginalPlaces && a_settings.UsesOtherMenus()) {
 				const auto home = std::ranges::find_if(usable, [&attacher](RE::BGSKeyword* a_keyword) { return attacher.Attach(a_keyword); });
 				if (home != usable.end()) {
 					auto path = attacher.PathOf(*home);
@@ -1211,7 +1211,7 @@ namespace LO
 		});
 
 		// 7) Menus of a mod with the same name and similar items: merged.
-		if (a_settings.mergeSimilarMenus) {
+		if (a_settings.mergeSimilarMenus && !a_settings.onlyOwnTab) {
 			MergePlanner(a_forms, a_ourRestores, result, parentOf, depthOf, menusOfCategory).Run();
 		}
 

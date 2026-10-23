@@ -79,8 +79,10 @@ namespace LO::Holotape
 			return a_settings.skipAlreadyBuildable;
 		case OPTION_SUMMARY:
 			return a_settings.showSummaryMessage;
-		default:
+		case OPTION_DEVELOPMENT:
 			return a_settings.writeInventory;
+		default:
+			return a_settings.onlyOwnTab;
 		}
 	}
 

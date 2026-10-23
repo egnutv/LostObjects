@@ -179,6 +179,7 @@ namespace LO
 		mergeSimilarMenus = GetBool(data, "general.bmergesimilarmenus", true);
 		sortIntoCategories = GetBool(data, "general.bsortintocategories", true);
 		minConfidence = GetUInt(data, "general.iminconfidence", 30, 1, 100);
+		onlyOwnTab = GetBool(data, "general.bonlyowntab", false);
 		const auto placementText = Util::ToLower(GetString(data, "general.splacement", "Home"));
 		if (placementText == "tab") {
 			placement = Placement::kTab;
@@ -196,11 +197,12 @@ namespace LO
 		ignoredPlugins = SplitList(GetString(data, "filters.signoreplugins", ""));
 
 		REX::LogInformation(
-			"Settings: enabled={} liveUpdate={} settle={}s placement={} restoreOriginalPlaces={} mergeSimilarMenus={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} developmentMode={} verbose={} ignoredPlugins={}",
+			"Settings: enabled={} liveUpdate={} settle={}s placement={} onlyOwnTab={} restoreOriginalPlaces={} mergeSimilarMenus={} sortIntoCategories={} minConfidence={} skipAlreadyBuildable={} skipMissingModels={} split>{} maxGroups={} minGroup={} sortMode={} skipUntouchedBaseGame={} skipWithoutCategory={} summary={} borrowIcon={} report={} developmentMode={} verbose={} ignoredPlugins={}",
 			enabled,
 			liveUpdate,
 			settleSeconds,
 			placement == Placement::kTab ? "Tab" : "Home",
+			onlyOwnTab,
 			restoreOriginalPlaces,
 			mergeSimilarMenus,
 			sortIntoCategories,
@@ -236,6 +238,7 @@ namespace LO
 		file << "bSortIntoCategories=" << (sortIntoCategories ? 1 : 0) << "\n";
 		file << "bShowSummaryMessage=" << (showSummaryMessage ? 1 : 0) << "\n";
 		file << "bDevelopmentMode=" << (writeInventory ? 1 : 0) << "\n";
+		file << "bOnlyOwnTab=" << (onlyOwnTab ? 1 : 0) << "\n";
 		file << "[Filters]\n";
 		file << "bSkipMissingModels=" << (skipMissingModels ? 1 : 0) << "\n";
 		file << "bSkipAlreadyBuildable=" << (skipAlreadyBuildable ? 1 : 0) << "\n";
