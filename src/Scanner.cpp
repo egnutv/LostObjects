@@ -364,8 +364,8 @@ namespace LO
 		// deeper entry is taken out of its folder, and sub menus with the same name
 		// inside are merged the same way. Nothing is fixed for a mod:
 		//   * on its own path: the upper menu lies directly in one of the menus above
-		//     the deeper entry, and that menu is neither the main menu nor a menu of
-		//     the base game or a DLC ("Structures" holds many mods),
+		//     the deeper entry, and both were made by the same plugin file (read
+		//     from the forms - no list of files or mods),
 		//   * similar items: at least one model file or one model folder in common,
 		//   * the upper one is a sub menu, the deeper one lies further down,
 		//   * entries that scripts added are never moved (the save game stores them).
@@ -593,15 +593,18 @@ namespace LO
 			}
 
 			// The target lies directly in one of the menus above the entry (on its
-			// own path up), and that menu belongs to the mod: it is neither the main
-			// menu nor a menu of the base game or a DLC ("Structures" holds many
-			// mods). A menu with the same name in a neighbouring branch ("Concrete >
-			// Supports" and "Wood > Supports") is never a target.
+			// own path up), and that menu was made by the same plugin file as the
+			// target (both read from the forms, no list of files). A menu with the
+			// same name in a neighbouring branch ("Concrete > Supports" and "Wood >
+			// Supports") is never a target.
 			bool OnOwnPath(const Node& a_target, const Node& a_node) const
 			{
 				const auto* holder = a_target.parent;
-				if (!holder || holder == _forms.workshopMenuMain || IsOfficialFile(Util::GetFileName(holder, 0))) {
+				if (!holder || holder == _forms.workshopMenuMain) {
 					return false;
+				}
+				if (Util::ToLower(Util::GetFileName(holder, 0)) != Util::ToLower(Util::GetFileName(a_target.form, 0))) {
+					return false;  // the target was put into that menu by another plugin
 				}
 				const auto chain = Ancestors(a_node.parent);
 				return std::ranges::find(chain, holder) != chain.end();

@@ -90,9 +90,9 @@ Greenhouse" and "Snap'n Build > Real Estate > Yard > Greenhouse". With
 1. Every reachable sub menu and category is grouped by its name (case, spaces and
    punctuation do not count).
 2. A deeper entry of the group goes into a sub menu of the group that lies directly in
-   one of the menus above the entry - on its own path up - if that menu is neither the
-   main menu nor a menu of the base game or a DLC (so both belong to the same mod). The
-   shallowest such sub menu wins. A menu with the same name in a neighbouring branch
+   one of the menus above the entry - on its own path up - if that menu and the sub menu
+   were made by the same plugin file (read from the forms, there is no list of files or
+   mods), and that menu is not the main menu. The shallowest such sub menu wins. A menu with the same name in a neighbouring branch
    ("Concrete > Supports" and "Wood > Supports") is never a target. Entries that
    already lie inside the target are left alone.
 3. The items must be similar: at least one model file or one model folder in common

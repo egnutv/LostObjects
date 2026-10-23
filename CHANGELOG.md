@@ -4,6 +4,14 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.12.2] - 2026-10-23 - public beta
+
+### Changed
+- **Merging menus uses no fixed list any more.** 0.12.1 used the names of the base game
+  files to tell a menu shared by many mods (like "Structures") from a mod's own menu.
+  Now it is read from the forms: the upper menu and the menu it lies in must have been
+  made by the same plugin file.
+
 ## [0.12.1] - 2026-10-22 - public beta
 
 ### Fixed
