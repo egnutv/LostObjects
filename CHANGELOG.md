@@ -4,6 +4,31 @@ All notable changes to Lost Objects. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.1] - 2026-10-24 - public beta
+
+### Changed
+- **All filters are off by default.** `bSkipAlreadyBuildable` and `bSkipMissingModels`
+  are now `0`: every lost recipe is shown. "The same object" only means the same form -
+  its place in the menu, its set of variants, its costs and its conditions can differ,
+  so the filter could hide items players miss (for example parts of Snap'n Build with
+  PAN_SnB). If a choice on the holotape was saved in `LostObjects_Settings.ini`, that
+  choice still counts - switch it off on the holotape or delete the file.
+- **Every recipe a filter hides is listed** in `LostObjects_Report.txt` and
+  `LostObjects.log`, with its own category and, for `bSkipAlreadyBuildable`, the place
+  where the object can be built.
+- **Thumbnails are framed by the item's own size.** Recovered items without a preview
+  transform no longer get the one that items of the same form type use most often. They
+  get a transform from a new pool of 768 transforms in `LostObjects.esp`, framed like the
+  Lost Objects icon: the camera of the icon of the first sub menu of the main menu,
+  scaled to the item's own size (its bounds). Nothing is taken from other items.
+- **Name table:** two addresses (0x08 apart) are checked one after the other, each with
+  the own keyword "Lost Objects" and fully guarded; only one that passes is used.
+- **Documentation:** Lost Objects is tested on and supports only Fallout 4 1.11.240. The
+  earlier statement that 1.10.984 and 1.10.163 are "supported but untested" was wrong and
+  is removed. Other statements that were not backed by tests are corrected, among them
+  what a save game contains (the holotape, the values of its option globals and script
+  entries for the Lost Objects menu forms; the game drops them when the mod is removed).
+
 ## [0.13.0] - 2026-10-23 - public beta
 
 ### Added

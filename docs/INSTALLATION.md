@@ -2,11 +2,11 @@
 
 ## Requirements
 
-1. **Fallout 4 1.11.240** (the current Steam version) - tested. The DLL also supports
-   1.10.984 (Next-Gen) and 1.10.163 (Old-Gen), but these were not tested.
-2. **F4SE 0.7.9** for 1.11.240, or the F4SE that matches your game version
+1. **Fallout 4 1.11.240** (the current Steam version) - the only version Lost Objects is
+   tested on and supports.
+2. **F4SE 0.7.9** for 1.11.240
    ([Nexus](https://www.nexusmods.com/fallout4/mods/42147)). Start the game through F4SE.
-3. **Address Library for F4SE Plugins** for your game version
+3. **Address Library for F4SE Plugins** for 1.11.240
    ([Nexus](https://www.nexusmods.com/fallout4/mods/47327)).
 
 ## Download

@@ -65,15 +65,14 @@ written to the log.
 ## [Filters]
 
 By default Lost Objects shows **everything** that has a workshop recipe and cannot be
-reached in the build menu. The only filters that are on by default are
-`bSkipAlreadyBuildable` and `bSkipMissingModels`, because they remove nothing you could
-build or see anyway. Both are listed in the inventory with the reason.
+reached in the build menu. All filters are off by default. Every recipe a filter hides
+is listed by name in `LostObjects_Report.txt` and `LostObjects.log`.
 
 | Setting | Default | Meaning |
 |---|---|---|
 | `bSkipUntouchedBaseGame` | `0` | `1` hides vanilla and DLC recipes that no mod changed. The base game hides a few recipes on purpose (for example a duplicate mattress). |
-| `bSkipAlreadyBuildable` | `1` | Skips lost recipes whose item can already be built through a reachable recipe (for example "scrap return" recipes of decoration mods). They would only show the same item twice. `0` shows them anyway. |
-| `bSkipMissingModels` | `1` | Hides "ghost objects": recipes whose item (or every variant of it) points to a model file that does not exist, so the build menu only shows an empty slot. Checked through the game's own file system (loose files and archives) after a self-test. `0` shows them anyway. |
+| `bSkipAlreadyBuildable` | `0` | `1` hides lost recipes whose object can already be built through a reachable recipe (meant for "scrap return" recipes of decoration mods). Careful: "the same object" only means the same form - its place in the menu (category, set of variants, the menu of its mod), its costs and its conditions can still differ, so this can hide items you miss. The report names each hidden recipe, its own category and the place where the object can be built. |
+| `bSkipMissingModels` | `0` | `1` hides "ghost objects": recipes whose item (or every variant of it) points to a model file Lost Objects cannot find, so the build menu would only show an empty slot. Checked through the game's own file system (loose files and archives) after a self-test; the lookup can miss files that do exist. The report names each hidden recipe. |
 | `bSkipWithoutCategory` | `0` | `1` hides recipes that have no named category. Many mods create such recipes only to define scrap results, often hundreds of buildings, trees and clutter. |
 | `sIgnorePlugins` | *(empty)* | Comma separated plugin file names. Recipes defined or last changed in these files never appear in the tab. Example: `sIgnorePlugins=SomeMod.esp, AnotherMod.esl` |
 

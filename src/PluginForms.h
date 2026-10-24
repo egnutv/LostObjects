@@ -37,6 +37,10 @@ namespace LO::Forms
 	inline constexpr std::string_view HolotapeScript = "LostObjects_Holotape";
 	inline constexpr std::uint32_t HolotapeRecipe = 0xC8C;  // COBJ, free, put at the chemistry station by the DLL
 
+	// Preview transforms (TRNS) for recovered items without one, framed by the DLL.
+	inline constexpr std::uint32_t PreviewCount = 768;
+	inline constexpr std::uint32_t FirstPreview = 0xC8D;
+
 	// Vanilla forms (Fallout4.esm).
 	inline constexpr std::string_view BaseGameFile = "Fallout4.esm";
 	inline constexpr std::uint32_t WorkshopMenuMain = 0x106DA2;

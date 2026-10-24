@@ -57,6 +57,9 @@ KEYWORD_TYPE_RECIPE_FILTER = 9  # KYWD TNAM value for workshop categories
 #   * LEAF_COUNT categories (recipe filter keywords) that lost recipes are tagged with
 MENU_COUNT = 192
 LEAF_COUNT = 768
+# Preview transforms (TRNS) for recovered items that have none: the DLL frames
+# each item by its own size (its bounds). One transform per item.
+PREVIEW_COUNT = 768
 FIRST_LOCAL_ID = 0x800
 LAST_LOCAL_ID = 0xFFF
 
@@ -216,6 +219,9 @@ def build_layout() -> tuple[list[Keyword], list[FormList], dict[str, int]]:
         take(f"Option{suffix}")
     take("HolotapeRecipe")
 
+    for i in range(1, PREVIEW_COUNT + 1):
+        take(f"Preview{i:03d}")
+
     ids["NextObjectID"] = next_id
     return keywords, formlists, ids
 
@@ -255,6 +261,16 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
         subrecord("EDID", zstring("LO_MenuIconTransform"))
         + subrecord("DATA", struct.pack("<9f", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -1.0, 1.0)),
     )
+    # The pool of preview transforms. The DLL sets the values for each item.
+    transform_records += b"".join(
+        record(
+            "TRNS",
+            full_id(ids[f"Preview{i:03d}"]),
+            subrecord("EDID", zstring(f"LO_Preview{i:03d}"))
+            + subrecord("DATA", struct.pack("<9f", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -1.0, 1.0)),
+        )
+        for i in range(1, PREVIEW_COUNT + 1)
+    )
 
     art_records = record(
         "ARTO",
@@ -280,7 +296,7 @@ def build_plugin(keywords: list[Keyword], formlists: list[FormList], ids: dict[s
 
     # HEDR "number of records" counts records *and* groups (as the Creation Kit does).
     group_count = 8
-    record_count = len(keywords) + len(formlists) + 2 + len(HOLOTAPE_OPTIONS) + 2 + 1 + group_count
+    record_count = len(keywords) + len(formlists) + 2 + len(HOLOTAPE_OPTIONS) + 2 + 1 + PREVIEW_COUNT + group_count
 
     header_data = subrecord("HEDR", struct.pack("<fII", HEDR_VERSION, record_count, next_object_id))
     header_data += subrecord("CNAM", zstring(AUTHOR))
@@ -433,6 +449,10 @@ def build_header(ids: dict[str, int]) -> str:
         f'\tinline constexpr std::string_view HolotapeScript = "{HOLOTAPE_SCRIPT}";',
         f"\tinline constexpr std::uint32_t HolotapeRecipe = 0x{ids['HolotapeRecipe']:03X};  // COBJ, free, put at the chemistry station by the DLL",
         "",
+        "\t// Preview transforms (TRNS) for recovered items without one, framed by the DLL.",
+        f"\tinline constexpr std::uint32_t PreviewCount = {PREVIEW_COUNT};",
+        f"\tinline constexpr std::uint32_t FirstPreview = 0x{ids['Preview001']:03X};",
+        "",
         "\t// Vanilla forms (Fallout4.esm).",
         '\tinline constexpr std::string_view BaseGameFile = "Fallout4.esm";',
         "\tinline constexpr std::uint32_t WorkshopMenuMain = 0x106DA2;",
@@ -466,7 +486,7 @@ def main() -> int:
     PLUGIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLUGIN_PATH.write_bytes(plugin_bytes)
     HEADER_PATH.write_text(header_text, encoding="utf-8", newline="\n")
-    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 5 + len(HOLOTAPE_OPTIONS)} records)")
+    print(f"Wrote {PLUGIN_PATH.relative_to(REPO_ROOT)} ({len(plugin_bytes)} bytes, {len(keywords) + len(formlists) + 5 + len(HOLOTAPE_OPTIONS) + PREVIEW_COUNT} records)")
     print(f"Wrote {HEADER_PATH.relative_to(REPO_ROOT)}")
     return 0
 

@@ -39,8 +39,8 @@ namespace LO
 		std::uint32_t minGroupSize{ 3 };
 		bool skipUntouchedBaseGame{ false };  // filter, off = show everything
 		bool skipWithoutCategory{ false };    // filter, off = show everything
-		bool skipAlreadyBuildable{ true };    // the item itself can already be built through another recipe
-		bool skipMissingModels{ true };       // ghost objects: no model file the game can load
+		bool skipAlreadyBuildable{ false };   // filter, off = show everything: the item itself can already be built through another recipe
+		bool skipMissingModels{ false };      // filter, off = show everything: ghost objects, no model file the game can load
 		bool restoreOriginalPlaces{ true };   // put lost categories back where their plugin files had them
 		bool mergeSimilarMenus{ true };       // merge menus of a mod with the same name and similar items
 		bool sortIntoCategories{ true };      // put lost items into matching existing categories

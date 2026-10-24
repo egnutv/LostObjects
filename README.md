@@ -4,7 +4,7 @@
 
 # Lost Objects
 
-**A Fallout 4 mod that finds every craftable workshop item you cannot reach in the build menu - from mods, DLCs or the base game - and puts it back into the menu, right where it belongs.**
+**A Fallout 4 mod that finds every craftable workshop item you cannot reach in the build menu - from mods, DLCs or the base game - and shows it in the menu again.**
 
 > **Vibecoded by AI.** The code of this mod was written by Claude (Anthropic), an AI model, directed and tested by **egnutv**.
 > AI-generated code can contain mistakes. Keep a backup save.
@@ -53,7 +53,7 @@ game, and no matter what it builds. Then it puts each item back, in this order:
 Workshop main menu
  +- Structures
  |   `- Snap'n Build
- |       +- ...                        <- lost stairs sorted in where they fit
+ |       +- ...                        <- categories put back where the mod had them
  |       `- Lost Objects               <- the rest of that mod's lost pieces
  +- Snappy Builds
  |   `- Lost Objects
@@ -63,18 +63,23 @@ Workshop main menu
 ```
 
 - Large groups are split automatically (tags, words, model folders).
-- Items that can already be built through another recipe are not shown twice.
-- "Ghost objects" whose model file does not exist are hidden.
+- Every lost recipe is shown. Two optional filters (off by default) can hide lost
+  recipes whose object can already be built elsewhere, and "ghost objects" whose model
+  file Lost Objects cannot find; every recipe a filter hides is listed in the report.
+- Recovered items without a thumbnail get one framed by their own size.
 - Items keep their original costs and requirements; conditions of their mod still apply.
 - The menus are built once the workshop menu has settled after loading and are updated
-  when something new turns up - they never flip back and forth.
-- Lost Objects remembers its result (a snapshot file next to its log). At the next game
-  start the menus are complete right away, even if you open the workshop immediately.
+  when something new turns up.
+- Lost Objects remembers its result (a snapshot file next to its log) and puts it back
+  at the next game start as soon as the game data is loaded.
 - A **settings holotape** ("Lost Objects Settings") in your inventory: rebuild the menus
   now, and switch the main options on or off - no text file needed.
-- Lost Objects stores nothing in your save game. Only the holotape is a normal item in
-  your inventory. Remove the mod and everything is as before; things you already built
-  stay where they are.
+- Lost Objects changes the menus in memory only; the menus in your save game stay as
+  your other mods made them. A save does contain the settings holotape (an item in your
+  inventory), the values of its option globals and, if a script of another mod walks
+  the workshop menu, script entries for the Lost Objects menu forms. A test with two
+  saves before and after removing the mod showed: the game drops all of this when the
+  save is loaded without Lost Objects. Things you already built stay where they are.
 - Only workshop (settlement) recipes are considered - chemistry, cooking, armor and weapon
   workbenches are not touched.
 
@@ -82,9 +87,9 @@ Workshop main menu
 
 | | |
 |---|---|
-| Fallout 4 | **1.11.240** (current Steam version) - tested. 1.10.984 and 1.10.163 are supported by the DLL but untested. |
+| Fallout 4 | **1.11.240** (current Steam version) - the only version Lost Objects is tested on and supports |
 | [F4SE](https://www.nexusmods.com/fallout4/mods/42147) | **0.7.9** for 1.11.240 |
-| [Address Library for F4SE Plugins](https://www.nexusmods.com/fallout4/mods/47327) | the file for your game version |
+| [Address Library for F4SE Plugins](https://www.nexusmods.com/fallout4/mods/47327) | the file for 1.11.240 |
 
 Tested with a large settlement load order (Workshop Framework, Settlement Menu Manager,
 Workshop Rearranged, Homemaker, SOE, Snap'n Build, Snappy HouseKit, The Master Plan and

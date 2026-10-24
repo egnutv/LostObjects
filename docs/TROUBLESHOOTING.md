@@ -56,8 +56,10 @@ Deleting `LostObjects_Snapshot.txt` is always safe.
 
 ## Items appear twice
 
-Lost Objects never shows an item that can already be built through another recipe. If
-you still see something twice, a mod probably added its menu very late. The next scan
+By default Lost Objects shows every lost recipe, also when the same object can already
+be built through another recipe somewhere else - then you see it at both places.
+`bSkipAlreadyBuildable=1` hides those; the report lists every recipe it hides and where
+the object can be built. Otherwise a mod probably added its menu very late. The next scan
 (at the latest when you enter workshop mode again) notices it and updates the menus.
 If it stays, please report it with `bDevelopmentMode=1` - `LostObjects_Duplicates.txt`
 shows what appears twice and why.

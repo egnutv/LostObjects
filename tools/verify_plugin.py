@@ -265,6 +265,8 @@ def main() -> int:
     for i in range(max(constant("OptionCount"), 0)):
         expect(constant("FirstOptionGlobal") + i, "GLOB", f"Option {i + 1}")
     expect(constant("HolotapeRecipe"), "COBJ", "HolotapeRecipe")
+    for i in range(max(constant("PreviewCount"), 0)):
+        expect(constant("FirstPreview") + i, "TRNS", f"Preview {i + 1}")
 
     print(f"{path.name}: {len(records)} records in {group_count} groups, masters {masters}, light={bool(flags & 0x200)}")
     return report()

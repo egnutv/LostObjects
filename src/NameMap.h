@@ -5,10 +5,11 @@
 //
 // Version 0.1.0 crashed on Fallout 4 1.11.240 because CommonLibF4 AV points to
 // the wrong address for this table on the Anniversary Edition. Lost Objects
-// therefore resolves the address itself and checks it before every use: it
-// looks up one of its own keywords and compares the name with the one stored
-// in LostObjects.esp. If that check fails, names are simply not used and the
-// rest of the mod keeps working.
+// therefore tries two addresses (0x08 apart) and checks each before it is
+// used: it looks up one of its own keywords and compares the name with the one
+// stored in LostObjects.esp, under structured exception handling. Only an
+// address that passes is used. If none passes, names are simply not used and
+// the rest of the mod keeps working.
 
 namespace LO::NameMap
 {

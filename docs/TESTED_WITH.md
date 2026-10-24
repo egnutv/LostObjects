@@ -1,7 +1,7 @@
 # Tested with
 
 Lost Objects 0.9.0 was tested by egnutv on **20 October 2026** with this setup.
-Other setups should work, but they were not tested - reports are welcome.
+Other setups were not tested - reports are welcome.
 
 ## Game
 
@@ -12,8 +12,7 @@ Other setups should work, but they were not tested - reports are welcome.
 | Address Library for F4SE Plugins (All In One) | **1.11.240** |
 | Mod manager | Vortex 1.15.2 |
 
-The DLL is also built for the older game versions 1.10.984 (Next-Gen) and 1.10.163
-(Old-Gen), but it was **only tested on 1.11.240**.
+Lost Objects is tested on and supports **only 1.11.240**.
 
 ## Mods in the tested load order
 
@@ -65,11 +64,14 @@ Plus the Creation Club content of the current game version (Halloween, Holiday,
 Mid-Century Modern, Slocum's Joe, VR Workshops, Neon Flats, Vault Homes, Manor and
 others) and all six official DLCs.
 
-## What was checked
+## What was looked at in the test of 0.9.0
 
-- Lost recipes are found and placed; nothing appears twice (`LostObjects_Duplicates.txt`).
-- Sorting into existing categories (77 items) checked by hand - no wrong placements.
-- "Lost Objects" folders inside the mods' own menus, one per menu.
-- Ghost objects (model file missing) are hidden; thumbnails show for recovered items.
-- The menus are built once the workshop menu has settled after loading and stay stable.
-- The menu icon (the logo) shows in the main workshop menu.
+- Lost recipes are found and placed; `LostObjects_Duplicates.txt` was checked for items
+  shown twice.
+- Sorting into existing categories (77 items) was looked at by hand.
+- "Lost Objects" folders inside the mods' own menus.
+- Ghost objects (model file missing) and thumbnails of recovered items.
+- Building the menus after loading.
+- The menu icon (the logo) in the main workshop menu.
+
+Problems found later (for example items in the wrong place) are in the change log.

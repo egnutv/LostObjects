@@ -28,15 +28,18 @@ namespace LO
 		RE::BGSTerminal* holotapeTerminal{ nullptr };  // its terminal (menu items, script)
 		std::vector<RE::TESGlobal*> optionGlobals;  // one per holotape option (1 = on), see Holotape.h
 		RE::BGSConstructibleObject* holotapeRecipe{ nullptr };  // optional: crafts the holotape (chemistry station)
+		std::vector<RE::BGSTransform*> previews;  // pool: preview transforms for recovered items without one
 
 		// Looks everything up. Returns false (and logs why) if something is missing.
 		bool Resolve();
 
 		[[nodiscard]] bool IsValid() const noexcept { return _valid; }
 		[[nodiscard]] bool IsOwned(const RE::TESForm* a_form) const;
+		[[nodiscard]] bool IsPreview(const RE::BGSTransform* a_transform) const;
 
 	private:
 		std::unordered_set<const RE::TESForm*> _owned;
+		std::unordered_set<const RE::BGSTransform*> _previews;
 		bool _valid{ false };
 	};
 }

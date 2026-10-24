@@ -57,8 +57,9 @@ Mark each case with OK / FAIL / NOT TESTED.
 | T17b | Open the top menus listed under "Added to existing menus" | At the end there is one folder "Lost Objects" with the rest of that mod's lost items, sorted by their original category. No loose entries next to the author's folders. |
 | T18 | Open a large recovered category | It is split into named groups (e.g. "Alcohol", "Stairs") plus "Other". Do the groups make sense? |
 | T19 | `LostObjects_Duplicates.txt` | "via Lost Objects AND normally" is 0. |
-| T19b | `LostObjects_Inventory.tsv`, column "Status" | "skipped, already buildable" items can really be built at the place in "Shown at". |
-| T19c | Report, "Model check" and "Ghost objects" | The model check is "active". The listed ghost objects really show only an empty slot when `bSkipMissingModels=0`. |
+| T19b | `bSkipAlreadyBuildable=1`, restart; report section "Hidden by bSkipAlreadyBuildable=1" | Every hidden recipe is listed with its own category and the place where the object can be built. The object can really be built there. With `0` (default) the section says "(none)". |
+| T19c | `bSkipMissingModels=1`, restart; report "Model check" and section "Hidden by bSkipMissingModels=1" | The model check is "active". The listed ghost objects really show only an empty slot when the filter is off again. |
+| T19e | Recovered items that had no thumbnail (scrap recipes, for example "Scrap Radio" in the Fallout4 folder) | They show a thumbnail of themselves in a sensible size. Highlight a radio: does a sound start, and does it stop when you move on or close the menu? |
 | T19d | Add-on without own menu (e.g. Snappy_DLC03) | Its lost items are in the "Lost Objects" folder of the main mod's menu, not in the tab. |
 | T20 | `sPlacement=Tab`, restart | Everything is in the "Lost Objects" tab again, nothing in other menus or categories. |
 | T21 | First start with 0.10 (or after deleting `LostObjects_Snapshot.txt`): load a save and open the workshop **at once** | A message asks you to restart the game. After the restart and loading the save, the Lost Objects folders and tab are there, even when you open the workshop at once. |

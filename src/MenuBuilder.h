@@ -115,7 +115,7 @@ namespace LO
 		using TagMap = std::unordered_map<RE::BGSConstructibleObject*, RE::BGSKeyword*>;
 
 		void UpdateTags(const TagMap& a_wanted);
-		std::uint32_t AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result);
+		std::uint32_t AddPreviewTransforms(const OwnedForms& a_forms, const ApplyResult& a_result);
 		void RemoveInjections(const OwnedForms& a_forms);
 		void RemoveRestores();
 		void ApplyMerges(const std::vector<MergeOp>& a_merges);

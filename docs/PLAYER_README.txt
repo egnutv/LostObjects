@@ -11,9 +11,9 @@ model, directed and tested by egnutv. AI-generated code can contain mistakes.
 Keep a backup save.
 
 REQUIREMENTS
-- Fallout 4 1.11.240 (tested); 1.10.984 and 1.10.163 supported but untested
-- F4SE 0.7.9 for 1.11.240 (or the version matching your game)
-- Address Library for F4SE Plugins matching your game version
+- Fallout 4 1.11.240 (the only version Lost Objects is tested on and supports)
+- F4SE 0.7.9 for 1.11.240
+- Address Library for F4SE Plugins for 1.11.240
 
 INSTALLATION
 Install with your mod manager and enable LostObjects.esp (light plugin).

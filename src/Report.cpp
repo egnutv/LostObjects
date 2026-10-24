@@ -42,6 +42,36 @@ namespace LO::Report
 			return name.empty() ? "<no name>"s : name;
 		}
 
+		// The categories of a lost recipe (its own place in the menu).
+		std::string OwnPlace(const LostRecipe& a_lost)
+		{
+			std::string result;
+			for (const auto* category : a_lost.categories) {
+				auto name = Util::GetFormName(category);
+				if (name.empty()) {
+					name = Util::GetEditorID(category);
+				}
+				if (name.empty()) {
+					name = Util::FormIDToString(category->GetFormID());
+				}
+				result += (result.empty() ? "" : ", ") + name;
+			}
+			return result.empty() ? "no category"s : "category " + result;
+		}
+
+		// One line per recipe a filter hides.
+		std::string HiddenAlreadyBuildable(const SkippedRecipe& a_skipped)
+		{
+			return std::format("{} - its own place: {} - {}, can be built at: {}",
+				DescribeRecipe(a_skipped.lost.recipe), OwnPlace(a_skipped.lost), a_skipped.reason,
+				a_skipped.shownAt.empty() ? "(unknown)"s : a_skipped.shownAt);
+		}
+
+		std::string HiddenGhost(const SkippedRecipe& a_skipped)
+		{
+			return std::format("{} - its own place: {} - {}", DescribeRecipe(a_skipped.lost.recipe), OwnPlace(a_skipped.lost), a_skipped.reason);
+		}
+
 		// Lost recipes that did not go into an existing category: where they went
 		// and why the matcher did not sort them in (best guess included).
 		std::vector<std::string> NotSortedLines(const ApplyResult& a_apply)
@@ -95,8 +125,8 @@ namespace LO::Report
 		file << "Sorted into existing categ.: " << a_apply.sortedIn << " recipes\n";
 		file << "In a Lost Objects folder   : " << a_apply.inModFolder << " recipes (inside the mod's own menu)\n";
 		file << "In the Lost Objects tab    : " << a_apply.inTab << " recipes\n";
-		file << "Skipped, already buildable : " << a_scan.alreadyBuildable.size() << " recipes (the same item is already in the menu)\n";
-		file << "Skipped, model file missing: " << a_scan.missingModel.size() << " recipes (ghost objects)\n";
+		file << "Hidden, already buildable  : " << a_scan.alreadyBuildable.size() << " recipes (filter bSkipAlreadyBuildable, off by default)\n";
+		file << "Hidden, model file missing : " << a_scan.missingModel.size() << " recipes (ghost objects, filter bSkipMissingModels, off by default)\n";
 		file << "Model check                : " << ModelCheck::Status() << "\n";
 		file << "Did not fit (pool full)    : " << a_apply.overflow << " recipes\n";
 		file << "Thumbnails added           : " << a_apply.previewsAdded << " items (had no preview transform)\n";
@@ -168,12 +198,21 @@ namespace LO::Report
 		}
 		file << "\n";
 
-		file << "Ghost objects (not shown, model file missing)\n---------------------------------------------\n";
+		file << "Hidden by bSkipAlreadyBuildable=1 (the same object can be built elsewhere)\n--------------------------------------------------------------------------\n";
+		if (a_scan.alreadyBuildable.empty()) {
+			file << "  (none)\n";
+		}
+		for (const auto& skipped : a_scan.alreadyBuildable) {
+			file << "  " << HiddenAlreadyBuildable(skipped) << "\n";
+		}
+		file << "\n";
+
+		file << "Hidden by bSkipMissingModels=1 (ghost objects, model file not found)\n--------------------------------------------------------------------\n";
 		if (a_scan.missingModel.empty()) {
 			file << "  (none)\n";
 		}
 		for (const auto& skipped : a_scan.missingModel) {
-			file << "  " << DescribeRecipe(skipped.lost.recipe) << " - " << skipped.reason << "\n";
+			file << "  " << HiddenGhost(skipped) << "\n";
 		}
 		file << "\n";
 
@@ -244,6 +283,12 @@ namespace LO::Report
 		}
 		for (const auto& line : NotSortedLines(a_apply)) {
 			REX::LogInformation("  not sorted in: {}", line);
+		}
+		for (const auto& skipped : a_scan.alreadyBuildable) {
+			REX::LogInformation("  hidden (bSkipAlreadyBuildable=1): {}", HiddenAlreadyBuildable(skipped));
+		}
+		for (const auto& skipped : a_scan.missingModel) {
+			REX::LogInformation("  hidden (bSkipMissingModels=1): {}", HiddenGhost(skipped));
 		}
 
 		if (a_verbose) {

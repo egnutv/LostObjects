@@ -19,6 +19,8 @@ namespace LO
 		menuTitles.clear();
 		leaves.clear();
 		optionGlobals.clear();
+		previews.clear();
+		_previews.clear();
 
 		auto* dataHandler = RE::TESDataHandler::GetSingleton();
 		if (!dataHandler) {
@@ -64,6 +66,12 @@ namespace LO
 			ok = ok && leaf;
 			leaves.push_back(leaf);
 		}
+		for (std::uint32_t i = 0; i < Forms::PreviewCount; ++i) {
+			auto* preview = Find<RE::BGSTransform>(dataHandler, Forms::FirstPreview + i, Forms::PluginFile);
+			ok = ok && preview;
+			previews.push_back(preview);
+			_previews.insert(preview);
+		}
 
 		if (!ok) {
 			REX::LogError("Forms: LostObjects.esp does not match this DLL version. Reinstall the mod.");
@@ -88,5 +96,10 @@ namespace LO
 	bool OwnedForms::IsOwned(const RE::TESForm* a_form) const
 	{
 		return a_form && _owned.contains(a_form);
+	}
+
+	bool OwnedForms::IsPreview(const RE::BGSTransform* a_transform) const
+	{
+		return a_transform && _previews.contains(a_transform);
 	}
 }

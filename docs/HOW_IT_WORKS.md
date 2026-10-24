@@ -52,7 +52,8 @@ tree from `WorkshopMenuMain`. Common reasons:
 
 ## 3. The scan
 
-The scan is read-only. It runs on the main thread and takes a few milliseconds.
+The scan is read-only. It runs on the main thread. In the tested load order (about
+36,000 reachable recipes) one scan took about 40 to 80 milliseconds.
 
 1. **Reachable tree.** Walk from `WorkshopMenuMain` through all form lists
    (including entries added by scripts) and collect every reachable category
@@ -120,7 +121,7 @@ like everything Lost Objects adds. If the menu cannot be reached either, the men
 back the same way first. The recipe keeps its own category; nothing is renamed or
 re-tagged. The report lists every place with the plugin whose version of the menu does
 not have it ("removed by"). What Lost Objects put back does not count as reachable in the
-next scan, so the result never flips back and forth.
+next scan, so the result does not flip back and forth because of it.
 
 Only recipes whose categories never were in any menu of any plugin (for example menus
 that a script was supposed to add) go the way described next. For them, the recipes that
@@ -166,18 +167,24 @@ With `sPlacement=Home` (the default) the order is:
 
 With `sPlacement=Tab` everything goes into the tab and nothing is added to other menus.
 
-Lost recipes whose item can **already be built** through a reachable recipe (for
-example the "scrap return" recipes of decoration mods) are skipped
-(`bSkipAlreadyBuildable=1`), because they would only show the same item twice. They are
-still listed in the inventory with the place where the item can be built.
+**Every lost recipe is shown** - that is the purpose of the mod. Two filters can hide
+some; both are **off by default**, and every recipe a filter hides is listed by name in
+`LostObjects_Report.txt` and `LostObjects.log`:
 
-**Ghost objects** are skipped too (`bSkipMissingModels=1`): recipes whose item - or,
-for a list of variants, every single variant - points to a model file that does not
-exist, so the build menu would only show an empty slot. Lost Objects asks the game's
-own file system (loose files in `Data` and all loaded `.ba2` archives). Forms that
-have no model by nature (an NPC from a spawner mod) are never hidden. The check only
-runs after a self-test: the model files of items that are visible right now must be
-found; otherwise it stays off and the report says so ("Model check").
+- `bSkipAlreadyBuildable=1` hides lost recipes whose object can already be built
+  through a reachable recipe (meant for the "scrap return" recipes of decoration mods).
+  "The same object" only means the same form. The place in the menu (category, set of
+  variants, the menu of its mod), the costs and the conditions can still differ, so this
+  filter can hide items you miss. The report names the recipe's own category and the
+  place where the object can be built.
+- `bSkipMissingModels=1` hides **ghost objects**: recipes whose item - or, for a list
+  of variants, every single variant - points to a model file Lost Objects cannot find,
+  so the build menu would only show an empty slot. Lost Objects asks the game's own file
+  system (loose files in `Data` and all loaded `.ba2` archives). Forms that have no model
+  by nature (an NPC from a spawner mod) are not hidden. The check only runs after a
+  self-test: the model files of items that are visible right now must be found;
+  otherwise it stays off and the report says so ("Model check"). The lookup can miss
+  files that do exist (in one test 4 of 300 visible models were not found).
 
 The inventory and the report say for every item where it went and why (which features
 matched and how strongly, or why it was not sorted in and what the best guess was).
@@ -202,10 +209,17 @@ useful feature exists, the recipes are split alphabetically ("A - F", ...).
 What you build in your settlements is saved by the game as always - Lost Objects does
 not change that, and nothing you built disappears. The changes Lost Objects makes to
 the menus are made **in memory only** and are not stored in the save game: they are
-checked again every time a save is loaded, so they always match the mods that are
-installed right now, and no stale entries can end up in a save. The only thing of Lost
-Objects in a save is the settings holotape in your inventory - a normal item that
-disappears when the mod is removed.
+checked again every time a save is loaded, so they match the mods that are installed
+right now. A save does contain some things of Lost Objects:
+
+- the settings holotape in your inventory (a normal item),
+- the values of the option globals of the holotape,
+- script (Papyrus) entries for the Lost Objects menu forms, if a script of another mod
+  walks the workshop menu and touches them.
+
+A test with two saves of the same game, before and after removing Lost Objects, showed:
+the menus stored in the save were the same in both and had no entry of Lost Objects,
+and the game dropped all of the things above when the save was loaded without it.
 
 Lost Objects keeps two files of its own in `Documents\My Games\Fallout4\F4SE\`:
 `LostObjects_Snapshot.txt` (the menus it built, see section 6) and
@@ -274,8 +288,11 @@ The menu is never changed while it is on screen.
 
 Items that were never meant for the build menu (scrap definitions of clutter,
 containers, ...) often have no preview transform, so their thumbnail in the bar
-stays empty. Recovered items without one get the transform that visible items of the
-same form type use most often (in memory only).
+stays empty. A recovered item without one gets a transform from the pool in
+`LostObjects.esp`, framed by the item's **own size** (its bounds): the camera of the
+icon of the first sub menu of the main menu, scaled by the ratio of that icon's size to
+the item's size - the same way the Lost Objects icon is framed. Nothing is taken from
+other items. Items without bounds keep an empty thumbnail. In memory only.
 
 ## 7. Names
 
@@ -295,6 +312,7 @@ check fails, names are not read or written.
 | `src/Scanner.*` | the read-only analysis described above |
 | `src/MenuBuilder.*` | decides where recovered recipes go and builds the menus |
 | `src/Matcher.*` | finds the existing category a lost item belongs to |
+| `src/Preview.*` | frames the thumbnails of recovered items by their own size |
 | `src/Grouping.*` | splits large categories into groups by common features |
 | `src/ModelCheck.*` | finds ghost objects (model file missing) |
 | `src/Util.h` | small helpers (names, files, variants of a form list) |

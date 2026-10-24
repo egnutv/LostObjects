@@ -173,8 +173,8 @@ namespace LO
 
 		skipUntouchedBaseGame = GetBool(data, "filters.bskipuntouchedbasegame", false);
 		skipWithoutCategory = GetBool(data, "filters.bskipwithoutcategory", false);
-		skipAlreadyBuildable = GetBool(data, "filters.bskipalreadybuildable", true);
-		skipMissingModels = GetBool(data, "filters.bskipmissingmodels", true);
+		skipAlreadyBuildable = GetBool(data, "filters.bskipalreadybuildable", false);
+		skipMissingModels = GetBool(data, "filters.bskipmissingmodels", false);
 		restoreOriginalPlaces = GetBool(data, "general.brestoreoriginalplaces", true);
 		mergeSimilarMenus = GetBool(data, "general.bmergesimilarmenus", true);
 		sortIntoCategories = GetBool(data, "general.bsortintocategories", true);

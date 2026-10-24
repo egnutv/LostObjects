@@ -3,6 +3,7 @@
 #include "Grouping.h"
 #include "Matcher.h"
 #include "NameMap.h"
+#include "Preview.h"
 #include "Util.h"
 
 namespace LO
@@ -572,38 +573,35 @@ namespace LO
 
 	// Items that were never meant for the build menu (scrap definitions of
 	// clutter, containers, ...) often have no preview transform. The menu then
-	// shows the 3D preview, but the thumbnail in the bar stays empty. They get
-	// the transform that visible items of the same form type use most often.
-	// Only items without any transform are touched; in memory only.
-	std::uint32_t MenuBuilder::AddPreviewTransforms(const ScanResult& a_scan, const ApplyResult& a_result)
+	// shows the 3D preview, but the thumbnail in the bar stays empty. Such an
+	// item gets a transform from our pool, framed by the item's own size (see
+	// Preview.h). Nothing is taken from other items. Only items without any
+	// transform are touched; in memory only.
+	std::uint32_t MenuBuilder::AddPreviewTransforms(const OwnedForms& a_forms, const ApplyResult& a_result)
 	{
-		std::unordered_map<RE::FormType, std::unordered_map<RE::BGSTransform*, std::uint32_t>> byType;
-		std::unordered_map<RE::BGSTransform*, std::uint32_t> overall;
-		for (const auto& visible : a_scan.visible) {
-			auto* item = RE::DynamicCast<RE::TESBoundObject*>(visible.recipe->createdItem);
-			auto* transform = item ? item->previewTransform.transform : nullptr;
-			if (transform) {
-				++byType[item->GetFormType()][transform];
-				++overall[transform];
-			}
-		}
-		const auto mostCommon = [](const std::unordered_map<RE::BGSTransform*, std::uint32_t>& a_counts) -> RE::BGSTransform* {
-			RE::BGSTransform* best = nullptr;
-			std::uint32_t bestCount = 0;
-			for (const auto& [transform, count] : a_counts) {
-				if (count > bestCount || (count == bestCount && best && transform->GetFormID() < best->GetFormID())) {
-					best = transform;
-					bestCount = count;
-				}
-			}
-			return best;
-		};
-		auto* fallback = mostCommon(overall);
-		if (!fallback) {
+		const auto* reference = Preview::FindReference(a_forms);
+		if (!reference) {
+			REX::LogWarning("MenuBuilder: no sub menu icon with a preview transform found - recovered items without a thumbnail keep an empty one");
 			return 0;
 		}
 
+		std::unordered_set<const RE::BGSTransform*> used;
+		for (const auto& [item, transform] : _previewGiven) {
+			used.insert(transform);
+		}
+		std::size_t next = 0;
+		const auto freeTransform = [&]() -> RE::BGSTransform* {
+			for (; next < a_forms.previews.size(); ++next) {
+				if (!used.contains(a_forms.previews[next])) {
+					return a_forms.previews[next];
+				}
+			}
+			return nullptr;
+		};
+
 		std::uint32_t added = 0;
+		std::uint32_t noSize = 0;
+		std::uint32_t poolFull = 0;
 		for (const auto& [recipe, placed] : a_result.placement) {
 			std::vector<const RE::TESForm*> variants;
 			Util::CollectVariants(recipe->createdItem, variants);
@@ -612,15 +610,24 @@ namespace LO
 				if (!item || item->previewTransform.transform || _previewGiven.contains(item)) {
 					continue;
 				}
-				const auto type = byType.find(item->GetFormType());
-				auto* transform = type != byType.end() ? mostCommon(type->second) : nullptr;
-				item->previewTransform.transform = transform ? transform : fallback;
-				_previewGiven.emplace(item, item->previewTransform.transform);
+				auto* transform = freeTransform();
+				if (!transform) {
+					++poolFull;
+					continue;
+				}
+				if (!Preview::Frame(transform, item, reference)) {
+					++noSize;
+					continue;
+				}
+				item->previewTransform.transform = transform;
+				_previewGiven.emplace(item, transform);
+				used.insert(transform);
 				++added;
 			}
 		}
-		if (added > 0) {
-			REX::LogInformation("MenuBuilder: {} recovered items had no preview transform (empty thumbnail) and got one", added);
+		if (added > 0 || noSize > 0 || poolFull > 0) {
+			REX::LogInformation("MenuBuilder: {} recovered items had no preview transform (empty thumbnail) and were framed by their own size; {} have no size (bounds) and keep an empty thumbnail; {} did not fit into the pool of {} transforms",
+				added, noSize, poolFull, a_forms.previews.size());
 		}
 		return added;
 	}
@@ -945,7 +952,7 @@ namespace LO
 		if (!unchanged) {
 			// --- 2. Apply ---------------------------------------------------------
 			Execute(a_forms, state);
-			AddPreviewTransforms(a_scan, result);
+			AddPreviewTransforms(a_forms, result);
 		}
 		_lastSignature = signature;
 
@@ -1015,8 +1022,14 @@ namespace LO
 
 		Execute(a_forms, a_state);
 
+		// Thumbnails: the transforms of our pool are framed again by the item's
+		// own size (their values are not stored in the snapshot).
+		const auto* reference = Preview::FindReference(a_forms);
 		for (const auto& [item, transform] : a_previews) {
-			if (item && transform && !item->previewTransform.transform) {
+			if (!item || !a_forms.IsPreview(transform) || item->previewTransform.transform) {
+				continue;
+			}
+			if (Preview::Frame(transform, item, reference)) {
 				item->previewTransform.transform = transform;
 				_previewGiven.emplace(item, transform);
 			}

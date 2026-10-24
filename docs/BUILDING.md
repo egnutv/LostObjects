@@ -74,13 +74,13 @@ python tools\verify_plugin.py
 `build_plugin.py` also regenerates `src/PluginForms.h`, so the DLL and the plugin always
 agree on form IDs. The CI fails if either file is out of date.
 
-## Supported game versions
+## Game versions
 
-CommonLibF4 AV builds one DLL for Old-Gen (1.10.163), Next-Gen (1.10.984) and the
-Anniversary Edition (1.11.191+). For the Anniversary Edition the DLL declares itself
-version independent through the Address Library, so new game patches usually only need
-a new Address Library file - not a new DLL. If a patch changes a structure the mod uses,
-CommonLibF4 has to be updated: change `GIT_TAG` in `CMakeLists.txt` to a newer commit.
+Lost Objects is tested on and supports only Fallout 4 **1.11.240**. The build settings of
+CommonLibF4 AV also compile code paths for 1.10.163 (Old-Gen) and 1.10.984 (Next-Gen),
+but Lost Objects was never tested on them. Whether a later game patch works is not known
+before it is tested. If a patch changes a structure the mod uses, CommonLibF4 has to be
+updated: change `GIT_TAG` in `CMakeLists.txt` to a newer commit.
 
 ## Everything is reproducible
 

@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 4.3.0)
 
 project(
 	LostObjects
-	VERSION 0.13.0.0
+	VERSION 0.13.1.0
 	DESCRIPTION "Adds a workshop menu tab that collects every craftable workshop item which is not reachable in the build menu."
 	LANGUAGES CXX
 )
@@ -27,8 +27,9 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
 # --- CommonLibF4 AV (MIT) ----------------------------------------------------
-# One DLL for Old-Gen (1.10.163), Next-Gen (1.10.984) and the Anniversary
-# Edition (1.11.191 and newer, through the Address Library).
+# Lost Objects is tested on and supports only Fallout 4 1.11.240. The runtime
+# switches below also compile CommonLibF4's code paths for 1.10.163 and 1.10.984;
+# those versions were never tested.
 # Pinned to an exact commit so every build uses the same code.
 
 set(COMMONLIB_RUNTIME_VR OFF CACHE BOOL "" FORCE)
@@ -76,6 +77,7 @@ set(SOURCES
 	src/NameMap.cpp
 	src/Notice.cpp
 	src/PluginHistory.cpp
+	src/Preview.cpp
 	src/Recovery.cpp
 	src/Report.cpp
 	src/Scanner.cpp
@@ -96,6 +98,7 @@ set(HEADERS
 	src/PCH.h
 	src/PluginForms.h
 	src/PluginHistory.h
+	src/Preview.h
 	src/Recovery.h
 	src/Report.h
 	src/Scanner.h
